@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo-disruptivaa.png";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -54,11 +55,21 @@ const Sidebar = () => {
         collapsed ? "w-16" : "w-56"
       )}
     >
-      {/* Logo / Isotipo */}
-      <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-4">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center font-bold text-xl text-primary-foreground">
-          D
-        </div>
+      {/* Logo */}
+      <div className="h-16 flex items-center border-b border-sidebar-border px-4 gap-2">
+        <img 
+          src={logo} 
+          alt="Disruptivaa" 
+          className={cn(
+            "transition-all duration-300",
+            collapsed ? "h-8" : "h-7"
+          )}
+        />
+        {!collapsed && (
+          <span className="text-lg font-bold text-sidebar-foreground">
+            disruptiv<span className="text-primary">aa</span>
+          </span>
+        )}
       </div>
 
       {/* Navigation */}
