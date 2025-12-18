@@ -7,7 +7,6 @@ import { toast } from "@/hooks/use-toast";
 import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/logo-disruptivaa.png";
 
 // Definición de los 5 agentes AI-First de Disruptivaa (IDs coinciden con tabla ai_agents)
 export const DISRUPTIVAA_AGENTS = [
@@ -192,23 +191,32 @@ const Dashboard = () => {
           {/* Welcome section - Hidden when chat is active */}
           {!isChatActive && (
             <div className="animate-fade-in">
-              {/* Logo and Title */}
-              <div className="text-center py-8">
-                <img 
-                  src={logo} 
-                  alt="Disruptivaa" 
-                  className="h-12 mx-auto mb-6"
-                />
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+              {/* Title - No logo */}
+              <div className="text-center pt-12 pb-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                   ¿Qué quieres hacer hoy?
                 </h2>
-                <p className="text-muted-foreground mb-8">
+              </div>
+
+              {/* Command Console - Right after title */}
+              <div className="mb-8">
+                <CommandConsole 
+                  onCommand={handleCommand} 
+                  selectedAgent={selectedAgent}
+                  onClearAgent={handleClearAgent}
+                  onAuthRequired={handleConsoleFocus}
+                  isAuthenticated={!!user}
+                  autoFocus
+                />
+              </div>
+
+              {/* Agent Cards - Below input */}
+              <div className="text-center mb-4">
+                <p className="text-sm text-muted-foreground">
                   Selecciona un agente para comenzar
                 </p>
               </div>
-
-              {/* Horizontal Agent Cards */}
-              <div className="flex flex-wrap justify-center gap-3 mb-8">
+              <div className="flex flex-wrap justify-center gap-3">
                 {DISRUPTIVAA_AGENTS.map((agent) => {
                   const Icon = agent.icon;
                   const isSelected = selectedAgent?.id === agent.id;
@@ -252,19 +260,18 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Command Console */}
-          <div className={cn(
-            "animate-fade-in",
-            isChatActive && "pt-4"
-          )}>
-            <CommandConsole 
-              onCommand={handleCommand} 
-              selectedAgent={selectedAgent}
-              onClearAgent={handleClearAgent}
-              onAuthRequired={handleConsoleFocus}
-              isAuthenticated={!!user}
-            />
-          </div>
+          {/* Command Console when chat is active */}
+          {isChatActive && (
+            <div className="animate-fade-in pt-4">
+              <CommandConsole 
+                onCommand={handleCommand} 
+                selectedAgent={selectedAgent}
+                onClearAgent={handleClearAgent}
+                onAuthRequired={handleConsoleFocus}
+                isAuthenticated={!!user}
+              />
+            </div>
+          )}
         </div>
       </main>
 
