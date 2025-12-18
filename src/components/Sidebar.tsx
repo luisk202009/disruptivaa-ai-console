@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo-disruptivaa.png";
+import isologo from "@/assets/isologo.png";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -56,19 +57,22 @@ const Sidebar = () => {
       )}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center border-b border-sidebar-border px-4 gap-2">
-        <img 
-          src={logo} 
-          alt="Disruptivaa" 
-          className={cn(
-            "transition-all duration-300",
-            collapsed ? "h-8" : "h-7"
-          )}
-        />
-        {!collapsed && (
-          <span className="text-lg font-bold text-sidebar-foreground">
-            disruptiv<span className="text-primary">aa</span>
-          </span>
+      <div className={cn(
+        "h-16 flex items-center border-b border-sidebar-border transition-all duration-300",
+        collapsed ? "justify-center px-2" : "px-4"
+      )}>
+        {collapsed ? (
+          <img 
+            src={isologo} 
+            alt="Disruptivaa" 
+            className="h-10 w-10 transition-all duration-300"
+          />
+        ) : (
+          <img 
+            src={logo} 
+            alt="Disruptivaa" 
+            className="h-8 transition-all duration-300"
+          />
         )}
       </div>
 
