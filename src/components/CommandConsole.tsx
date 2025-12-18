@@ -79,6 +79,20 @@ const CommandConsole = ({
       
       const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0and6ZmJpbnNybW52bHNndnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzY4MDUsImV4cCI6MjA4MTU1MjgwNX0.gvLt5ggffAwHp-HbBAqyGa18HuNZzJ5AHD6p4q6dk7E";
       
+      const requestBody = {
+        message: userMessage,
+        userId: userId,
+        agentId: selectedAgent?.id || null,
+        agentName: selectedAgent?.name || null,
+        systemInstruction: selectedAgent?.systemInstruction || null,
+        useKnowledgeBase: true,
+        knowledgePriority: knowledgePriority,
+      };
+      
+      console.log("🔑 Supabase Anon Key:", supabaseAnonKey.substring(0, 50) + "...");
+      console.log("📤 Request URL:", EDGE_FUNCTION_URL);
+      console.log("📤 Request Body:", requestBody);
+      
       const response = await fetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: {
@@ -86,16 +100,10 @@ const CommandConsole = ({
           "apikey": supabaseAnonKey,
           "Authorization": `Bearer ${supabaseAnonKey}`,
         },
-        body: JSON.stringify({
-          message: userMessage,
-          userId: userId,
-          agentId: selectedAgent?.id || null,
-          agentName: selectedAgent?.name || null,
-          systemInstruction: selectedAgent?.systemInstruction || null,
-          useKnowledgeBase: true,
-          knowledgePriority: knowledgePriority,
-        }),
+        body: JSON.stringify(requestBody),
       });
+      
+      console.log("📥 Response Status:", response.status, response.statusText);
 
       if (!response.ok) {
         throw new Error(`Error: ${response.status}`);
