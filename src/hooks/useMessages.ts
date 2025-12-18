@@ -68,6 +68,10 @@ export const useMessages = () => {
     return newMessage;
   };
 
+  const clearMessages = () => {
+    setMessages([]);
+  };
+
   useEffect(() => {
     fetchMessages();
 
@@ -105,5 +109,5 @@ export const useMessages = () => {
     };
   }, [fetchMessages]);
 
-  return { messages, loading, sending, saveMessage, addLocalMessage, refetch: fetchMessages };
+  return { messages, loading, sending, saveMessage, addLocalMessage, clearMessages, refetch: fetchMessages };
 };

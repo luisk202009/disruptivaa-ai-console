@@ -14,6 +14,7 @@ interface CommandConsoleProps {
   onAuthRequired?: () => boolean;
   isAuthenticated?: boolean;
   autoFocus?: boolean;
+  showMessages?: boolean;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -25,7 +26,8 @@ const CommandConsole = ({
   onClearAgent,
   onAuthRequired,
   isAuthenticated = true,
-  autoFocus = false
+  autoFocus = false,
+  showMessages = true
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -191,7 +193,7 @@ const CommandConsole = ({
       )}
 
       {/* Chat Messages */}
-      {(messages.length > 0 || messagesLoading || isAdsOptimizer) && (
+      {showMessages && (messages.length > 0 || messagesLoading || isAdsOptimizer) && (
         <div className="mb-4 max-h-80 overflow-y-auto space-y-3 p-4 glass rounded-2xl">
           {/* Connect Ads Account button inside chat area */}
           {isAdsOptimizer && (

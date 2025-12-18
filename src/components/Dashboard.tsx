@@ -207,6 +207,7 @@ const Dashboard = () => {
                   onAuthRequired={handleConsoleFocus}
                   isAuthenticated={!!user}
                   autoFocus
+                  showMessages={false}
                 />
               </div>
 
