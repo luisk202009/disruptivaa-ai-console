@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Palette, PenTool, BarChart3, Users, ImageIcon, Activity, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AgentCard from "./AgentCard";
-import AuthGateModal from "./AuthGateModal";
+import AuthModal from "./AuthModal";
 import { toast } from "@/hooks/use-toast";
 import { useAgents, Agent } from "@/hooks/useAgents";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,11 +73,21 @@ interface RecentMessage {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut } = useAuth();
   const { agents, loading, updateAgentStatus } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
   const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Check if redirected from protected route
+  useEffect(() => {
+    if (location.state?.showAuthModal) {
+      setShowAuthModal(true);
+      // Clear the state so it doesn't trigger again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Fetch recent messages from agent_messages
   useEffect(() => {
@@ -349,8 +359,8 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* Auth Gate Modal */}
-      <AuthGateModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      {/* Auth Modal */}
+      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
     </div>
   );
 };

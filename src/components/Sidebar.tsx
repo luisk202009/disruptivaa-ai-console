@@ -5,11 +5,14 @@ import {
   History, 
   HelpCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User,
+  LogOut
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo-disruptivaa.png";
 import isologo from "@/assets/isologo.png";
 
@@ -42,6 +45,7 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const navItems = [
     { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/" },
@@ -55,6 +59,13 @@ const Sidebar = () => {
     if (location.pathname === "/history") return "history";
     if (location.pathname === "/settings") return "settings";
     return "dashboard";
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (!user) return null;
+    const metadata = user.user_metadata;
+    return metadata?.full_name || user.email?.split("@")[0] || "Usuario";
   };
 
   return (
@@ -97,6 +108,42 @@ const Sidebar = () => {
           />
         ))}
       </nav>
+
+      {/* User Section at Bottom */}
+      {user && (
+        <div className={cn(
+          "p-3 border-t border-sidebar-border",
+          collapsed ? "flex justify-center" : ""
+        )}>
+          <div className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/50",
+            collapsed && "justify-center p-2"
+          )}>
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0">
+              {getUserDisplayName()?.charAt(0).toUpperCase()}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {getUserDisplayName()}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user.email}
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <button
+                onClick={signOut}
+                className="p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut size={16} className="text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Collapse toggle */}
       <div className="p-3 border-t border-sidebar-border">
