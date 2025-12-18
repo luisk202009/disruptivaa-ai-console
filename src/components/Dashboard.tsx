@@ -271,6 +271,7 @@ const Dashboard = () => {
               selectedAgent={selectedAgent}
               onClearAgent={handleClearAgent}
               onAuthRequired={handleConsoleFocus}
+              isAuthenticated={!!user}
             />
           </div>
 

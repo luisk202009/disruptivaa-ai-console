@@ -12,6 +12,7 @@ interface CommandConsoleProps {
   selectedAgent?: DisruptivaaAgent | null;
   onClearAgent?: () => void;
   onAuthRequired?: () => boolean;
+  isAuthenticated?: boolean;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -21,7 +22,8 @@ const CommandConsole = ({
   userId = "anonymous",
   selectedAgent,
   onClearAgent,
-  onAuthRequired
+  onAuthRequired,
+  isAuthenticated = true
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -259,7 +261,11 @@ const CommandConsole = ({
         <div
           className={cn(
             "relative rounded-2xl transition-all duration-300 bg-card border-2",
-            isFocused ? "border-primary shadow-[0_0_20px_rgba(239,121,17,0.3)]" : "border-border"
+            !isAuthenticated 
+              ? "border-muted cursor-not-allowed opacity-75" 
+              : isFocused 
+                ? "border-primary shadow-[0_0_20px_rgba(239,121,17,0.3)]" 
+                : "border-border"
           )}
         >
           <div className="flex items-center gap-3 p-2">
@@ -278,27 +284,37 @@ const CommandConsole = ({
               value={command}
               onChange={(e) => setCommand(e.target.value)}
               onFocus={() => {
-                if (onAuthRequired?.()) return;
+                if (!isAuthenticated) {
+                  onAuthRequired?.();
+                  return;
+                }
                 setIsFocused(true);
               }}
               onBlur={() => setIsFocused(false)}
               placeholder={
-                isLoading 
-                  ? "Procesando..." 
-                  : selectedAgent 
-                    ? `Escribe a ${selectedAgent.name}...` 
-                    : "Selecciona un agente para comenzar..."
+                !isAuthenticated
+                  ? "Inicia sesión para chatear"
+                  : isLoading 
+                    ? "Procesando..." 
+                    : selectedAgent 
+                      ? `Escribe a ${selectedAgent.name}...` 
+                      : "Selecciona un agente para comenzar..."
               }
-              disabled={isLoading}
-              className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || !isAuthenticated}
+              className={cn(
+                "flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base py-2",
+                !isAuthenticated 
+                  ? "cursor-not-allowed" 
+                  : "disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
             />
             
             <button
               type="submit"
-              disabled={!command.trim() || isLoading}
+              disabled={!command.trim() || isLoading || !isAuthenticated}
               className={cn(
                 "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                command.trim() && !isLoading
+                command.trim() && !isLoading && isAuthenticated
                   ? "bg-primary text-primary-foreground hover:bg-primary/90" 
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
@@ -311,6 +327,13 @@ const CommandConsole = ({
             </button>
           </div>
         </div>
+        
+        {/* Login prompt for unauthenticated users */}
+        {!isAuthenticated && (
+          <p className="text-center text-xs text-muted-foreground mt-2">
+            🔒 Inicia sesión para interactuar con nuestros agentes AI
+          </p>
+        )}
       </form>
 
       {/* Quick suggestions */}
