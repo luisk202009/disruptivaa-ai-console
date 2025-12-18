@@ -1,16 +1,24 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Sparkles, Loader2, User, Bot } from "lucide-react";
+import { Send, Sparkles, Loader2, User, Bot, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMessages, Message } from "@/hooks/useMessages";
+import { useMessages } from "@/hooks/useMessages";
+import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
   userId?: string;
+  selectedAgent?: DisruptivaaAgent | null;
+  onClearAgent?: () => void;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
 
-const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps) => {
+const CommandConsole = ({ 
+  onCommand, 
+  userId = "anonymous",
+  selectedAgent,
+  onClearAgent 
+}: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +55,8 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
         body: JSON.stringify({
           message: userMessage,
           userId: userId,
+          agentId: selectedAgent?.id || null,
+          agentName: selectedAgent?.name || null,
         }),
       });
 
@@ -68,14 +78,49 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
     }
   };
 
-  const suggestions = [
-    "Auditar sitio web",
-    "Generar presupuesto",
-    "Desplegar cambios",
-  ];
+  // Suggestions based on selected agent
+  const getSuggestions = () => {
+    if (selectedAgent) {
+      switch (selectedAgent.id) {
+        case "smart-brand-architect":
+          return ["Crear identidad visual", "Generar paleta de colores", "Diseñar logo"];
+        case "ghostwriter-pro":
+          return ["Escribir artículo de blog", "Crear copy para redes", "Generar newsletter"];
+        case "ads-optimizer":
+          return ["Optimizar campaña Meta", "Analizar rendimiento Ads", "Sugerir presupuesto"];
+        case "ai-crm-sales":
+          return ["Calificar nuevos leads", "Crear secuencia de emails", "Analizar pipeline"];
+        case "visual-content-bot":
+          return ["Crear banner para Instagram", "Diseñar post para LinkedIn", "Generar carrusel"];
+        default:
+          return ["¿Cómo puedes ayudarme?"];
+      }
+    }
+    return DISRUPTIVAA_AGENTS.map(a => a.name);
+  };
+
+  const suggestions = getSuggestions();
 
   return (
     <div className="w-full max-w-3xl mx-auto">
+      {/* Agent Context Badge */}
+      {selectedAgent && (
+        <div className="mb-4 flex items-center justify-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+            <selectedAgent.icon size={16} className="text-primary" />
+            <span className="text-sm font-medium text-primary">
+              Hablando con {selectedAgent.name}
+            </span>
+            <button 
+              onClick={onClearAgent}
+              className="ml-1 p-1 rounded-full hover:bg-primary/20 transition-colors"
+            >
+              <X size={14} className="text-primary" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Chat Messages */}
       {(messages.length > 0 || messagesLoading) && (
         <div className="mb-4 max-h-80 overflow-y-auto space-y-3 p-4 glass rounded-2xl">
@@ -124,7 +169,9 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
                   <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-tl-sm">
                     <div className="flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin text-primary" />
-                      <span className="text-sm text-muted-foreground">Pensando...</span>
+                      <span className="text-sm text-muted-foreground">
+                        {selectedAgent ? `${selectedAgent.name} está pensando...` : "Pensando..."}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -147,6 +194,8 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
               {isLoading ? (
                 <Loader2 className="w-5 h-5 text-primary animate-spin" />
+              ) : selectedAgent ? (
+                <selectedAgent.icon className="w-5 h-5 text-primary" />
               ) : (
                 <Sparkles className="w-5 h-5 text-primary" />
               )}
@@ -158,7 +207,13 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
               onChange={(e) => setCommand(e.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={isLoading ? "Procesando..." : "Escribe un comando para los agentes AI..."}
+              placeholder={
+                isLoading 
+                  ? "Procesando..." 
+                  : selectedAgent 
+                    ? `Escribe un mensaje para ${selectedAgent.name}...` 
+                    : "Selecciona un agente o escribe un comando..."
+              }
               disabled={isLoading}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             />
