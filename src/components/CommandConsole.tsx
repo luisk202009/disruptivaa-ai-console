@@ -118,11 +118,11 @@ const CommandConsole = ({
     <div className="w-full max-w-3xl mx-auto">
       {/* Agent Context Badge */}
       {selectedAgent && (
-        <div className="mb-4 flex items-center justify-center gap-3">
+        <div className="mb-4 flex items-center justify-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
             <selectedAgent.icon size={16} className="text-primary" />
             <span className="text-sm font-medium text-primary">
-              Hablando con {selectedAgent.name}
+              Consultando a {selectedAgent.name}
             </span>
             <button 
               onClick={onClearAgent}
@@ -131,25 +131,27 @@ const CommandConsole = ({
               <X size={14} className="text-primary" />
             </button>
           </div>
-          
-          {/* Connect Account button for Ads Optimizer */}
-          {isAdsOptimizer && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleConnectAccount}
-              className="text-xs border-primary/30 text-primary hover:bg-primary/10"
-            >
-              <Link2 size={14} className="mr-1.5" />
-              Conectar Cuenta
-            </Button>
-          )}
         </div>
       )}
 
       {/* Chat Messages */}
-      {(messages.length > 0 || messagesLoading) && (
+      {(messages.length > 0 || messagesLoading || isAdsOptimizer) && (
         <div className="mb-4 max-h-80 overflow-y-auto space-y-3 p-4 glass rounded-2xl">
+          {/* Connect Ads Account button inside chat area */}
+          {isAdsOptimizer && (
+            <div className="flex justify-center pb-2 border-b border-border/30 mb-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleConnectAccount}
+                className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <Link2 size={14} className="mr-1.5" />
+                Conectar cuenta de Ads
+              </Button>
+            </div>
+          )}
+
           {messagesLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -196,7 +198,7 @@ const CommandConsole = ({
                     <div className="flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin text-primary" />
                       <span className="text-sm text-muted-foreground">
-                        {selectedAgent ? `${selectedAgent.name} está pensando...` : "Pensando..."}
+                        {selectedAgent ? `${selectedAgent.name} está consultando...` : "Procesando..."}
                       </span>
                     </div>
                   </div>
