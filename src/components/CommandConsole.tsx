@@ -11,6 +11,7 @@ interface CommandConsoleProps {
   userId?: string;
   selectedAgent?: DisruptivaaAgent | null;
   onClearAgent?: () => void;
+  onAuthRequired?: () => boolean;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -19,7 +20,8 @@ const CommandConsole = ({
   onCommand, 
   userId = "anonymous",
   selectedAgent,
-  onClearAgent 
+  onClearAgent,
+  onAuthRequired
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -275,7 +277,10 @@ const CommandConsole = ({
               type="text"
               value={command}
               onChange={(e) => setCommand(e.target.value)}
-              onFocus={() => setIsFocused(true)}
+              onFocus={() => {
+                if (onAuthRequired?.()) return;
+                setIsFocused(true);
+              }}
               onBlur={() => setIsFocused(false)}
               placeholder={
                 isLoading 

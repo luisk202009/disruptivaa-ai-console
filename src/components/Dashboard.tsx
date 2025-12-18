@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Palette, PenTool, BarChart3, Users, ImageIcon, Activity, Loader2 } from "lucide-react";
+import { Search, Palette, PenTool, BarChart3, Users, ImageIcon, Activity, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AgentCard from "./AgentCard";
+import AuthGateModal from "./AuthGateModal";
 import { toast } from "@/hooks/use-toast";
 import { useAgents, Agent } from "@/hooks/useAgents";
+import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -71,9 +73,11 @@ interface RecentMessage {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const { agents, loading, updateAgentStatus } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
   const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Fetch recent messages from agent_messages
   useEffect(() => {
@@ -129,11 +133,23 @@ const Dashboard = () => {
   };
 
   const handleSelectAgent = (agent: DisruptivaaAgent) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     setSelectedAgent(agent);
     toast({
       title: `${agent.name} seleccionado`,
       description: `Ahora estás hablando con ${agent.name}`,
     });
+  };
+
+  const handleConsoleFocus = () => {
+    if (!user) {
+      setShowAuthModal(true);
+      return true; // Return true to indicate focus was blocked
+    }
+    return false;
   };
 
   const handleClearAgent = () => {
@@ -201,9 +217,27 @@ const Dashboard = () => {
           <button className="p-2 rounded-lg hover:bg-muted transition-colors">
             <Search size={20} className="text-muted-foreground" />
           </button>
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground">
-            U
-          </div>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground">
+                {user.email?.charAt(0).toUpperCase() || "U"}
+              </div>
+              <button
+                onClick={signOut}
+                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                title="Cerrar sesión"
+              >
+                <LogOut size={18} className="text-muted-foreground" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate("/auth")}
+              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Iniciar sesión
+            </button>
+          )}
         </div>
       </header>
 
@@ -226,6 +260,7 @@ const Dashboard = () => {
               onCommand={handleCommand} 
               selectedAgent={selectedAgent}
               onClearAgent={handleClearAgent}
+              onAuthRequired={handleConsoleFocus}
             />
           </div>
 
@@ -313,6 +348,9 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Auth Gate Modal */}
+      <AuthGateModal open={showAuthModal} onOpenChange={setShowAuthModal} />
     </div>
   );
 };
