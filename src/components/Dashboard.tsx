@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Palette, PenTool, BarChart3, Users, ImageIcon, Activity, Loader2 } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AgentCard from "./AgentCard";
 import { toast } from "@/hooks/use-toast";
 import { useAgents, Agent } from "@/hooks/useAgents";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Definición de los 5 agentes AI-First de Disruptivaa (IDs coinciden con tabla ai_agents)
 export const DISRUPTIVAA_AGENTS = [
@@ -58,9 +62,71 @@ export const DISRUPTIVAA_AGENTS = [
 
 export type DisruptivaaAgent = typeof DISRUPTIVAA_AGENTS[number];
 
+interface RecentMessage {
+  id: string;
+  content: string;
+  created_at: string;
+  role: string;
+}
+
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { agents, loading, updateAgentStatus } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
+  const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
+
+  // Fetch recent messages from agent_messages
+  useEffect(() => {
+    const fetchRecentMessages = async () => {
+      const { data, error } = await supabase
+        .from("agent_messages")
+        .select("id, content, created_at, role")
+        .eq("role", "assistant")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setRecentMessages(data);
+      }
+    };
+
+    fetchRecentMessages();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel("recent_messages")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "agent_messages" },
+        () => fetchRecentMessages()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Detect agent from message content
+  const detectAgentFromMessage = (content: string): DisruptivaaAgent => {
+    const lowerContent = content.toLowerCase();
+    for (const agent of DISRUPTIVAA_AGENTS) {
+      if (agent.keywords.some(kw => lowerContent.includes(kw))) {
+        return agent;
+      }
+    }
+    // Default to first agent if no match
+    return DISRUPTIVAA_AGENTS[0];
+  };
+
+  const handleActivityClick = (message: RecentMessage) => {
+    const agent = detectAgentFromMessage(message.content);
+    setSelectedAgent(agent);
+    toast({
+      title: `${agent.name} seleccionado`,
+      description: "Continuando conversación...",
+    });
+  };
 
   const handleSelectAgent = (agent: DisruptivaaAgent) => {
     setSelectedAgent(agent);
@@ -197,31 +263,47 @@ const Dashboard = () => {
             })}
           </div>
 
-          {/* Recent activity */}
+          {/* Recent activity - Now using agent_messages */}
           <div className="glass rounded-2xl p-6 animate-fade-in">
-            <h3 className="font-semibold text-foreground mb-4">Actividad reciente</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-foreground">Actividad reciente</h3>
+              <button 
+                onClick={() => navigate("/history")}
+                className="text-xs text-primary hover:underline"
+              >
+                Ver todo
+              </button>
+            </div>
             <div className="space-y-3">
-              {agents.filter(a => a.last_action).length > 0 ? (
-                agents
-                  .filter(a => a.last_action)
-                  .map((agent) => (
+              {recentMessages.length > 0 ? (
+                recentMessages.map((msg) => {
+                  const agent = detectAgentFromMessage(msg.content);
+                  const Icon = agent.icon;
+                  const snippet = msg.content.length > 80 
+                    ? msg.content.substring(0, 80) + "..." 
+                    : msg.content;
+                  
+                  return (
                     <div
-                      key={agent.id}
-                      className="flex items-center justify-between py-3 border-b border-border/30 last:border-0"
+                      key={msg.id}
+                      onClick={() => handleActivityClick(msg)}
+                      className="flex items-center justify-between py-3 border-b border-border/30 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 -mx-2 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${
-                          agent.status === "working" ? "bg-primary pulse-status" : 
-                          agent.status === "completed" ? "bg-emerald-500" : "bg-muted-foreground"
-                        }`} />
-                        <div>
-                          <p className="text-sm text-foreground">{agent.last_action}</p>
+                        <div className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-[#EF7911] flex items-center justify-center">
+                          <Icon size={14} className="text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm text-foreground truncate max-w-[300px]">{snippet}</p>
                           <p className="text-xs text-muted-foreground">{agent.name}</p>
                         </div>
                       </div>
-                      <span className="text-xs text-muted-foreground capitalize">{agent.status}</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                        {format(new Date(msg.created_at), "d MMM, HH:mm", { locale: es })}
+                      </span>
                     </div>
-                  ))
+                  );
+                })
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No hay actividad reciente. Selecciona un agente para comenzar.
