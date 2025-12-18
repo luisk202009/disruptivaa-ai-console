@@ -1,51 +1,68 @@
-import { useState } from "react";
-import { Search, FileSearch, Rocket, Calculator, Activity } from "lucide-react";
+import { Search, FileSearch, Rocket, Calculator, Activity, Loader2 } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AgentCard from "./AgentCard";
 import { toast } from "@/hooks/use-toast";
+import { useAgents, Agent } from "@/hooks/useAgents";
+import { useMessages } from "@/hooks/useMessages";
 
-interface AgentStatus {
-  id: string;
-  status: "idle" | "working" | "completed" | "error";
-  lastAction?: string;
-}
+const agentIcons: Record<string, typeof FileSearch> = {
+  "Auditoría": FileSearch,
+  "Despliegue": Rocket,
+  "Presupuesto": Calculator,
+  "Performance Auditor": FileSearch,
+  "Creative Deployer": Rocket,
+  "Budget Optimizer": Calculator,
+};
+
+const agentKeywords: Record<string, string[]> = {
+  "Auditoría": ["auditar", "audit", "analizar", "análisis"],
+  "Performance Auditor": ["auditar", "audit", "analizar", "análisis", "performance"],
+  "Despliegue": ["desplegar", "deploy", "deployment", "publicar"],
+  "Creative Deployer": ["desplegar", "deploy", "deployment", "publicar", "creative"],
+  "Presupuesto": ["presupuesto", "budget", "costo", "estimación"],
+  "Budget Optimizer": ["presupuesto", "budget", "costo", "estimación", "optimizer"],
+};
 
 const Dashboard = () => {
-  const [agentStatuses, setAgentStatuses] = useState<AgentStatus[]>([
-    { id: "audit", status: "idle" },
-    { id: "deploy", status: "working", lastAction: "Analizando dependencias..." },
-    { id: "budget", status: "completed", lastAction: "Presupuesto Q4 generado" },
-  ]);
+  const { agents, loading, updateAgentStatus } = useAgents();
+  const { saveMessage, sending } = useMessages();
 
-  const handleCommand = (command: string) => {
-    // Simulate agent activation
+  const handleCommand = async (command: string) => {
+    // Save message to Supabase
+    await saveMessage(command, "user");
+
     const lowerCommand = command.toLowerCase();
-    
-    if (lowerCommand.includes("auditar") || lowerCommand.includes("audit")) {
-      setAgentStatuses(prev => 
-        prev.map(a => a.id === "audit" ? { ...a, status: "working", lastAction: "Iniciando auditoría..." } : a)
-      );
-      toast({
-        title: "Agente de Auditoría activado",
-        description: "Analizando el sitio web...",
-      });
-    } else if (lowerCommand.includes("desplegar") || lowerCommand.includes("deploy")) {
-      setAgentStatuses(prev => 
-        prev.map(a => a.id === "deploy" ? { ...a, status: "working", lastAction: "Preparando despliegue..." } : a)
-      );
-      toast({
-        title: "Agente de Despliegue activado",
-        description: "Verificando cambios...",
-      });
-    } else if (lowerCommand.includes("presupuesto") || lowerCommand.includes("budget")) {
-      setAgentStatuses(prev => 
-        prev.map(a => a.id === "budget" ? { ...a, status: "working", lastAction: "Calculando costos..." } : a)
-      );
-      toast({
-        title: "Agente de Presupuesto activado",
-        description: "Generando estimaciones...",
-      });
-    } else {
+    let agentActivated = false;
+
+    // Find matching agent based on command
+    for (const agent of agents) {
+      const keywords = agentKeywords[agent.name] || [];
+      const matches = keywords.some((kw) => lowerCommand.includes(kw));
+
+      if (matches) {
+        agentActivated = true;
+        
+        // Set to working status
+        await updateAgentStatus(agent.id, "working", `Procesando: "${command}"`);
+        
+        toast({
+          title: `Agente ${agent.name} activado`,
+          description: "Procesando tu solicitud...",
+        });
+
+        // Simulate agent processing time
+        setTimeout(async () => {
+          await updateAgentStatus(agent.id, "completed", `Completado: "${command}"`);
+          
+          // Save agent response
+          await saveMessage(`Tarea completada: ${command}`, "assistant");
+        }, 3000);
+        
+        break;
+      }
+    }
+
+    if (!agentActivated) {
       toast({
         title: "Comando recibido",
         description: `Procesando: "${command}"`,
@@ -53,7 +70,22 @@ const Dashboard = () => {
     }
   };
 
-  const getStatus = (id: string) => agentStatuses.find(a => a.id === id);
+  const getAgentByName = (name: string): Agent | undefined => {
+    return agents.find((a) => a.name === name);
+  };
+
+  const activeAgentsCount = agents.filter((a) => a.status === "working").length;
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Cargando agentes...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-background">
@@ -63,7 +95,7 @@ const Dashboard = () => {
           <h1 className="text-lg font-semibold text-foreground">AI-Agent Console</h1>
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
             <Activity size={12} />
-            <span>3 Agentes activos</span>
+            <span>{agents.length} Agentes • {activeAgentsCount} activos</span>
           </div>
         </div>
         
@@ -92,77 +124,86 @@ const Dashboard = () => {
 
           {/* Command Console */}
           <div className="animate-fade-in stagger-1">
-            <CommandConsole onCommand={handleCommand} />
+            <CommandConsole onCommand={handleCommand} isLoading={sending} />
           </div>
 
           {/* Agent Cards Grid */}
           <div className="grid md:grid-cols-3 gap-4 pt-8">
-            <div className="animate-fade-in stagger-1">
-              <AgentCard
-                title="Auditoría"
-                description="Análisis de sitios web"
-                icon={FileSearch}
-                status={getStatus("audit")?.status || "idle"}
-                lastAction={getStatus("audit")?.lastAction}
-                stats={[
-                  { label: "Sitios analizados", value: 24 },
-                  { label: "Issues detectados", value: 156 },
-                ]}
-              />
-            </div>
-
-            <div className="animate-fade-in stagger-2">
-              <AgentCard
-                title="Despliegue"
-                description="Gestión de deployments"
-                icon={Rocket}
-                status={getStatus("deploy")?.status || "idle"}
-                lastAction={getStatus("deploy")?.lastAction}
-                stats={[
-                  { label: "Despliegues", value: 89 },
-                  { label: "Uptime", value: "99.9%" },
-                ]}
-              />
-            </div>
-
-            <div className="animate-fade-in stagger-3">
-              <AgentCard
-                title="Presupuesto"
-                description="Estimaciones de costos"
-                icon={Calculator}
-                status={getStatus("budget")?.status || "idle"}
-                lastAction={getStatus("budget")?.lastAction}
-                stats={[
-                  { label: "Presupuestos", value: 12 },
-                  { label: "Precisión", value: "94%" },
-                ]}
-              />
-            </div>
+            {agents.length > 0 ? (
+              agents.map((agent, index) => {
+                const Icon = agentIcons[agent.name] || FileSearch;
+                return (
+                  <div key={agent.id} className={`animate-fade-in stagger-${index + 1}`}>
+                    <AgentCard
+                      title={agent.name}
+                      description={agent.role}
+                      icon={Icon}
+                      status={agent.status}
+                      lastAction={agent.last_action || undefined}
+                    />
+                  </div>
+                );
+              })
+            ) : (
+              <>
+                <div className="animate-fade-in stagger-1">
+                  <AgentCard
+                    title="Auditoría"
+                    description="Análisis de sitios web"
+                    icon={FileSearch}
+                    status="idle"
+                  />
+                </div>
+                <div className="animate-fade-in stagger-2">
+                  <AgentCard
+                    title="Despliegue"
+                    description="Gestión de deployments"
+                    icon={Rocket}
+                    status="idle"
+                  />
+                </div>
+                <div className="animate-fade-in stagger-3">
+                  <AgentCard
+                    title="Presupuesto"
+                    description="Estimaciones de costos"
+                    icon={Calculator}
+                    status="idle"
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Recent activity */}
           <div className="glass rounded-2xl p-6 animate-fade-in">
             <h3 className="font-semibold text-foreground mb-4">Actividad reciente</h3>
             <div className="space-y-3">
-              {[
-                { time: "Hace 2 min", action: "Auditoría completada para cliente-xyz.com", agent: "Auditoría" },
-                { time: "Hace 15 min", action: "Despliegue exitoso en producción", agent: "Despliegue" },
-                { time: "Hace 1 hora", action: "Presupuesto Q4 generado y enviado", agent: "Presupuesto" },
-              ].map((activity, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                    <div>
-                      <p className="text-sm text-foreground">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">{activity.agent}</p>
+              {agents.filter(a => a.last_action).length > 0 ? (
+                agents
+                  .filter(a => a.last_action)
+                  .map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="flex items-center justify-between py-3 border-b border-border/30 last:border-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          agent.status === "working" ? "bg-primary pulse-status" : 
+                          agent.status === "completed" ? "bg-emerald-500" : "bg-muted-foreground"
+                        }`} />
+                        <div>
+                          <p className="text-sm text-foreground">{agent.last_action}</p>
+                          <p className="text-xs text-muted-foreground">{agent.name}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground capitalize">{agent.status}</span>
                     </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{activity.time}</span>
-                </div>
-              ))}
+                  ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No hay actividad reciente. Envía un comando para comenzar.
+                </p>
+              )}
             </div>
           </div>
         </div>
