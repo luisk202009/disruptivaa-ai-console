@@ -1,59 +1,98 @@
-import { Search, FileSearch, Rocket, Calculator, Activity, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Search, Palette, PenTool, BarChart3, Users, ImageIcon, Activity, Loader2 } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AgentCard from "./AgentCard";
 import { toast } from "@/hooks/use-toast";
 import { useAgents, Agent } from "@/hooks/useAgents";
+import { cn } from "@/lib/utils";
 
-const agentIcons: Record<string, typeof FileSearch> = {
-  "Auditoría": FileSearch,
-  "Despliegue": Rocket,
-  "Presupuesto": Calculator,
-  "Performance Auditor": FileSearch,
-  "Creative Deployer": Rocket,
-  "Budget Optimizer": Calculator,
-};
+// Definición de los 5 agentes AI-First de Disruptivaa
+export const DISRUPTIVAA_AGENTS = [
+  {
+    id: "smart-brand-architect",
+    name: "Smart Brand Architect",
+    description: "Generador de identidades visuales",
+    icon: Palette,
+    keywords: ["marca", "brand", "identidad", "logo", "visual", "branding", "colores", "tipografía"],
+  },
+  {
+    id: "ghostwriter-pro",
+    name: "GhostWriter Pro",
+    description: "Plataforma de contenidos y blogs",
+    icon: PenTool,
+    keywords: ["contenido", "blog", "artículo", "escribir", "copy", "texto", "redacción", "post"],
+  },
+  {
+    id: "ads-optimizer",
+    name: "Ads Optimizer Agent",
+    description: "Optimizador de presupuestos Meta/Google",
+    icon: BarChart3,
+    keywords: ["ads", "publicidad", "meta", "google", "facebook", "instagram", "presupuesto", "campaña", "anuncios"],
+  },
+  {
+    id: "ai-crm-sales",
+    name: "AI-CRM Sales Bot",
+    description: "Calificador de leads automatizado",
+    icon: Users,
+    keywords: ["lead", "leads", "crm", "ventas", "sales", "cliente", "prospecto", "calificar", "seguimiento"],
+  },
+  {
+    id: "visual-content-bot",
+    name: "Visual Content Bot",
+    description: "Diseño de piezas bajo demanda",
+    icon: ImageIcon,
+    keywords: ["diseño", "imagen", "gráfico", "pieza", "visual", "banner", "post", "creative", "arte"],
+  },
+];
 
-const agentKeywords: Record<string, string[]> = {
-  "Auditoría": ["auditar", "audit", "analizar", "análisis"],
-  "Performance Auditor": ["auditar", "audit", "analizar", "análisis", "performance"],
-  "Despliegue": ["desplegar", "deploy", "deployment", "publicar"],
-  "Creative Deployer": ["desplegar", "deploy", "deployment", "publicar", "creative"],
-  "Presupuesto": ["presupuesto", "budget", "costo", "estimación"],
-  "Budget Optimizer": ["presupuesto", "budget", "costo", "estimación", "optimizer"],
-};
+export type DisruptivaaAgent = typeof DISRUPTIVAA_AGENTS[number];
 
 const Dashboard = () => {
   const { agents, loading, updateAgentStatus } = useAgents();
+  const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
+
+  const handleSelectAgent = (agent: DisruptivaaAgent) => {
+    setSelectedAgent(agent);
+    toast({
+      title: `${agent.name} seleccionado`,
+      description: `Ahora estás hablando con ${agent.name}`,
+    });
+  };
+
+  const handleClearAgent = () => {
+    setSelectedAgent(null);
+  };
 
   const handleCommand = async (command: string) => {
     const lowerCommand = command.toLowerCase();
 
-    // Find matching agent based on command
-    for (const agent of agents) {
-      const keywords = agentKeywords[agent.name] || [];
-      const matches = keywords.some((kw) => lowerCommand.includes(kw));
-
-      if (matches) {
-        // Set to working status
-        await updateAgentStatus(agent.id, "working", `Procesando: "${command}"`);
-        
-        toast({
-          title: `Agente ${agent.name} activado`,
-          description: "Procesando tu solicitud...",
-        });
-
-        // Simulate agent completing after response
-        setTimeout(async () => {
-          await updateAgentStatus(agent.id, "completed", `Completado: "${command}"`);
-        }, 5000);
-        
-        break;
+    // Si no hay agente seleccionado, detectar automáticamente
+    if (!selectedAgent) {
+      for (const agent of DISRUPTIVAA_AGENTS) {
+        const matches = agent.keywords.some((kw) => lowerCommand.includes(kw));
+        if (matches) {
+          setSelectedAgent(agent);
+          toast({
+            title: `${agent.name} detectado`,
+            description: "Procesando tu solicitud...",
+          });
+          break;
+        }
       }
     }
-  };
 
-  const getAgentByName = (name: string): Agent | undefined => {
-    return agents.find((a) => a.name === name);
+    // Update status in DB if matching agent exists
+    const dbAgent = agents.find(a => 
+      a.name.toLowerCase().includes(selectedAgent?.name.toLowerCase().split(' ')[0] || '') ||
+      selectedAgent?.keywords.some(kw => a.name.toLowerCase().includes(kw))
+    );
+
+    if (dbAgent) {
+      await updateAgentStatus(dbAgent.id, "working", `Procesando: "${command}"`);
+      setTimeout(async () => {
+        await updateAgentStatus(dbAgent.id, "completed", `Completado: "${command}"`);
+      }, 5000);
+    }
   };
 
   const activeAgentsCount = agents.filter((a) => a.status === "working").length;
@@ -77,7 +116,7 @@ const Dashboard = () => {
           <h1 className="text-lg font-semibold text-foreground">AI-Agent Console</h1>
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
             <Activity size={12} />
-            <span>{agents.length} Agentes • {activeAgentsCount} activos</span>
+            <span>{DISRUPTIVAA_AGENTS.length} Agentes • {activeAgentsCount} activos</span>
           </div>
         </div>
         
@@ -100,60 +139,51 @@ const Dashboard = () => {
               ¿Qué quieres hacer hoy?
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Escribe un comando en natural y nuestros agentes AI se encargarán del resto.
+              Selecciona un agente o escribe directamente y nuestros AI se encargarán del resto.
             </p>
           </div>
 
           {/* Command Console */}
           <div className="animate-fade-in stagger-1">
-            <CommandConsole onCommand={handleCommand} />
+            <CommandConsole 
+              onCommand={handleCommand} 
+              selectedAgent={selectedAgent}
+              onClearAgent={handleClearAgent}
+            />
           </div>
 
           {/* Agent Cards Grid */}
-          <div className="grid md:grid-cols-3 gap-4 pt-8">
-            {agents.length > 0 ? (
-              agents.map((agent, index) => {
-                const Icon = agentIcons[agent.name] || FileSearch;
-                return (
-                  <div key={agent.id} className={`animate-fade-in stagger-${index + 1}`}>
-                    <AgentCard
-                      title={agent.name}
-                      description={agent.role}
-                      icon={Icon}
-                      status={agent.status}
-                      lastAction={agent.last_action || undefined}
-                    />
-                  </div>
-                );
-              })
-            ) : (
-              <>
-                <div className="animate-fade-in stagger-1">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pt-8">
+            {DISRUPTIVAA_AGENTS.map((agent, index) => {
+              const Icon = agent.icon;
+              const isSelected = selectedAgent?.id === agent.id;
+              // Find matching DB agent for status
+              const dbAgent = agents.find(a => 
+                a.name.toLowerCase().includes(agent.name.toLowerCase().split(' ')[0])
+              );
+              const status = dbAgent?.status || "idle";
+              const lastAction = dbAgent?.last_action;
+
+              return (
+                <div 
+                  key={agent.id} 
+                  className={`animate-fade-in stagger-${index + 1} cursor-pointer`}
+                  onClick={() => handleSelectAgent(agent)}
+                >
                   <AgentCard
-                    title="Auditoría"
-                    description="Análisis de sitios web"
-                    icon={FileSearch}
-                    status="idle"
+                    title={agent.name}
+                    description={agent.description}
+                    icon={Icon}
+                    status={status as "idle" | "working" | "completed" | "error"}
+                    lastAction={lastAction || undefined}
+                    className={cn(
+                      "transition-all duration-300",
+                      isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                    )}
                   />
                 </div>
-                <div className="animate-fade-in stagger-2">
-                  <AgentCard
-                    title="Despliegue"
-                    description="Gestión de deployments"
-                    icon={Rocket}
-                    status="idle"
-                  />
-                </div>
-                <div className="animate-fade-in stagger-3">
-                  <AgentCard
-                    title="Presupuesto"
-                    description="Estimaciones de costos"
-                    icon={Calculator}
-                    status="idle"
-                  />
-                </div>
-              </>
-            )}
+              );
+            })}
           </div>
 
           {/* Recent activity */}
@@ -183,7 +213,7 @@ const Dashboard = () => {
                   ))
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay actividad reciente. Envía un comando para comenzar.
+                  No hay actividad reciente. Selecciona un agente para comenzar.
                 </p>
               )}
             </div>
