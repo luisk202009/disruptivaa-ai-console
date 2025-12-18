@@ -7,7 +7,8 @@ import {
   ChevronRight,
   LogOut,
   Plus,
-  MessageSquare
+  MessageSquare,
+  Bot
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -64,12 +65,14 @@ const Sidebar = () => {
 
   const navItems = [
     { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/" },
+    { id: "agents", icon: <Bot size={20} />, label: "Agentes AI", path: "/agents" },
     { id: "history", icon: <History size={20} />, label: "Historial", path: "/history" },
     { id: "settings", icon: <Settings size={20} />, label: "Configuración", path: "/settings" },
     { id: "help", icon: <HelpCircle size={20} />, label: "Ayuda", path: "/" },
   ];
 
   const getActiveItem = () => {
+    if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/history") return "history";
     if (location.pathname === "/settings") return "settings";
     return "dashboard";
