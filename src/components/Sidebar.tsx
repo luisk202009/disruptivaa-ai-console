@@ -6,12 +6,14 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Plus
+  Plus,
+  MessageSquare
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecentConversations } from "@/hooks/useRecentConversations";
 import logo from "@/assets/logo-disruptivaa.png";
 import isologo from "@/assets/isologo.png";
 
@@ -48,11 +50,16 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { conversations, loading: conversationsLoading } = useRecentConversations();
 
   const handleNewConversation = () => {
     navigate("/");
-    // Dispatch custom event to reset Dashboard state
     window.dispatchEvent(new CustomEvent("newConversation"));
+  };
+
+  const handleLoadConversation = (conversationId: string) => {
+    navigate("/");
+    window.dispatchEvent(new CustomEvent("loadConversation", { detail: { id: conversationId } }));
   };
 
   const navItems = [
@@ -68,7 +75,6 @@ const Sidebar = () => {
     return "dashboard";
   };
 
-  // Get user display name
   const getUserDisplayName = () => {
     if (!user) return null;
     const metadata = user.user_metadata;
@@ -114,7 +120,7 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="p-3 space-y-1">
         {navItems.map((item) => (
           <NavItem
             key={item.id}
@@ -126,6 +132,35 @@ const Sidebar = () => {
           />
         ))}
       </nav>
+
+      {/* Recent Conversations Section */}
+      {user && !collapsed && (
+        <div className="flex-1 overflow-hidden flex flex-col px-3">
+          <div className="flex items-center gap-2 py-2 mb-1">
+            <MessageSquare size={14} className="text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Conversaciones recientes
+            </span>
+          </div>
+          <div className="flex-1 overflow-y-auto space-y-0.5">
+            {conversationsLoading ? (
+              <p className="text-xs text-muted-foreground px-3 py-2">Cargando...</p>
+            ) : conversations.length === 0 ? (
+              <p className="text-xs text-muted-foreground px-3 py-2">Sin conversaciones</p>
+            ) : (
+              conversations.map((convo) => (
+                <button
+                  key={convo.id}
+                  onClick={() => handleLoadConversation(convo.id)}
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors truncate"
+                >
+                  {convo.title}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* User Section at Bottom */}
       {user && (

@@ -13,6 +13,7 @@ interface CommandConsoleProps {
   onClearAgent?: () => void;
   onAuthRequired?: () => boolean;
   isAuthenticated?: boolean;
+  autoFocus?: boolean;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -23,14 +24,23 @@ const CommandConsole = ({
   selectedAgent,
   onClearAgent,
   onAuthRequired,
-  isAuthenticated = true
+  isAuthenticated = true,
+  autoFocus = false
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const { messages, loading: messagesLoading, saveMessage } = useMessages();
+
+  // Auto-focus on mount if requested
+  useEffect(() => {
+    if (autoFocus && isAuthenticated && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [autoFocus, isAuthenticated]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -280,6 +290,7 @@ const CommandConsole = ({
             </div>
             
             <input
+              ref={inputRef}
               type="text"
               value={command}
               onChange={(e) => setCommand(e.target.value)}
