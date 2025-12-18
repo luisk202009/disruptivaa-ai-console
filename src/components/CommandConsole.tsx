@@ -110,13 +110,21 @@ const CommandConsole = ({
       }
 
       const data = await response.json();
-      const agentResponse = data.response || data.message || "Respuesta recibida del agente.";
+      console.log("📥 Response Data:", data);
       
-      // Save agent response to Supabase (will appear via realtime subscription)
+      // Handle different response formats: { text: '...' }, { response: '...' }, { message: '...' }
+      const agentResponse = data.text || data.response || data.message || "Respuesta recibida del agente.";
+      console.log("💬 Agent Response:", agentResponse);
+      
+      // Save agent response to Supabase
       await saveMessage(agentResponse, "assistant");
+      
+      // Force scroll to bottom after response
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     } catch (error) {
       console.error("Error calling agent:", error);
-      // Save error message
       await saveMessage("Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo.", "assistant");
     } finally {
       setIsLoading(false);
@@ -214,7 +222,7 @@ const CommandConsole = ({
                       "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm",
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground rounded-tr-sm"
-                        : "bg-card border border-border text-foreground rounded-tl-sm"
+                        : "bg-zinc-800 border-2 border-[#EF7911] text-foreground rounded-tl-sm"
                     )}
                   >
                     {msg.content}
@@ -228,7 +236,7 @@ const CommandConsole = ({
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground shrink-0">
                     <Bot size={16} />
                   </div>
-                  <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-tl-sm">
+                  <div className="bg-zinc-800 border-2 border-[#EF7911] px-4 py-3 rounded-2xl rounded-tl-sm">
                     <div className="flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin text-primary" />
                       <span className="text-sm text-muted-foreground">
