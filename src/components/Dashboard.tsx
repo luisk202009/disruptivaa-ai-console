@@ -6,6 +6,7 @@ import AuthModal from "./AuthModal";
 import { toast } from "@/hooks/use-toast";
 import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMessages } from "@/hooks/useMessages";
 import { cn } from "@/lib/utils";
 
 // Definición de los 5 agentes AI-First de Disruptivaa (IDs coinciden con tabla ai_agents)
@@ -68,11 +69,23 @@ const Dashboard = () => {
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isChatActive, setIsChatActive] = useState(false);
+  const { clearMessages } = useMessages();
 
-  // Check if redirected from protected route
+  // Check if redirected from protected route or from Agents page with agent pre-selected
   useEffect(() => {
     if (location.state?.showAuthModal) {
       setShowAuthModal(true);
+      window.history.replaceState({}, document.title);
+    }
+    if (location.state?.selectedAgentId) {
+      const agent = DISRUPTIVAA_AGENTS.find(a => a.id === location.state.selectedAgentId);
+      if (agent) {
+        setSelectedAgent(agent);
+        toast({
+          title: `${agent.name} seleccionado`,
+          description: `Ahora estás hablando con ${agent.name}`,
+        });
+      }
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -82,10 +95,11 @@ const Dashboard = () => {
     const handleNewConversation = () => {
       setSelectedAgent(null);
       setIsChatActive(false);
+      clearMessages();
     };
     window.addEventListener("newConversation", handleNewConversation);
     return () => window.removeEventListener("newConversation", handleNewConversation);
-  }, []);
+  }, [clearMessages]);
 
   const handleSelectAgent = (agent: DisruptivaaAgent) => {
     if (!user) {
@@ -159,7 +173,7 @@ const Dashboard = () => {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="h-16 border-b border-border flex items-center justify-end px-6">
+      <header className="h-16 border-b border-border flex items-center justify-end px-6 shrink-0">
         <div className="flex items-center gap-3">
           {user ? (
             <div className="flex items-center gap-2">
@@ -186,8 +200,14 @@ const Dashboard = () => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-4xl mx-auto">
+      <main className={cn(
+        "flex-1 p-6 overflow-hidden flex flex-col",
+        isChatActive ? "min-h-0" : "overflow-auto"
+      )}>
+        <div className={cn(
+          "mx-auto w-full",
+          isChatActive ? "max-w-4xl flex-1 flex flex-col min-h-0" : "max-w-4xl"
+        )}>
           {/* Welcome section - Hidden when chat is active */}
           {!isChatActive && (
             <div className="animate-fade-in">
@@ -261,15 +281,16 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Command Console when chat is active */}
+          {/* Command Console when chat is active - Full height */}
           {isChatActive && (
-            <div className="animate-fade-in pt-4">
+            <div className="flex-1 flex flex-col min-h-0 animate-fade-in pt-4">
               <CommandConsole 
                 onCommand={handleCommand} 
                 selectedAgent={selectedAgent}
                 onClearAgent={handleClearAgent}
                 onAuthRequired={handleConsoleFocus}
                 isAuthenticated={!!user}
+                fullHeight
               />
             </div>
           )}

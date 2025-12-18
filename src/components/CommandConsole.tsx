@@ -15,6 +15,7 @@ interface CommandConsoleProps {
   isAuthenticated?: boolean;
   autoFocus?: boolean;
   showMessages?: boolean;
+  fullHeight?: boolean;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -27,7 +28,8 @@ const CommandConsole = ({
   onAuthRequired,
   isAuthenticated = true,
   autoFocus = false,
-  showMessages = true
+  showMessages = true,
+  fullHeight = false
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -173,7 +175,7 @@ const CommandConsole = ({
   const isAdsOptimizer = selectedAgent?.id === "ads-optimizer";
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
+    <div className={cn("w-full mx-auto", fullHeight ? "h-full flex flex-col max-w-4xl" : "max-w-3xl")}>
       {/* Agent Context Badge */}
       {selectedAgent && (
         <div className="mb-4 flex items-center justify-center">
@@ -194,7 +196,10 @@ const CommandConsole = ({
 
       {/* Chat Messages */}
       {showMessages && (messages.length > 0 || messagesLoading || isAdsOptimizer) && (
-        <div className="mb-4 max-h-80 overflow-y-auto space-y-3 p-4 glass rounded-2xl">
+        <div className={cn(
+          "mb-4 overflow-y-auto space-y-3 p-4 glass rounded-2xl",
+          fullHeight ? "flex-1 min-h-0" : "max-h-80"
+        )}>
           {/* Connect Ads Account button inside chat area */}
           {isAdsOptimizer && (
             <div className="flex justify-center pb-2 border-b border-border/30 mb-3">
