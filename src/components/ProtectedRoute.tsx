@@ -18,7 +18,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    // Redirect to dashboard with state to trigger auth modal
+    return <Navigate to="/" state={{ showAuthModal: true }} replace />;
   }
 
   return <>{children}</>;
