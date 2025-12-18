@@ -1,11 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send, Sparkles, Loader2, User, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import { useMessages, Message } from "@/hooks/useMessages";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -18,7 +14,14 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { messages, loading: messagesLoading, saveMessage } = useMessages();
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +30,8 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
     const userMessage = command.trim();
     setCommand("");
     
-    // Add user message to chat
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    // Save user message to Supabase
+    await saveMessage(userMessage, "user");
     
     // Notify parent if callback provided
     onCommand?.(userMessage);
@@ -54,14 +57,12 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
       const data = await response.json();
       const agentResponse = data.response || data.message || "Respuesta recibida del agente.";
       
-      // Add agent response to chat
-      setMessages(prev => [...prev, { role: "assistant", content: agentResponse }]);
+      // Save agent response to Supabase (will appear via realtime subscription)
+      await saveMessage(agentResponse, "assistant");
     } catch (error) {
       console.error("Error calling agent:", error);
-      setMessages(prev => [...prev, { 
-        role: "assistant", 
-        content: "Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo." 
-      }]);
+      // Save error message
+      await saveMessage("Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo.", "assistant");
     } finally {
       setIsLoading(false);
     }
@@ -76,50 +77,60 @@ const CommandConsole = ({ onCommand, userId = "anonymous" }: CommandConsoleProps
   return (
     <div className="w-full max-w-3xl mx-auto">
       {/* Chat Messages */}
-      {messages.length > 0 && (
+      {(messages.length > 0 || messagesLoading) && (
         <div className="mb-4 max-h-80 overflow-y-auto space-y-3 p-4 glass rounded-2xl">
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={cn(
-                "flex items-start gap-3",
-                msg.role === "user" ? "flex-row-reverse" : "flex-row"
-              )}
-            >
-              <div className={cn(
-                "flex items-center justify-center w-8 h-8 rounded-full shrink-0",
-                msg.role === "user" 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-muted text-muted-foreground"
-              )}>
-                {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
-              </div>
-              <div
-                className={cn(
-                  "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm",
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-tr-sm"
-                    : "bg-card border border-border text-foreground rounded-tl-sm"
-                )}
-              >
-                {msg.content}
-              </div>
+          {messagesLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="ml-2 text-sm text-muted-foreground">Cargando mensajes...</span>
             </div>
-          ))}
-          
-          {/* Loading indicator */}
-          {isLoading && (
-            <div className="flex items-start gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground shrink-0">
-                <Bot size={16} />
-              </div>
-              <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-tl-sm">
-                <div className="flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin text-primary" />
-                  <span className="text-sm text-muted-foreground">Pensando...</span>
+          ) : (
+            <>
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "flex items-start gap-3",
+                    msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                  )}
+                >
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-full shrink-0",
+                    msg.role === "user" 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-muted text-muted-foreground"
+                  )}>
+                    {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
+                  </div>
+                  <div
+                    className={cn(
+                      "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm",
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm"
+                        : "bg-card border border-border text-foreground rounded-tl-sm"
+                    )}
+                  >
+                    {msg.content}
+                  </div>
                 </div>
-              </div>
-            </div>
+              ))}
+              
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground shrink-0">
+                    <Bot size={16} />
+                  </div>
+                  <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-tl-sm">
+                    <div className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin text-primary" />
+                      <span className="text-sm text-muted-foreground">Pensando...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </>
           )}
         </div>
       )}
