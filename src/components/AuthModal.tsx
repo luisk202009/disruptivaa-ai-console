@@ -11,9 +11,15 @@ import AuthForm from "./AuthForm";
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
+const AuthModal = ({ open, onOpenChange, onSuccess }: AuthModalProps) => {
+  const handleSuccess = () => {
+    onOpenChange(false);
+    onSuccess?.();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-[#3D3D3D] border-[#EF7911]/30">
@@ -22,16 +28,16 @@ const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
             <Sparkles className="w-8 h-8 text-[#EF7911]" />
           </div>
           <DialogTitle className="text-xl font-bold text-foreground">
-            Estás a un paso de la disrupción
+            Lleva tu marca al siguiente nivel
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-2">
-            Regístrate para que nuestros agentes guarden tu historial y analicen tus campañas
+            Crea tu cuenta en Disruptivaa para que nuestros agentes guarden tu historial y analicen tus campañas reales
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4">
           <AuthForm 
-            onSuccess={() => onOpenChange(false)} 
+            onSuccess={handleSuccess} 
             defaultTab="register" 
           />
         </div>

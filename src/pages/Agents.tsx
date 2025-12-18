@@ -1,13 +1,32 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DISRUPTIVAA_AGENTS, DisruptivaaAgent } from "@/components/Dashboard";
 import { cn } from "@/lib/utils";
 import Sidebar from "@/components/Sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import AuthModal from "@/components/AuthModal";
 
 const Agents = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingAgent, setPendingAgent] = useState<DisruptivaaAgent | null>(null);
 
   const handleSelectAgent = (agent: DisruptivaaAgent) => {
+    if (!user) {
+      setPendingAgent(agent);
+      setShowAuthModal(true);
+      return;
+    }
     navigate("/", { state: { selectedAgentId: agent.id } });
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    if (pendingAgent) {
+      navigate("/", { state: { selectedAgentId: pendingAgent.id } });
+      setPendingAgent(null);
+    }
   };
 
   return (
@@ -79,6 +98,13 @@ const Agents = () => {
           </div>
         </main>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        open={showAuthModal} 
+        onOpenChange={setShowAuthModal}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 };
