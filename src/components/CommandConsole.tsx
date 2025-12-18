@@ -55,7 +55,28 @@ const CommandConsole = ({
     
     setIsLoading(true);
 
+    // Determinar prioridad de conocimiento según el agente
+    const getKnowledgePriority = () => {
+      if (!selectedAgent) return { documents: ["all"], priority: "general" };
+      switch (selectedAgent.id) {
+        case "smart-brand-architect":
+          return { documents: ["Manual_de_Marca_Disruptivaa.pdf"], priority: "brand_identity" };
+        case "ghostwriter-pro":
+          return { documents: ["Portafolio_Disruptivaa.pdf", "Servicios_Disruptivaa.pdf"], priority: "content_pricing" };
+        case "ads-optimizer":
+          return { documents: ["Portafolio_Disruptivaa.pdf"], priority: "campaigns_budget" };
+        case "ai-crm-sales":
+          return { documents: ["Servicios_Disruptivaa.pdf", "Portafolio_Disruptivaa.pdf"], priority: "sales_leads" };
+        case "visual-content-bot":
+          return { documents: ["Manual_de_Marca_Disruptivaa.pdf", "Portafolio_Disruptivaa.pdf"], priority: "visual_design" };
+        default:
+          return { documents: ["all"], priority: "general" };
+      }
+    };
+
     try {
+      const knowledgePriority = getKnowledgePriority();
+      
       const response = await fetch(EDGE_FUNCTION_URL, {
         method: "POST",
         headers: {
@@ -68,6 +89,7 @@ const CommandConsole = ({
           agentName: selectedAgent?.name || null,
           systemInstruction: selectedAgent?.systemInstruction || null,
           useKnowledgeBase: true,
+          knowledgePriority: knowledgePriority,
         }),
       });
 
@@ -147,7 +169,7 @@ const CommandConsole = ({
                 className="text-xs border-primary/30 text-primary hover:bg-primary/10"
               >
                 <Link2 size={14} className="mr-1.5" />
-                Conectar cuenta de Ads
+                Conectar cuenta de Meta/Google
               </Button>
             </div>
           )}
@@ -239,8 +261,8 @@ const CommandConsole = ({
                 isLoading 
                   ? "Procesando..." 
                   : selectedAgent 
-                    ? `Escribe un mensaje para ${selectedAgent.name}...` 
-                    : "Selecciona un agente o escribe un comando..."
+                    ? `Escribe a ${selectedAgent.name}...` 
+                    : "Selecciona un agente para comenzar..."
               }
               disabled={isLoading}
               className="flex-1 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-base py-2 disabled:opacity-50 disabled:cursor-not-allowed"
