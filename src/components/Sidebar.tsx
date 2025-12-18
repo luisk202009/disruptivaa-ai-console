@@ -1,13 +1,12 @@
 import { 
   LayoutDashboard, 
-  Bot, 
   Settings, 
   History, 
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  User,
-  LogOut
+  LogOut,
+  Plus
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -22,19 +21,22 @@ interface NavItemProps {
   active?: boolean;
   collapsed?: boolean;
   onClick?: () => void;
+  variant?: "default" | "primary";
 }
 
-const NavItem = ({ icon, label, active, collapsed, onClick }: NavItemProps) => (
+const NavItem = ({ icon, label, active, collapsed, onClick, variant = "default" }: NavItemProps) => (
   <button
     onClick={onClick}
     className={cn(
       "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-      "hover:bg-sidebar-accent",
-      active && "bg-primary/10 text-primary border-l-2 border-primary",
-      !active && "text-sidebar-foreground"
+      variant === "primary" 
+        ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+        : "hover:bg-sidebar-accent",
+      active && variant === "default" && "bg-primary/10 text-primary border-l-2 border-primary",
+      !active && variant === "default" && "text-sidebar-foreground"
     )}
   >
-    <span className={cn(active && "text-primary")}>{icon}</span>
+    <span className={cn(active && variant === "default" && "text-primary")}>{icon}</span>
     {!collapsed && (
       <span className="font-medium text-sm">{label}</span>
     )}
@@ -47,9 +49,14 @@ const Sidebar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
 
+  const handleNewConversation = () => {
+    navigate("/");
+    // Dispatch custom event to reset Dashboard state
+    window.dispatchEvent(new CustomEvent("newConversation"));
+  };
+
   const navItems = [
     { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/" },
-    { id: "agents", icon: <Bot size={20} />, label: "Agentes AI", path: "/" },
     { id: "history", icon: <History size={20} />, label: "Historial", path: "/history" },
     { id: "settings", icon: <Settings size={20} />, label: "Configuración", path: "/settings" },
     { id: "help", icon: <HelpCircle size={20} />, label: "Ayuda", path: "/" },
@@ -93,6 +100,17 @@ const Sidebar = () => {
             className="h-8 transition-all duration-300"
           />
         )}
+      </div>
+
+      {/* New Conversation Button */}
+      <div className="p-3">
+        <NavItem
+          icon={<Plus size={20} />}
+          label="Nueva Conversación"
+          collapsed={collapsed}
+          onClick={handleNewConversation}
+          variant="primary"
+        />
       </div>
 
       {/* Navigation */}

@@ -1,16 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Palette, PenTool, BarChart3, Users, ImageIcon, Activity, Loader2, LogOut } from "lucide-react";
+import { Palette, PenTool, BarChart3, Users, ImageIcon, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
-import AgentCard from "./AgentCard";
 import AuthModal from "./AuthModal";
 import { toast } from "@/hooks/use-toast";
-import { useAgents, Agent } from "@/hooks/useAgents";
+import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import logo from "@/assets/logo-disruptivaa.png";
 
 // Definición de los 5 agentes AI-First de Disruptivaa (IDs coinciden con tabla ai_agents)
 export const DISRUPTIVAA_AGENTS = [
@@ -64,83 +61,32 @@ export const DISRUPTIVAA_AGENTS = [
 
 export type DisruptivaaAgent = typeof DISRUPTIVAA_AGENTS[number];
 
-interface RecentMessage {
-  id: string;
-  content: string;
-  created_at: string;
-  role: string;
-}
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
   const { agents, loading, updateAgentStatus } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
-  const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isChatActive, setIsChatActive] = useState(false);
 
   // Check if redirected from protected route
   useEffect(() => {
     if (location.state?.showAuthModal) {
       setShowAuthModal(true);
-      // Clear the state so it doesn't trigger again on refresh
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  // Fetch recent messages from agent_messages
+  // Listen for new conversation event from sidebar
   useEffect(() => {
-    const fetchRecentMessages = async () => {
-      const { data, error } = await supabase
-        .from("agent_messages")
-        .select("id, content, created_at, role")
-        .eq("role", "assistant")
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (!error && data) {
-        setRecentMessages(data);
-      }
+    const handleNewConversation = () => {
+      setSelectedAgent(null);
+      setIsChatActive(false);
     };
-
-    fetchRecentMessages();
-
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel("recent_messages")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "agent_messages" },
-        () => fetchRecentMessages()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    window.addEventListener("newConversation", handleNewConversation);
+    return () => window.removeEventListener("newConversation", handleNewConversation);
   }, []);
-
-  // Detect agent from message content
-  const detectAgentFromMessage = (content: string): DisruptivaaAgent => {
-    const lowerContent = content.toLowerCase();
-    for (const agent of DISRUPTIVAA_AGENTS) {
-      if (agent.keywords.some(kw => lowerContent.includes(kw))) {
-        return agent;
-      }
-    }
-    // Default to first agent if no match
-    return DISRUPTIVAA_AGENTS[0];
-  };
-
-  const handleActivityClick = (message: RecentMessage) => {
-    const agent = detectAgentFromMessage(message.content);
-    setSelectedAgent(agent);
-    toast({
-      title: `${agent.name} seleccionado`,
-      description: "Continuando conversación...",
-    });
-  };
 
   const handleSelectAgent = (agent: DisruptivaaAgent) => {
     if (!user) {
@@ -157,17 +103,19 @@ const Dashboard = () => {
   const handleConsoleFocus = () => {
     if (!user) {
       setShowAuthModal(true);
-      return true; // Return true to indicate focus was blocked
+      return true;
     }
     return false;
   };
 
   const handleClearAgent = () => {
     setSelectedAgent(null);
+    setIsChatActive(false);
   };
 
   const handleCommand = async (command: string) => {
     const lowerCommand = command.toLowerCase();
+    setIsChatActive(true);
 
     // Si no hay agente seleccionado, detectar automáticamente
     if (!selectedAgent) {
@@ -198,8 +146,6 @@ const Dashboard = () => {
     }
   };
 
-  const activeAgentsCount = agents.filter((a) => a.status === "working").length;
-
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
@@ -214,19 +160,8 @@ const Dashboard = () => {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="h-16 border-b border-border flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold text-foreground">AI-Agent Console</h1>
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-            <Activity size={12} />
-            <span>{DISRUPTIVAA_AGENTS.length} Agentes • {activeAgentsCount} activos</span>
-          </div>
-        </div>
-        
+      <header className="h-16 border-b border-border flex items-center justify-end px-6">
         <div className="flex items-center gap-3">
-          <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-            <Search size={20} className="text-muted-foreground" />
-          </button>
           {user ? (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground">
@@ -253,19 +188,75 @@ const Dashboard = () => {
 
       {/* Main content */}
       <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {/* Welcome section */}
-          <div className="text-center py-8 animate-fade-in">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-              ¿Qué quieres hacer hoy?
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Selecciona un agente o escribe directamente y nuestros AI se encargarán del resto.
-            </p>
-          </div>
+        <div className="max-w-4xl mx-auto">
+          {/* Welcome section - Hidden when chat is active */}
+          {!isChatActive && (
+            <div className="animate-fade-in">
+              {/* Logo and Title */}
+              <div className="text-center py-8">
+                <img 
+                  src={logo} 
+                  alt="Disruptivaa" 
+                  className="h-12 mx-auto mb-6"
+                />
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
+                  ¿Qué quieres hacer hoy?
+                </h2>
+                <p className="text-muted-foreground mb-8">
+                  Selecciona un agente para comenzar
+                </p>
+              </div>
+
+              {/* Horizontal Agent Cards */}
+              <div className="flex flex-wrap justify-center gap-3 mb-8">
+                {DISRUPTIVAA_AGENTS.map((agent) => {
+                  const Icon = agent.icon;
+                  const isSelected = selectedAgent?.id === agent.id;
+
+                  return (
+                    <button
+                      key={agent.id}
+                      onClick={() => handleSelectAgent(agent)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-300",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        isSelected 
+                          ? "border-primary bg-primary/10" 
+                          : "border-border bg-card"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
+                        isSelected ? "bg-primary/20" : "bg-muted"
+                      )}>
+                        <Icon className={cn(
+                          "w-5 h-5",
+                          isSelected ? "text-primary" : "text-muted-foreground"
+                        )} />
+                      </div>
+                      <div className="text-left">
+                        <p className={cn(
+                          "font-medium text-sm",
+                          isSelected ? "text-primary" : "text-foreground"
+                        )}>
+                          {agent.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {agent.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Command Console */}
-          <div className="animate-fade-in stagger-1">
+          <div className={cn(
+            "animate-fade-in",
+            isChatActive && "pt-4"
+          )}>
             <CommandConsole 
               onCommand={handleCommand} 
               selectedAgent={selectedAgent}
@@ -273,89 +264,6 @@ const Dashboard = () => {
               onAuthRequired={handleConsoleFocus}
               isAuthenticated={!!user}
             />
-          </div>
-
-          {/* Agent Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 pt-8">
-            {DISRUPTIVAA_AGENTS.map((agent, index) => {
-              const Icon = agent.icon;
-              const isSelected = selectedAgent?.id === agent.id;
-              // Find matching DB agent for status
-              const dbAgent = agents.find(a => 
-                a.name.toLowerCase().includes(agent.name.toLowerCase().split(' ')[0])
-              );
-              const status = dbAgent?.status || "idle";
-              const lastAction = dbAgent?.last_action;
-
-              return (
-                <div 
-                  key={agent.id} 
-                  className={`animate-fade-in stagger-${index + 1} cursor-pointer`}
-                  onClick={() => handleSelectAgent(agent)}
-                >
-                  <AgentCard
-                    title={agent.name}
-                    description={agent.description}
-                    icon={Icon}
-                    status={status as "idle" | "working" | "completed" | "error"}
-                    lastAction={lastAction || undefined}
-                    className={cn(
-                      "transition-all duration-300",
-                      isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                    )}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Recent activity - Now using agent_messages */}
-          <div className="glass rounded-2xl p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">Actividad reciente</h3>
-              <button 
-                onClick={() => navigate("/history")}
-                className="text-xs text-primary hover:underline"
-              >
-                Ver todo
-              </button>
-            </div>
-            <div className="space-y-3">
-              {recentMessages.length > 0 ? (
-                recentMessages.map((msg) => {
-                  const agent = detectAgentFromMessage(msg.content);
-                  const Icon = agent.icon;
-                  const snippet = msg.content.length > 80 
-                    ? msg.content.substring(0, 80) + "..." 
-                    : msg.content;
-                  
-                  return (
-                    <div
-                      key={msg.id}
-                      onClick={() => handleActivityClick(msg)}
-                      className="flex items-center justify-between py-3 border-b border-border/30 last:border-0 cursor-pointer hover:bg-muted/50 rounded-lg px-2 -mx-2 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-[#EF7911] flex items-center justify-center">
-                          <Icon size={14} className="text-primary" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm text-foreground truncate max-w-[300px]">{snippet}</p>
-                          <p className="text-xs text-muted-foreground">{agent.name}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                        {format(new Date(msg.created_at), "d MMM, HH:mm", { locale: es })}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No hay actividad reciente. Selecciona un agente para comenzar.
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </main>
