@@ -3,7 +3,6 @@ import CommandConsole from "./CommandConsole";
 import AgentCard from "./AgentCard";
 import { toast } from "@/hooks/use-toast";
 import { useAgents, Agent } from "@/hooks/useAgents";
-import { useMessages } from "@/hooks/useMessages";
 
 const agentIcons: Record<string, typeof FileSearch> = {
   "Auditoría": FileSearch,
@@ -25,14 +24,9 @@ const agentKeywords: Record<string, string[]> = {
 
 const Dashboard = () => {
   const { agents, loading, updateAgentStatus } = useAgents();
-  const { saveMessage, sending } = useMessages();
 
   const handleCommand = async (command: string) => {
-    // Save message to Supabase
-    await saveMessage(command, "user");
-
     const lowerCommand = command.toLowerCase();
-    let agentActivated = false;
 
     // Find matching agent based on command
     for (const agent of agents) {
@@ -40,8 +34,6 @@ const Dashboard = () => {
       const matches = keywords.some((kw) => lowerCommand.includes(kw));
 
       if (matches) {
-        agentActivated = true;
-        
         // Set to working status
         await updateAgentStatus(agent.id, "working", `Procesando: "${command}"`);
         
@@ -50,23 +42,13 @@ const Dashboard = () => {
           description: "Procesando tu solicitud...",
         });
 
-        // Simulate agent processing time
+        // Simulate agent completing after response
         setTimeout(async () => {
           await updateAgentStatus(agent.id, "completed", `Completado: "${command}"`);
-          
-          // Save agent response
-          await saveMessage(`Tarea completada: ${command}`, "assistant");
-        }, 3000);
+        }, 5000);
         
         break;
       }
-    }
-
-    if (!agentActivated) {
-      toast({
-        title: "Comando recibido",
-        description: `Procesando: "${command}"`,
-      });
     }
   };
 
@@ -124,7 +106,7 @@ const Dashboard = () => {
 
           {/* Command Console */}
           <div className="animate-fade-in stagger-1">
-            <CommandConsole onCommand={handleCommand} isLoading={sending} />
+            <CommandConsole onCommand={handleCommand} />
           </div>
 
           {/* Agent Cards Grid */}
