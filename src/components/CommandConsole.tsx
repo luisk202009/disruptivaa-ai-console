@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, Sparkles, Loader2, User, Bot, X } from "lucide-react";
+import { Send, Sparkles, Loader2, User, Bot, X, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
+import { Button } from "./ui/button";
+import { toast } from "@/hooks/use-toast";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -31,6 +33,13 @@ const CommandConsole = ({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleConnectAccount = () => {
+    toast({
+      title: "Conectar cuenta publicitaria",
+      description: "Próximamente podrás conectar tus cuentas de Meta y Google Ads.",
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!command.trim() || isLoading) return;
@@ -57,6 +66,8 @@ const CommandConsole = ({
           userId: userId,
           agentId: selectedAgent?.id || null,
           agentName: selectedAgent?.name || null,
+          systemInstruction: selectedAgent?.systemInstruction || null,
+          useKnowledgeBase: true,
         }),
       });
 
@@ -101,11 +112,13 @@ const CommandConsole = ({
 
   const suggestions = getSuggestions();
 
+  const isAdsOptimizer = selectedAgent?.id === "ads-optimizer";
+
   return (
     <div className="w-full max-w-3xl mx-auto">
       {/* Agent Context Badge */}
       {selectedAgent && (
-        <div className="mb-4 flex items-center justify-center">
+        <div className="mb-4 flex items-center justify-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
             <selectedAgent.icon size={16} className="text-primary" />
             <span className="text-sm font-medium text-primary">
@@ -118,6 +131,19 @@ const CommandConsole = ({
               <X size={14} className="text-primary" />
             </button>
           </div>
+          
+          {/* Connect Account button for Ads Optimizer */}
+          {isAdsOptimizer && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleConnectAccount}
+              className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Link2 size={14} className="mr-1.5" />
+              Conectar Cuenta
+            </Button>
+          )}
         </div>
       )}
 

@@ -6,42 +6,53 @@ import { toast } from "@/hooks/use-toast";
 import { useAgents, Agent } from "@/hooks/useAgents";
 import { cn } from "@/lib/utils";
 
-// Definición de los 5 agentes AI-First de Disruptivaa
+// Definición de los 5 agentes AI-First de Disruptivaa (IDs coinciden con tabla ai_agents)
 export const DISRUPTIVAA_AGENTS = [
   {
     id: "smart-brand-architect",
+    dbName: "Smart Brand Architect",
     name: "Smart Brand Architect",
     description: "Generador de identidades visuales",
     icon: Palette,
     keywords: ["marca", "brand", "identidad", "logo", "visual", "branding", "colores", "tipografía"],
+    systemInstruction: "Eres Smart Brand Architect, experto en identidad visual y branding. Usa el Manual de Marca de Disruptivaa del bucket knowledge-base como referencia para mantener coherencia en tus respuestas.",
   },
   {
     id: "ghostwriter-pro",
+    dbName: "GhostWriter Pro",
     name: "GhostWriter Pro",
     description: "Plataforma de contenidos y blogs",
     icon: PenTool,
     keywords: ["contenido", "blog", "artículo", "escribir", "copy", "texto", "redacción", "post"],
+    systemInstruction: "Eres GhostWriter Pro, especialista en creación de contenido y copywriting. Consulta el Portafolio y Manual de Marca de Disruptivaa en el bucket knowledge-base para mantener el tono de voz de la marca.",
   },
   {
     id: "ads-optimizer",
+    dbName: "Ads Optimizer Agent",
     name: "Ads Optimizer Agent",
     description: "Optimizador de presupuestos Meta/Google",
     icon: BarChart3,
     keywords: ["ads", "publicidad", "meta", "google", "facebook", "instagram", "presupuesto", "campaña", "anuncios"],
+    systemInstruction: "Eres Ads Optimizer Agent, experto en optimización de campañas publicitarias en Meta y Google. Usa los documentos del bucket knowledge-base para alinear estrategias con la marca Disruptivaa.",
+    requiresConnection: true,
   },
   {
     id: "ai-crm-sales",
+    dbName: "AI-CRM Sales Bot",
     name: "AI-CRM Sales Bot",
     description: "Calificador de leads automatizado",
     icon: Users,
     keywords: ["lead", "leads", "crm", "ventas", "sales", "cliente", "prospecto", "calificar", "seguimiento"],
+    systemInstruction: "Eres AI-CRM Sales Bot, especialista en calificación de leads y automatización de ventas. Referencia el Manual de Marca de Disruptivaa del bucket knowledge-base para comunicaciones coherentes.",
   },
   {
     id: "visual-content-bot",
+    dbName: "Visual Content Bot",
     name: "Visual Content Bot",
     description: "Diseño de piezas bajo demanda",
     icon: ImageIcon,
     keywords: ["diseño", "imagen", "gráfico", "pieza", "visual", "banner", "post", "creative", "arte"],
+    systemInstruction: "Eres Visual Content Bot, diseñador de contenido visual bajo demanda. Consulta el Manual de Marca y Portafolio de Disruptivaa en el bucket knowledge-base para mantener coherencia visual.",
   },
 ];
 
