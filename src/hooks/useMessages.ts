@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Message {
   id: string;
@@ -9,19 +10,28 @@ export interface Message {
 }
 
 export const useMessages = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
   const fetchMessages = useCallback(async () => {
+    if (!user) {
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("agent_messages")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: true })
       .limit(50);
 
     if (error) {
       console.error("Error fetching messages:", error);
+      setLoading(false);
       return;
     }
 
@@ -34,9 +44,14 @@ export const useMessages = () => {
       }))
     );
     setLoading(false);
-  }, []);
+  }, [user]);
 
   const saveMessage = async (content: string, role: "user" | "assistant" = "user") => {
+    if (!user) {
+      console.error("Cannot save message: user not authenticated");
+      return null;
+    }
+
     setSending(true);
 
     const { data, error } = await supabase
@@ -44,6 +59,7 @@ export const useMessages = () => {
       .insert({
         content,
         role,
+        user_id: user.id,
       })
       .select()
       .single();
@@ -68,19 +84,28 @@ export const useMessages = () => {
     return newMessage;
   };
 
-  const clearMessages = () => {
+  const clearMessages = useCallback(() => {
     setMessages([]);
-  };
+  }, []);
 
   useEffect(() => {
     fetchMessages();
+  }, [fetchMessages]);
 
-    // Subscribe to real-time updates for new messages
+  // Subscribe to real-time updates for new messages
+  useEffect(() => {
+    if (!user) return;
+
     const channel = supabase
       .channel("agent_messages_realtime")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "agent_messages" },
+        { 
+          event: "INSERT", 
+          schema: "public", 
+          table: "agent_messages",
+          filter: `user_id=eq.${user.id}`
+        },
         (payload) => {
           console.log("New message received:", payload);
           const newMsg = payload.new as any;
@@ -107,7 +132,7 @@ export const useMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchMessages]);
+  }, [user]);
 
   return { messages, loading, sending, saveMessage, addLocalMessage, clearMessages, refetch: fetchMessages };
 };

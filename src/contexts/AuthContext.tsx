@@ -38,6 +38,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Emit event so other components can clean up their state
+    window.dispatchEvent(new CustomEvent("userLoggedOut"));
   };
 
   return (
