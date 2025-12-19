@@ -101,6 +101,17 @@ const Dashboard = () => {
     return () => window.removeEventListener("newConversation", handleNewConversation);
   }, [clearMessages]);
 
+  // Listen for logout event to clean up state
+  useEffect(() => {
+    const handleLogout = () => {
+      setSelectedAgent(null);
+      setIsChatActive(false);
+      clearMessages();
+    };
+    window.addEventListener("userLoggedOut", handleLogout);
+    return () => window.removeEventListener("userLoggedOut", handleLogout);
+  }, [clearMessages]);
+
   const handleSelectAgent = (agent: DisruptivaaAgent) => {
     if (!user) {
       setShowAuthModal(true);
