@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Send, Sparkles, Loader2, User, Bot, X, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
+import { useIntegrations } from "@/hooks/useIntegrations";
 import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
 import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -36,8 +38,10 @@ const CommandConsole = ({
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   
   const { messages, loading: messagesLoading, saveMessage } = useMessages();
+  const { getConnectedPlatforms } = useIntegrations();
 
   // Auto-focus on mount if requested
   useEffect(() => {
@@ -52,10 +56,7 @@ const CommandConsole = ({
   }, [messages]);
 
   const handleConnectAccount = () => {
-    toast({
-      title: "Conectar cuenta publicitaria",
-      description: "Próximamente podrás conectar tus cuentas de Meta y Google Ads.",
-    });
+    navigate("/connections");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,17 +95,37 @@ const CommandConsole = ({
 
     try {
       const knowledgePriority = getKnowledgePriority();
+      const connectedPlatforms = getConnectedPlatforms();
+      
+      // Build integration context for the agent
+      let integrationContext = "";
+      if (selectedAgent?.id === "ads-optimizer" && connectedPlatforms.length > 0) {
+        const platformNames = connectedPlatforms.map(p => {
+          if (p.platform === "meta_ads") return "Meta Ads (Facebook/Instagram)";
+          if (p.platform === "google_ads") return "Google Ads";
+          if (p.platform === "tiktok_ads") return "TikTok Ads";
+          return p.platform;
+        }).join(", ");
+        
+        integrationContext = `He detectado que tienes las siguientes cuentas publicitarias vinculadas: ${platformNames}. Puedo analizar tus métricas y ayudarte a optimizar tus campañas. `;
+      }
       
       const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0and6ZmJpbnNybW52bHNndnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzY4MDUsImV4cCI6MjA4MTU1MjgwNX0.gvLt5ggffAwHp-HbBAqyGa18HuNZzJ5AHD6p4q6dk7E";
+      
+      // Enhance system instruction with integration context
+      const enhancedSystemInstruction = integrationContext 
+        ? `${integrationContext}${selectedAgent?.systemInstruction || ""}`
+        : selectedAgent?.systemInstruction || null;
       
       const requestBody = {
         message: userMessage,
         userId: userId,
         agentId: selectedAgent?.id || null,
         agentName: selectedAgent?.name || null,
-        systemInstruction: selectedAgent?.systemInstruction || null,
+        systemInstruction: enhancedSystemInstruction,
         useKnowledgeBase: true,
         knowledgePriority: knowledgePriority,
+        connectedPlatforms: connectedPlatforms.map(p => p.platform),
       };
       
       console.log("🔑 Supabase Anon Key:", supabaseAnonKey.substring(0, 50) + "...");
