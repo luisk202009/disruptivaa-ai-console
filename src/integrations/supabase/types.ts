@@ -113,6 +113,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_integrations: {
+        Row: {
+          account_name: string | null
+          connected_at: string | null
+          created_at: string | null
+          id: string
+          platform: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          id?: string
+          platform: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          connected_at?: string | null
+          created_at?: string | null
+          id?: string
+          platform?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

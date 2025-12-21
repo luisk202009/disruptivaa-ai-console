@@ -8,7 +8,8 @@ import {
   LogOut,
   Plus,
   MessageSquare,
-  Bot
+  Bot,
+  Link2
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -67,6 +68,7 @@ const Sidebar = () => {
     { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/" },
     { id: "agents", icon: <Bot size={20} />, label: "Agentes AI", path: "/agents" },
     { id: "history", icon: <History size={20} />, label: "Historial", path: "/history" },
+    { id: "connections", icon: <Link2 size={20} />, label: "Conexiones", path: "/connections" },
     { id: "settings", icon: <Settings size={20} />, label: "Configuración", path: "/settings" },
     { id: "help", icon: <HelpCircle size={20} />, label: "Ayuda", path: "/" },
   ];
@@ -74,6 +76,7 @@ const Sidebar = () => {
   const getActiveItem = () => {
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/history") return "history";
+    if (location.pathname === "/connections") return "connections";
     if (location.pathname === "/settings") return "settings";
     return "dashboard";
   };
