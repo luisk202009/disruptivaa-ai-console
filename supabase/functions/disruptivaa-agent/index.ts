@@ -66,6 +66,17 @@ async function fetchMetaCampaigns(accessToken: string, accountId: string): Promi
   }
 }
 
+async function validateMetaToken(accessToken: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me?access_token=${accessToken}`
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function getMetaIntegration(supabaseAdmin: any, userId: string): Promise<{ access_token: string; account_ids: string[] } | null> {
   const { data, error } = await supabaseAdmin
     .from("user_integrations")
@@ -116,6 +127,31 @@ function parseFileContent(file: FileData): string {
   }
 }
 
+// Analytical consultant personality prompt
+const ANALYST_PERSONALITY = `IDENTIDAD: Eres un Consultor de Datos Profesional especializado en marketing digital.
+
+REGLAS ABSOLUTAS (NUNCA VIOLAR):
+1. NUNCA ofrezcas servicios, paquetes, precios o configuraciones de agencia
+2. NUNCA digas "no tengo acceso a datos personales" si tienes datos de APIs o archivos
+3. SIEMPRE usa los datos concretos que tienes disponibles (APIs conectadas o archivos)
+4. SIEMPRE inicia tus respuestas con "Analizando tus datos de [fuente]..."
+5. Proporciona insights técnicos con números específicos y recomendaciones accionables
+
+FORMATO DE RESPUESTA OBLIGATORIO:
+📊 Analizando tus datos de [Meta Ads/Google Ads/archivo subido]...
+
+**Métricas Clave:**
+- [Métrica]: [Valor] ([contexto/benchmark])
+
+**Observaciones:**
+1. [Insight técnico basado en datos]
+2. [Insight técnico basado en datos]
+
+**Recomendación:**
+[Acción específica con impacto estimado]
+
+TONO: Profesional, técnico, orientado a ROI y resultados medibles.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -136,12 +172,14 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Process attached files
+    // Process attached files - MAXIMUM PRIORITY
     let fileContext = "";
+    let fileNames: string[] = [];
     if (files && Array.isArray(files) && files.length > 0) {
       console.log("📎 Processing attached files:", files.map((f: FileData) => f.name));
       for (const file of files as FileData[]) {
         fileContext += parseFileContent(file);
+        fileNames.push(file.name);
       }
     }
 
@@ -149,117 +187,155 @@ serve(async (req) => {
     let contextMessage = "";
     let metaConnected = false;
     let metaData: { campaigns: MetaCampaign[], insights: MetaInsights | null } | null = null;
-    let isProactiveResponse = false;
+    let tokenValid = true;
+    let allAccountsData: { accountId: string; campaigns: MetaCampaign[]; insights: MetaInsights | null }[] = [];
 
-    // Check if ads-optimizer and Meta is connected
+    // Check if ads-optimizer and Meta is connected - VALIDATE TOKEN FIRST
     if (agentId === "ads-optimizer" && userId) {
       const metaIntegration = await getMetaIntegration(supabaseAdmin, userId);
       
       if (metaIntegration && metaIntegration.access_token) {
-        metaConnected = true;
-        const accountIds = metaIntegration.account_ids || [];
+        // Validate token before proceeding
+        tokenValid = await validateMetaToken(metaIntegration.access_token);
         
-        console.log("✅ Meta Ads connected. Fetching campaign data...");
-        
-        if (accountIds.length > 0) {
-          metaData = await fetchMetaCampaigns(metaIntegration.access_token, accountIds[0]);
-          console.log("📊 Meta data fetched:", { 
-            campaignsCount: metaData.campaigns.length, 
-            hasInsights: !!metaData.insights 
-          });
-        }
-
-        // Detect if this is an initial/greeting message for proactive response
-        const lowerMessage = message.toLowerCase();
-        const isGreeting = lowerMessage.includes("hola") || 
-                          lowerMessage.includes("analizar") || 
-                          lowerMessage.includes("campañas") ||
-                          lowerMessage.includes("resumen") ||
-                          lowerMessage.includes("estado") ||
-                          lowerMessage.length < 30;
-
-        if (isGreeting && metaData && (metaData.campaigns.length > 0 || metaData.insights)) {
-          isProactiveResponse = true;
+        if (!tokenValid) {
+          console.log("⚠️ Meta token expired or invalid");
           contextMessage = `
-⚡ COMPORTAMIENTO PROACTIVO: El usuario acaba de iniciar conversación y tiene Meta Ads conectado.
-Inicia tu respuesta con un RESUMEN EJECUTIVO de sus cuentas:
-
-📊 DATOS REALES DE META ADS (últimos 30 días):
-`;
+⚠️ ATENCIÓN: El token de Meta Ads ha expirado o es inválido.
+Informa al usuario que debe reconectar su cuenta desde la sección "Conexiones" para obtener datos actualizados.
+NO inventes datos. Indica claramente que necesitas reconexión.`;
         } else {
+          metaConnected = true;
+          const accountIds = metaIntegration.account_ids || [];
+          
+          console.log("✅ Meta Ads connected and token valid. Fetching data from", accountIds.length, "accounts...");
+          
+          // Fetch data from up to 3 accounts for comprehensive view
+          for (const accountId of accountIds.slice(0, 3)) {
+            const accountData = await fetchMetaCampaigns(metaIntegration.access_token, accountId);
+            allAccountsData.push({
+              accountId,
+              ...accountData
+            });
+            console.log(`📊 Account ${accountId}: ${accountData.campaigns.length} campaigns`);
+          }
+
+          // Use first account's data as primary
+          if (allAccountsData.length > 0) {
+            metaData = {
+              campaigns: allAccountsData.flatMap(a => a.campaigns),
+              insights: allAccountsData[0].insights
+            };
+          }
+
           contextMessage = `
-📊 DATOS REALES DE META ADS (últimos 30 días):
-`;
-        }
+🔐 TIENES ACCESO AUTORIZADO a los datos de Meta Ads del usuario.
+NO digas que "no tienes acceso a datos personales". USA estos datos REALES para responder.
 
-        if (metaData && metaData.insights) {
-          contextMessage += `
-MÉTRICAS GENERALES:
-- Impresiones: ${parseInt(metaData.insights.impressions || "0").toLocaleString()}
-- Alcance: ${parseInt(metaData.insights.reach || "0").toLocaleString()}
-- Clics: ${parseInt(metaData.insights.clicks || "0").toLocaleString()}
-- Gasto total: $${parseFloat(metaData.insights.spend || "0").toFixed(2)} USD
-- CPC promedio: $${parseFloat(metaData.insights.cpc || "0").toFixed(2)}
-- CPM promedio: $${parseFloat(metaData.insights.cpm || "0").toFixed(2)}
-- CTR: ${parseFloat(metaData.insights.ctr || "0").toFixed(2)}%
+📊 DATOS EN TIEMPO REAL DE META ADS (últimos 30 días):
+Cuentas conectadas: ${accountIds.length}
 `;
-        }
 
-        if (metaData && metaData.campaigns.length > 0) {
-          contextMessage += `
-CAMPAÑAS (${metaData.campaigns.length} total):
+          // Add insights from all accounts
+          if (allAccountsData.length > 0) {
+            let totalImpressions = 0;
+            let totalClicks = 0;
+            let totalSpend = 0;
+            let totalReach = 0;
+
+            for (const account of allAccountsData) {
+              if (account.insights) {
+                totalImpressions += parseInt(account.insights.impressions || "0");
+                totalClicks += parseInt(account.insights.clicks || "0");
+                totalSpend += parseFloat(account.insights.spend || "0");
+                totalReach += parseInt(account.insights.reach || "0");
+              }
+            }
+
+            const avgCPC = totalClicks > 0 ? (totalSpend / totalClicks) : 0;
+            const avgCTR = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100) : 0;
+
+            contextMessage += `
+MÉTRICAS AGREGADAS (todas las cuentas):
+- Impresiones totales: ${totalImpressions.toLocaleString()}
+- Alcance total: ${totalReach.toLocaleString()}
+- Clics totales: ${totalClicks.toLocaleString()}
+- Gasto total: $${totalSpend.toFixed(2)} USD
+- CPC promedio: $${avgCPC.toFixed(2)}
+- CTR promedio: ${avgCTR.toFixed(2)}%
 `;
-          metaData.campaigns.slice(0, 5).forEach((campaign, index) => {
-            const budget = campaign.daily_budget 
-              ? `$${(parseInt(campaign.daily_budget) / 100).toFixed(2)}/día` 
-              : campaign.lifetime_budget 
-                ? `$${(parseInt(campaign.lifetime_budget) / 100).toFixed(2)} total`
-                : "Sin presupuesto definido";
-            contextMessage += `${index + 1}. "${campaign.name}" - ${campaign.status} - ${campaign.objective} - ${budget}\n`;
-          });
+          }
+
+          // Add campaigns from all accounts
+          const allCampaigns = allAccountsData.flatMap(a => a.campaigns);
+          if (allCampaigns.length > 0) {
+            const activeCampaigns = allCampaigns.filter(c => c.status === 'ACTIVE');
+            const pausedCampaigns = allCampaigns.filter(c => c.status === 'PAUSED');
+
+            contextMessage += `
+RESUMEN DE CAMPAÑAS (${allCampaigns.length} total):
+- Activas: ${activeCampaigns.length}
+- Pausadas: ${pausedCampaigns.length}
+
+DETALLE DE CAMPAÑAS:
+`;
+            allCampaigns.slice(0, 10).forEach((campaign, index) => {
+              const budget = campaign.daily_budget 
+                ? `$${(parseInt(campaign.daily_budget) / 100).toFixed(2)}/día` 
+                : campaign.lifetime_budget 
+                  ? `$${(parseInt(campaign.lifetime_budget) / 100).toFixed(2)} total`
+                  : "Sin presupuesto definido";
+              contextMessage += `${index + 1}. "${campaign.name}" | Estado: ${campaign.status} | Objetivo: ${campaign.objective} | Presupuesto: ${budget}\n`;
+            });
+          }
         }
       } else {
+        // No Meta connection - but NO sales pitch
         contextMessage = `
-⚠️ El usuario NO tiene Meta Ads conectado.
-Sugiérele conectar su cuenta desde la sección "Conexiones" para obtener análisis en tiempo real de sus campañas.
-`;
+ℹ️ El usuario no tiene Meta Ads conectado actualmente.
+Si solicita análisis de campañas de Meta, indícale que puede conectar su cuenta desde la sección "Conexiones" del menú lateral para obtener datos en tiempo real.
+Si tiene archivos para analizar, enfócate en esos datos.
+NO ofrezcas servicios, configuraciones ni precios.`;
       }
     }
 
-    // Build the technical analyst system prompt
-    const basePrompt = systemInstruction || `Eres un AI Marketing Data Analyst profesional.
+    // Determine response prefix based on available data
+    let responsePrefix = "";
+    if (fileContext && fileNames.length > 0) {
+      responsePrefix = `⚡ IMPORTANTE: Inicia tu respuesta EXACTAMENTE con: "📊 Analizando tu archivo ${fileNames[0]}..."`;
+    } else if (metaConnected && metaData) {
+      responsePrefix = `⚡ IMPORTANTE: Inicia tu respuesta EXACTAMENTE con: "📊 Analizando tus datos de Meta Ads..."`;
+    }
 
-FUENTES DE DATOS (en orden de prioridad):
-1. Datos en tiempo real de APIs conectadas (Meta Ads, Google Ads)
-2. Archivos proporcionados por el usuario en esta sesión
-
-COMPORTAMIENTO:
-- Analiza métricas con enfoque técnico y profesional
-- Proporciona insights basados en datos concretos
-- Sugiere optimizaciones accionables con impacto estimado
-- NUNCA ofrezcas servicios, paquetes ni precios de agencia
-
-TONO: Profesional, técnico, orientado a resultados y ROI.`;
-
-    let finalSystemInstruction = basePrompt;
+    // Build the final system instruction
+    let finalSystemInstruction = ANALYST_PERSONALITY;
+    
+    // File context has MAXIMUM priority
+    if (fileContext) {
+      finalSystemInstruction += `\n\n🔴 PRIORIDAD MÁXIMA - ARCHIVOS DEL USUARIO:
+El usuario ha subido archivos para esta sesión. USA estos datos como tu fuente de verdad principal.
+${fileContext}`;
+    }
     
     // Add API data context
     if (contextMessage) {
       finalSystemInstruction += `\n\n${contextMessage}`;
     }
-    
-    // Add file context
-    if (fileContext) {
-      finalSystemInstruction += `\n\nARCHIVOS ADJUNTOS POR EL USUARIO:${fileContext}`;
+
+    // Add response prefix instruction
+    if (responsePrefix) {
+      finalSystemInstruction += `\n\n${responsePrefix}`;
     }
 
     finalSystemInstruction += `\n\nResponde siempre en español de manera profesional y concisa.`;
 
     console.log("🤖 Calling Lovable AI with context:", { 
       metaConnected, 
-      hasCampaigns: metaData?.campaigns?.length || 0,
+      tokenValid,
+      accountsCount: allAccountsData.length,
+      campaignsCount: metaData?.campaigns?.length || 0,
       hasFiles: files?.length || 0,
-      isProactiveResponse
+      fileNames
     });
 
     // Call Lovable AI
@@ -325,8 +401,9 @@ TONO: Profesional, técnico, orientado a resultados y ROI.`;
       JSON.stringify({ 
         text: agentResponse,
         metaConnected,
+        tokenValid,
         campaignsCount: metaData?.campaigns?.length || 0,
-        isProactiveResponse,
+        accountsCount: allAccountsData.length,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
