@@ -8,6 +8,7 @@ import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
 import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import FileUploadButton from "./FileUploadButton";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -23,6 +24,21 @@ interface CommandConsoleProps {
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
 
+// Convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (e.g., "data:application/pdf;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+  });
+};
+
 const CommandConsole = ({ 
   onCommand, 
   selectedAgent,
@@ -37,6 +53,7 @@ const CommandConsole = ({
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +62,18 @@ const CommandConsole = ({
   
   const { messages, loading: messagesLoading, saveMessage } = useMessages(chatId);
   const { getConnectedPlatforms } = useIntegrations();
+
+  const handleFilesSelected = (files: File[]) => {
+    setAttachedFiles(prev => [...prev, ...files]);
+    toast({
+      title: "Archivo adjuntado",
+      description: `${files.map(f => f.name).join(', ')} listo para análisis`,
+    });
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   // Auto-focus on mount if requested
   useEffect(() => {
@@ -71,36 +100,33 @@ const CommandConsole = ({
     const userMessage = command.trim();
     setCommand("");
     
+    // Capture files before clearing
+    const filesToSend = [...attachedFiles];
+    setAttachedFiles([]);
+    
     // Save user message to Supabase with chat_id
-    await saveMessage(userMessage, "user", chatId || undefined);
+    const fileNames = filesToSend.length > 0 
+      ? `\n📎 Archivos: ${filesToSend.map(f => f.name).join(', ')}` 
+      : '';
+    await saveMessage(userMessage + fileNames, "user", chatId || undefined);
     
     // Notify parent if callback provided
     onCommand?.(userMessage);
     
     setIsLoading(true);
 
-    // Determinar prioridad de conocimiento según el agente
-    const getKnowledgePriority = () => {
-      if (!selectedAgent) return { documents: ["all"], priority: "general" };
-      switch (selectedAgent.id) {
-        case "smart-brand-architect":
-          return { documents: ["Manual_de_Marca_Disruptivaa.pdf"], priority: "brand_identity" };
-        case "ghostwriter-pro":
-          return { documents: ["Portafolio_Disruptivaa.pdf", "Servicios_Disruptivaa.pdf"], priority: "content_pricing" };
-        case "ads-optimizer":
-          return { documents: ["Portafolio_Disruptivaa.pdf"], priority: "campaigns_budget" };
-        case "ai-crm-sales":
-          return { documents: ["Servicios_Disruptivaa.pdf", "Portafolio_Disruptivaa.pdf"], priority: "sales_leads" };
-        case "visual-content-bot":
-          return { documents: ["Manual_de_Marca_Disruptivaa.pdf", "Portafolio_Disruptivaa.pdf"], priority: "visual_design" };
-        default:
-          return { documents: ["all"], priority: "general" };
-      }
-    };
-
     try {
-      const knowledgePriority = getKnowledgePriority();
       const connectedPlatforms = getConnectedPlatforms();
+      
+      // Convert attached files to base64
+      const filesData = await Promise.all(
+        filesToSend.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          content: await fileToBase64(file),
+        }))
+      );
       
       const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0and6ZmJpbnNybW52bHNndnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzY4MDUsImV4cCI6MjA4MTU1MjgwNX0.gvLt5ggffAwHp-HbBAqyGa18HuNZzJ5AHD6p4q6dk7E";
       
@@ -110,13 +136,12 @@ const CommandConsole = ({
         agentId: selectedAgent?.id || null,
         agentName: selectedAgent?.name || null,
         systemInstruction: selectedAgent?.systemInstruction || null,
-        useKnowledgeBase: true,
-        knowledgePriority: knowledgePriority,
         connectedPlatforms: connectedPlatforms.map(p => p.platform),
         chatId: chatId || null,
+        files: filesData,
       };
       
-      console.log("📤 Request Body:", requestBody);
+      console.log("📤 Request Body:", { ...requestBody, files: filesData.map(f => ({ name: f.name, size: f.size })) });
       
       const response = await fetch(EDGE_FUNCTION_URL, {
         method: "POST",
@@ -312,7 +337,29 @@ const CommandConsole = ({
                 : "border-border"
           )}
         >
-          <div className="flex items-center gap-3 p-2">
+        {/* File previews above input */}
+          {attachedFiles.length > 0 && (
+            <div className="px-3 pt-2 pb-1 border-b border-border/30">
+              <FileUploadButton
+                onFilesSelected={handleFilesSelected}
+                attachedFiles={attachedFiles}
+                onRemoveFile={handleRemoveFile}
+                disabled={isLoading || !isAuthenticated}
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 p-2">
+            {/* File upload button */}
+            {attachedFiles.length === 0 && (
+              <FileUploadButton
+                onFilesSelected={handleFilesSelected}
+                attachedFiles={attachedFiles}
+                onRemoveFile={handleRemoveFile}
+                disabled={isLoading || !isAuthenticated}
+              />
+            )}
+
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
               {isLoading ? (
                 <Loader2 className="w-5 h-5 text-primary animate-spin" />
@@ -340,9 +387,9 @@ const CommandConsole = ({
                 !isAuthenticated
                   ? "Inicia sesión para chatear"
                   : isLoading 
-                    ? "Procesando..." 
+                    ? "Analizando..." 
                     : selectedAgent 
-                      ? `Escribe a ${selectedAgent.name}...` 
+                      ? `Escribe o adjunta archivos para análisis...` 
                       : "Selecciona un agente para comenzar..."
               }
               disabled={isLoading || !isAuthenticated}
@@ -356,10 +403,10 @@ const CommandConsole = ({
             
             <button
               type="submit"
-              disabled={!command.trim() || isLoading || !isAuthenticated}
+              disabled={(!command.trim() && attachedFiles.length === 0) || isLoading || !isAuthenticated}
               className={cn(
                 "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200",
-                command.trim() && !isLoading && isAuthenticated
+                (command.trim() || attachedFiles.length > 0) && !isLoading && isAuthenticated
                   ? "bg-primary text-primary-foreground hover:bg-primary/90" 
                   : "bg-muted text-muted-foreground cursor-not-allowed"
               )}

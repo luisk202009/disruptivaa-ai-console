@@ -10,12 +10,6 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-interface MetaAdAccount {
-  id: string;
-  name: string;
-  account_status: number;
-}
-
 interface MetaCampaign {
   id: string;
   name: string;
@@ -35,9 +29,15 @@ interface MetaInsights {
   ctr?: string;
 }
 
+interface FileData {
+  name: string;
+  type: string;
+  size: number;
+  content: string; // base64
+}
+
 async function fetchMetaCampaigns(accessToken: string, accountId: string): Promise<{ campaigns: MetaCampaign[], insights: MetaInsights | null }> {
   try {
-    // Fetch campaigns
     const campaignsUrl = `https://graph.facebook.com/v18.0/${accountId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget&access_token=${accessToken}`;
     const campaignsResponse = await fetch(campaignsUrl);
     const campaignsData = await campaignsResponse.json();
@@ -47,7 +47,6 @@ async function fetchMetaCampaigns(accessToken: string, accountId: string): Promi
       return { campaigns: [], insights: null };
     }
 
-    // Fetch account insights (last 30 days)
     const insightsUrl = `https://graph.facebook.com/v18.0/${accountId}/insights?fields=impressions,clicks,spend,reach,cpc,cpm,ctr&date_preset=last_30d&access_token=${accessToken}`;
     const insightsResponse = await fetch(insightsUrl);
     const insightsData = await insightsResponse.json();
@@ -83,15 +82,49 @@ async function getMetaIntegration(supabaseAdmin: any, userId: string): Promise<{
   return data as { access_token: string; account_ids: string[] };
 }
 
+// Parse file content based on type
+function parseFileContent(file: FileData): string {
+  try {
+    const decodedContent = atob(file.content);
+    
+    // For CSV files, return as-is (it's plain text)
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      return `\n📊 DATOS DEL ARCHIVO "${file.name}":\n${decodedContent}`;
+    }
+    
+    // For Excel files, we can't fully parse in edge function but can extract some text
+    if (file.type.includes('spreadsheet') || file.type.includes('excel') || 
+        file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      // Extract readable strings from the binary content
+      const textContent = decodedContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
+      const relevantText = textContent.slice(0, 5000); // Limit to prevent token overflow
+      return `\n📊 DATOS EXTRAÍDOS DEL ARCHIVO EXCEL "${file.name}" (texto extraíble):\n${relevantText}`;
+    }
+    
+    // For PDF files, extract readable text
+    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      // Extract readable strings from PDF binary
+      const textContent = decodedContent.replace(/[^\x20-\x7E\n\r\t]/g, ' ').replace(/\s+/g, ' ').trim();
+      const relevantText = textContent.slice(0, 5000);
+      return `\n📄 CONTENIDO EXTRAÍDO DEL PDF "${file.name}":\n${relevantText}`;
+    }
+    
+    return `\n📎 Archivo adjunto: ${file.name} (${Math.round(file.size / 1024)} KB)`;
+  } catch (error) {
+    console.error("Error parsing file:", error);
+    return `\n📎 Archivo adjunto: ${file.name} (no se pudo extraer contenido)`;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { message, userId, agentId, agentName, systemInstruction, chatId, knowledgePriority } = await req.json();
+    const { message, userId, agentId, agentName, systemInstruction, chatId, files } = await req.json();
     
-    console.log("📥 Request received:", { message, userId, agentId, agentName, chatId });
+    console.log("📥 Request received:", { message, userId, agentId, agentName, chatId, filesCount: files?.length || 0 });
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -103,10 +136,20 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Build context based on agent type
+    // Process attached files
+    let fileContext = "";
+    if (files && Array.isArray(files) && files.length > 0) {
+      console.log("📎 Processing attached files:", files.map((f: FileData) => f.name));
+      for (const file of files as FileData[]) {
+        fileContext += parseFileContent(file);
+      }
+    }
+
+    // Build context based on agent type and connections
     let contextMessage = "";
     let metaConnected = false;
     let metaData: { campaigns: MetaCampaign[], insights: MetaInsights | null } | null = null;
+    let isProactiveResponse = false;
 
     // Check if ads-optimizer and Meta is connected
     if (agentId === "ads-optimizer" && userId) {
@@ -118,7 +161,6 @@ serve(async (req) => {
         
         console.log("✅ Meta Ads connected. Fetching campaign data...");
         
-        // Fetch real campaign data from the first account
         if (accountIds.length > 0) {
           metaData = await fetchMetaCampaigns(metaIntegration.access_token, accountIds[0]);
           console.log("📊 Meta data fetched:", { 
@@ -127,16 +169,32 @@ serve(async (req) => {
           });
         }
 
-        // Build context with real data
-        if (metaData && (metaData.campaigns.length > 0 || metaData.insights)) {
-          contextMessage = `
-IMPORTANTE: El usuario ya tiene su cuenta de Meta Ads conectada. NO le ofrezcas el servicio de "Configuración de cuenta ($80 USD)" ya que no lo necesita.
+        // Detect if this is an initial/greeting message for proactive response
+        const lowerMessage = message.toLowerCase();
+        const isGreeting = lowerMessage.includes("hola") || 
+                          lowerMessage.includes("analizar") || 
+                          lowerMessage.includes("campañas") ||
+                          lowerMessage.includes("resumen") ||
+                          lowerMessage.includes("estado") ||
+                          lowerMessage.length < 30;
 
-📊 DATOS REALES DE SUS CAMPAÑAS (últimos 30 días):
+        if (isGreeting && metaData && (metaData.campaigns.length > 0 || metaData.insights)) {
+          isProactiveResponse = true;
+          contextMessage = `
+⚡ COMPORTAMIENTO PROACTIVO: El usuario acaba de iniciar conversación y tiene Meta Ads conectado.
+Inicia tu respuesta con un RESUMEN EJECUTIVO de sus cuentas:
+
+📊 DATOS REALES DE META ADS (últimos 30 días):
 `;
-          if (metaData.insights) {
-            contextMessage += `
-Métricas generales:
+        } else {
+          contextMessage = `
+📊 DATOS REALES DE META ADS (últimos 30 días):
+`;
+        }
+
+        if (metaData && metaData.insights) {
+          contextMessage += `
+MÉTRICAS GENERALES:
 - Impresiones: ${parseInt(metaData.insights.impressions || "0").toLocaleString()}
 - Alcance: ${parseInt(metaData.insights.reach || "0").toLocaleString()}
 - Clics: ${parseInt(metaData.insights.clicks || "0").toLocaleString()}
@@ -145,48 +203,64 @@ Métricas generales:
 - CPM promedio: $${parseFloat(metaData.insights.cpm || "0").toFixed(2)}
 - CTR: ${parseFloat(metaData.insights.ctr || "0").toFixed(2)}%
 `;
-          }
+        }
 
-          if (metaData.campaigns.length > 0) {
-            contextMessage += `
-Campañas activas (${metaData.campaigns.length} total):
-`;
-            metaData.campaigns.slice(0, 5).forEach((campaign, index) => {
-              const budget = campaign.daily_budget 
-                ? `$${(parseInt(campaign.daily_budget) / 100).toFixed(2)}/día` 
-                : campaign.lifetime_budget 
-                  ? `$${(parseInt(campaign.lifetime_budget) / 100).toFixed(2)} total`
-                  : "Sin presupuesto definido";
-              contextMessage += `${index + 1}. "${campaign.name}" - Estado: ${campaign.status} - Objetivo: ${campaign.objective} - Presupuesto: ${budget}\n`;
-            });
-          }
-
+        if (metaData && metaData.campaigns.length > 0) {
           contextMessage += `
-Puedes analizar estos datos y dar recomendaciones específicas basadas en las métricas reales del usuario.
+CAMPAÑAS (${metaData.campaigns.length} total):
 `;
-        } else {
-          contextMessage = `
-El usuario tiene Meta Ads conectado pero no tiene campañas activas o datos recientes. 
-Ofrécele ayuda para crear su primera campaña o analizar por qué no hay datos disponibles.
-NO le ofrezcas el servicio de "Configuración de cuenta ($80 USD)" ya que su cuenta ya está conectada.
-`;
+          metaData.campaigns.slice(0, 5).forEach((campaign, index) => {
+            const budget = campaign.daily_budget 
+              ? `$${(parseInt(campaign.daily_budget) / 100).toFixed(2)}/día` 
+              : campaign.lifetime_budget 
+                ? `$${(parseInt(campaign.lifetime_budget) / 100).toFixed(2)} total`
+                : "Sin presupuesto definido";
+            contextMessage += `${index + 1}. "${campaign.name}" - ${campaign.status} - ${campaign.objective} - ${budget}\n`;
+          });
         }
       } else {
         contextMessage = `
-El usuario NO tiene Meta Ads conectado. Puedes ofrecerle los servicios de configuración según el PDF de servicios,
-incluyendo la "Configuración de cuenta ($80 USD)" si es apropiado.
+⚠️ El usuario NO tiene Meta Ads conectado.
+Sugiérele conectar su cuenta desde la sección "Conexiones" para obtener análisis en tiempo real de sus campañas.
 `;
       }
     }
 
-    // Build the final system prompt
-    const finalSystemInstruction = `${systemInstruction || "Eres un asistente experto de Disruptivaa."}
+    // Build the technical analyst system prompt
+    const basePrompt = systemInstruction || `Eres un AI Marketing Data Analyst profesional.
 
-${contextMessage}
+FUENTES DE DATOS (en orden de prioridad):
+1. Datos en tiempo real de APIs conectadas (Meta Ads, Google Ads)
+2. Archivos proporcionados por el usuario en esta sesión
 
-Responde siempre en español de manera profesional y concisa.`;
+COMPORTAMIENTO:
+- Analiza métricas con enfoque técnico y profesional
+- Proporciona insights basados en datos concretos
+- Sugiere optimizaciones accionables con impacto estimado
+- NUNCA ofrezcas servicios, paquetes ni precios de agencia
 
-    console.log("🤖 Calling Lovable AI with context:", { metaConnected, hasCampaigns: metaData?.campaigns?.length || 0 });
+TONO: Profesional, técnico, orientado a resultados y ROI.`;
+
+    let finalSystemInstruction = basePrompt;
+    
+    // Add API data context
+    if (contextMessage) {
+      finalSystemInstruction += `\n\n${contextMessage}`;
+    }
+    
+    // Add file context
+    if (fileContext) {
+      finalSystemInstruction += `\n\nARCHIVOS ADJUNTOS POR EL USUARIO:${fileContext}`;
+    }
+
+    finalSystemInstruction += `\n\nResponde siempre en español de manera profesional y concisa.`;
+
+    console.log("🤖 Calling Lovable AI with context:", { 
+      metaConnected, 
+      hasCampaigns: metaData?.campaigns?.length || 0,
+      hasFiles: files?.length || 0,
+      isProactiveResponse
+    });
 
     // Call Lovable AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -252,6 +326,7 @@ Responde siempre en español de manera profesional y concisa.`;
         text: agentResponse,
         metaConnected,
         campaignsCount: metaData?.campaigns?.length || 0,
+        isProactiveResponse,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
