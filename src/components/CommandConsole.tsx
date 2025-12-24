@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Send, Sparkles, Loader2, User, Bot, X, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useIntegrations } from "@/hooks/useIntegrations";
+import { useAuth } from "@/contexts/AuthContext";
 import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
 import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -10,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
-  userId?: string;
   selectedAgent?: DisruptivaaAgent | null;
   onClearAgent?: () => void;
   onAuthRequired?: () => boolean;
@@ -18,29 +18,32 @@ interface CommandConsoleProps {
   autoFocus?: boolean;
   showMessages?: boolean;
   fullHeight?: boolean;
+  chatId?: string | null;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
 
 const CommandConsole = ({ 
   onCommand, 
-  userId = "anonymous",
   selectedAgent,
   onClearAgent,
   onAuthRequired,
   isAuthenticated = true,
   autoFocus = false,
   showMessages = true,
-  fullHeight = false
+  fullHeight = false,
+  chatId
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
   
-  const { messages, loading: messagesLoading, saveMessage } = useMessages();
+  const { messages, loading: messagesLoading, saveMessage } = useMessages(chatId);
   const { getConnectedPlatforms } = useIntegrations();
 
   // Auto-focus on mount if requested
@@ -50,10 +53,12 @@ const CommandConsole = ({
     }
   }, [autoFocus, isAuthenticated]);
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // Auto-scroll to bottom when new messages arrive - using useLayoutEffect for immediate scroll
+  useLayoutEffect(() => {
+    if (messagesEndRef.current && messagesContainerRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
 
   const handleConnectAccount = () => {
     navigate("/connections");
@@ -61,13 +66,13 @@ const CommandConsole = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!command.trim() || isLoading) return;
+    if (!command.trim() || isLoading || !user) return;
 
     const userMessage = command.trim();
     setCommand("");
     
-    // Save user message to Supabase
-    await saveMessage(userMessage, "user");
+    // Save user message to Supabase with chat_id
+    await saveMessage(userMessage, "user", chatId || undefined);
     
     // Notify parent if callback provided
     onCommand?.(userMessage);
@@ -97,45 +102,20 @@ const CommandConsole = ({
       const knowledgePriority = getKnowledgePriority();
       const connectedPlatforms = getConnectedPlatforms();
       
-      // Build integration context for the agent
-      let integrationContext = "";
-      if (selectedAgent?.id === "ads-optimizer" && connectedPlatforms.length > 0) {
-        const metaConnection = connectedPlatforms.find(p => p.platform === "meta_ads");
-        const googleConnection = connectedPlatforms.find(p => p.platform === "google_ads");
-        const tiktokConnection = connectedPlatforms.find(p => p.platform === "tiktok_ads");
-        
-        const connectedNames: string[] = [];
-        if (metaConnection) connectedNames.push("Meta Ads (Facebook/Instagram)");
-        if (googleConnection) connectedNames.push("Google Ads");
-        if (tiktokConnection) connectedNames.push("TikTok Ads");
-        
-        if (metaConnection) {
-          integrationContext = `✅ Conexión con Meta Ads establecida. He detectado acceso a tus cuentas de anuncios. ¿En qué campaña trabajamos hoy? `;
-        } else {
-          integrationContext = `He detectado que tienes las siguientes cuentas publicitarias vinculadas: ${connectedNames.join(", ")}. Puedo analizar tus métricas y ayudarte a optimizar tus campañas. `;
-        }
-      }
-      
       const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0and6ZmJpbnNybW52bHNndnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzY4MDUsImV4cCI6MjA4MTU1MjgwNX0.gvLt5ggffAwHp-HbBAqyGa18HuNZzJ5AHD6p4q6dk7E";
-      
-      // Enhance system instruction with integration context
-      const enhancedSystemInstruction = integrationContext 
-        ? `${integrationContext}${selectedAgent?.systemInstruction || ""}`
-        : selectedAgent?.systemInstruction || null;
       
       const requestBody = {
         message: userMessage,
-        userId: userId,
+        userId: user.id,
         agentId: selectedAgent?.id || null,
         agentName: selectedAgent?.name || null,
-        systemInstruction: enhancedSystemInstruction,
+        systemInstruction: selectedAgent?.systemInstruction || null,
         useKnowledgeBase: true,
         knowledgePriority: knowledgePriority,
         connectedPlatforms: connectedPlatforms.map(p => p.platform),
+        chatId: chatId || null,
       };
       
-      console.log("🔑 Supabase Anon Key:", supabaseAnonKey.substring(0, 50) + "...");
-      console.log("📤 Request URL:", EDGE_FUNCTION_URL);
       console.log("📤 Request Body:", requestBody);
       
       const response = await fetch(EDGE_FUNCTION_URL, {
@@ -151,26 +131,43 @@ const CommandConsole = ({
       console.log("📥 Response Status:", response.status, response.statusText);
 
       if (!response.ok) {
+        if (response.status === 429) {
+          toast({
+            title: "Límite de velocidad excedido",
+            description: "Por favor espera un momento e intenta de nuevo.",
+            variant: "destructive",
+          });
+          throw new Error("Rate limit exceeded");
+        }
+        if (response.status === 402) {
+          toast({
+            title: "Créditos agotados",
+            description: "Por favor agrega créditos a tu workspace.",
+            variant: "destructive",
+          });
+          throw new Error("Payment required");
+        }
         throw new Error(`Error: ${response.status}`);
       }
 
       const data = await response.json();
       console.log("📥 Response Data:", data);
       
-      // Handle different response formats: { text: '...' }, { response: '...' }, { message: '...' }
-      const agentResponse = data.text || data.response || data.message || "Respuesta recibida del agente.";
-      console.log("💬 Agent Response:", agentResponse);
+      // The edge function now saves the message directly, but we can use realtime to update
+      // If metaConnected info is returned, we could use it for UI updates
+      if (data.metaConnected) {
+        console.log("✅ Meta Ads connected, campaigns analyzed:", data.campaignsCount);
+      }
       
-      // Save agent response to Supabase
-      await saveMessage(agentResponse, "assistant");
-      
-      // Force scroll to bottom after response
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
     } catch (error) {
       console.error("Error calling agent:", error);
-      await saveMessage("Lo siento, hubo un error al procesar tu solicitud. Por favor intenta de nuevo.", "assistant");
+      if (!(error instanceof Error && (error.message.includes("Rate limit") || error.message.includes("Payment")))) {
+        toast({
+          title: "Error",
+          description: "Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -223,10 +220,13 @@ const CommandConsole = ({
 
       {/* Chat Messages */}
       {showMessages && (messages.length > 0 || messagesLoading || isAdsOptimizer) && (
-        <div className={cn(
-          "mb-4 overflow-y-auto space-y-3 p-4 glass rounded-2xl",
-          fullHeight ? "flex-1 min-h-0" : "max-h-80"
-        )}>
+        <div 
+          ref={messagesContainerRef}
+          className={cn(
+            "mb-4 overflow-y-auto space-y-3 p-4 glass rounded-2xl",
+            fullHeight ? "flex-1 min-h-0" : "max-h-80"
+          )}
+        >
           {/* Connect Ads Account button inside chat area */}
           {isAdsOptimizer && (
             <div className="flex justify-center pb-2 border-b border-border/30 mb-3">

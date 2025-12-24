@@ -59,9 +59,9 @@ const Sidebar = () => {
     window.dispatchEvent(new CustomEvent("newConversation"));
   };
 
-  const handleLoadConversation = (conversationId: string) => {
+  const handleLoadConversation = (chatId: string) => {
     navigate("/");
-    window.dispatchEvent(new CustomEvent("loadConversation", { detail: { id: conversationId } }));
+    window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
   };
 
   const navItems = [
@@ -156,8 +156,8 @@ const Sidebar = () => {
             ) : (
               conversations.map((convo) => (
                 <button
-                  key={convo.id}
-                  onClick={() => handleLoadConversation(convo.id)}
+                  key={convo.chat_id}
+                  onClick={() => handleLoadConversation(convo.chat_id)}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors truncate"
                 >
                   {convo.title}
