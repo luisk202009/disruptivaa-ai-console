@@ -1,11 +1,12 @@
-import { Link2, ExternalLink, Check, X, Loader2 } from "lucide-react";
+import { Link2, ExternalLink, Check, X, Loader2, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIntegrations } from "@/hooks/useIntegrations";
+import { useIntegrations, ConnectionResult } from "@/hooks/useIntegrations";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import { useState } from "react";
 
 interface PlatformConfig {
   id: string;
@@ -54,19 +55,31 @@ const platforms: PlatformConfig[] = [
 const Connections = () => {
   const { user } = useAuth();
   const { getIntegration, connectPlatform, disconnectPlatform, connecting, loading } = useIntegrations();
+  const [connectionResults, setConnectionResults] = useState<Record<string, ConnectionResult>>({});
 
   const handleConnect = async (platformId: string) => {
-    const success = await connectPlatform(platformId);
-    if (success) {
-      toast.success('Cuenta conectada exitosamente');
+    const result = await connectPlatform(platformId);
+    setConnectionResults(prev => ({ ...prev, [platformId]: result }));
+    
+    if (result.success) {
+      if (platformId === 'meta_ads' && result.accountsCount) {
+        toast.success(`✅ Conexión exitosa. ${result.accountsCount} cuenta(s) de anuncios detectadas.`);
+      } else {
+        toast.success('Cuenta conectada exitosamente');
+      }
     } else {
-      toast.error('Error al conectar la cuenta');
+      toast.error(`❌ Error: ${result.error || 'Error al conectar la cuenta'}`);
     }
   };
 
   const handleDisconnect = async (platformId: string) => {
     const success = await disconnectPlatform(platformId);
     if (success) {
+      setConnectionResults(prev => {
+        const newResults = { ...prev };
+        delete newResults[platformId];
+        return newResults;
+      });
       toast.success('Cuenta desconectada');
     } else {
       toast.error('Error al desconectar la cuenta');
@@ -107,6 +120,7 @@ const Connections = () => {
                 const integration = getIntegration(platform.id);
                 const isConnected = integration?.status === 'connected';
                 const isConnecting = connecting === platform.id;
+                const connectionResult = connectionResults[platform.id];
 
                 return (
                   <div
@@ -155,6 +169,35 @@ const Connections = () => {
                       )}
                     </div>
 
+                    {/* Account Details for Meta */}
+                    {isConnected && platform.id === 'meta_ads' && connectionResult?.accountDetails && (
+                      <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <p className="text-xs text-green-400 font-medium mb-2">Cuentas detectadas:</p>
+                        <ul className="space-y-1">
+                          {connectionResult.accountDetails.slice(0, 3).map((acc) => (
+                            <li key={acc.id} className="text-xs text-muted-foreground">
+                              • {acc.name || acc.id}
+                            </li>
+                          ))}
+                          {connectionResult.accountDetails.length > 3 && (
+                            <li className="text-xs text-muted-foreground">
+                              ... y {connectionResult.accountDetails.length - 3} más
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Error message */}
+                    {!isConnected && connectionResult?.error && (
+                      <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle size={14} className="text-destructive mt-0.5" />
+                          <p className="text-xs text-destructive">{connectionResult.error}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Action Button */}
                     {isConnected ? (
                       <Button
@@ -182,7 +225,7 @@ const Connections = () => {
                         ) : (
                           <ExternalLink size={16} />
                         )}
-                        {isConnecting ? 'Conectando...' : 'Conectar Cuenta'}
+                        {isConnecting ? 'Validando...' : 'Conectar Cuenta'}
                       </Button>
                     )}
                   </div>
@@ -194,8 +237,8 @@ const Connections = () => {
           {/* Info Note */}
           <div className="mt-8 p-4 rounded-lg border border-border bg-card/50">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Nota:</strong> Esta es una simulación de conexión. 
-              En una implementación real, se utilizaría OAuth para conectar de forma segura con cada plataforma.
+              <strong className="text-foreground">Conexión Real:</strong> Meta Ads valida tu token de acceso directamente con la API de Facebook. 
+              Google Ads y TikTok Ads están configurados en modo demo.
             </p>
           </div>
         </div>

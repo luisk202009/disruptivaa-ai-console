@@ -2,25 +2,43 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export interface MetaAccountDetail {
+  id: string;
+  name: string;
+  status: string;
+}
+
 export interface Integration {
   id: string;
   platform: string;
   status: 'connected' | 'disconnected';
   connected_at: string | null;
   account_name: string | null;
+  accountsCount?: number;
+  accountDetails?: MetaAccountDetail[];
+}
+
+export interface ConnectionResult {
+  success: boolean;
+  accountsCount?: number;
+  accountDetails?: MetaAccountDetail[];
+  error?: string;
 }
 
 const PLATFORM_ACCOUNTS: Record<string, string> = {
-  meta_ads: 'Business Manager Demo',
+  meta_ads: 'Meta Business Manager',
   google_ads: 'Google Ads Demo Account',
   tiktok_ads: 'TikTok Business Center',
 };
+
+const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/validate-meta-connection";
 
 export const useIntegrations = () => {
   const { user } = useAuth();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [lastConnectionResult, setLastConnectionResult] = useState<ConnectionResult | null>(null);
 
   const fetchIntegrations = async () => {
     if (!user) {
@@ -51,15 +69,69 @@ export const useIntegrations = () => {
     }
   };
 
-  const connectPlatform = async (platform: string) => {
-    if (!user) return false;
+  const validateMetaConnection = async (): Promise<ConnectionResult> => {
+    try {
+      console.log('🔄 Validating Meta connection via edge function...');
+      
+      const response = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      console.log('📥 Validation response:', data);
+
+      if (data.success) {
+        return {
+          success: true,
+          accountsCount: data.accounts,
+          accountDetails: data.accountDetails,
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error,
+        };
+      }
+    } catch (error) {
+      console.error('Error validating Meta connection:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Error de conexión',
+      };
+    }
+  };
+
+  const connectPlatform = async (platform: string): Promise<ConnectionResult> => {
+    if (!user) return { success: false, error: 'Usuario no autenticado' };
 
     setConnecting(platform);
 
-    // Simulate connection delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
     try {
+      let connectionResult: ConnectionResult;
+      let accountName = PLATFORM_ACCOUNTS[platform];
+
+      // For Meta Ads, validate real connection
+      if (platform === 'meta_ads') {
+        connectionResult = await validateMetaConnection();
+        
+        if (!connectionResult.success) {
+          setLastConnectionResult(connectionResult);
+          return connectionResult;
+        }
+        
+        // Update account name with real data
+        if (connectionResult.accountsCount) {
+          accountName = `${connectionResult.accountsCount} cuenta(s) de anuncios`;
+        }
+      } else {
+        // Simulate connection delay for other platforms
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        connectionResult = { success: true };
+      }
+
       const existingIntegration = integrations.find(i => i.platform === platform);
 
       if (existingIntegration) {
@@ -68,7 +140,7 @@ export const useIntegrations = () => {
           .update({
             status: 'connected',
             connected_at: new Date().toISOString(),
-            account_name: PLATFORM_ACCOUNTS[platform],
+            account_name: accountName,
           })
           .eq('id', existingIntegration.id);
 
@@ -81,23 +153,26 @@ export const useIntegrations = () => {
             platform,
             status: 'connected',
             connected_at: new Date().toISOString(),
-            account_name: PLATFORM_ACCOUNTS[platform],
+            account_name: accountName,
           });
 
         if (error) throw error;
       }
 
       await fetchIntegrations();
-      return true;
+      setLastConnectionResult(connectionResult);
+      return connectionResult;
     } catch (error) {
       console.error('Error connecting platform:', error);
-      return false;
+      const result = { success: false, error: 'Error al guardar la conexión' };
+      setLastConnectionResult(result);
+      return result;
     } finally {
       setConnecting(null);
     }
   };
 
-  const disconnectPlatform = async (platform: string) => {
+  const disconnectPlatform = async (platform: string): Promise<boolean> => {
     if (!user) return false;
 
     setConnecting(platform);
@@ -116,6 +191,7 @@ export const useIntegrations = () => {
       if (error) throw error;
 
       await fetchIntegrations();
+      setLastConnectionResult(null);
       return true;
     } catch (error) {
       console.error('Error disconnecting platform:', error);
@@ -165,6 +241,7 @@ export const useIntegrations = () => {
     integrations,
     loading,
     connecting,
+    lastConnectionResult,
     connectPlatform,
     disconnectPlatform,
     getIntegration,

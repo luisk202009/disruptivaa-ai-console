@@ -100,14 +100,20 @@ const CommandConsole = ({
       // Build integration context for the agent
       let integrationContext = "";
       if (selectedAgent?.id === "ads-optimizer" && connectedPlatforms.length > 0) {
-        const platformNames = connectedPlatforms.map(p => {
-          if (p.platform === "meta_ads") return "Meta Ads (Facebook/Instagram)";
-          if (p.platform === "google_ads") return "Google Ads";
-          if (p.platform === "tiktok_ads") return "TikTok Ads";
-          return p.platform;
-        }).join(", ");
+        const metaConnection = connectedPlatforms.find(p => p.platform === "meta_ads");
+        const googleConnection = connectedPlatforms.find(p => p.platform === "google_ads");
+        const tiktokConnection = connectedPlatforms.find(p => p.platform === "tiktok_ads");
         
-        integrationContext = `He detectado que tienes las siguientes cuentas publicitarias vinculadas: ${platformNames}. Puedo analizar tus métricas y ayudarte a optimizar tus campañas. `;
+        const connectedNames: string[] = [];
+        if (metaConnection) connectedNames.push("Meta Ads (Facebook/Instagram)");
+        if (googleConnection) connectedNames.push("Google Ads");
+        if (tiktokConnection) connectedNames.push("TikTok Ads");
+        
+        if (metaConnection) {
+          integrationContext = `✅ Conexión con Meta Ads establecida. He detectado acceso a tus cuentas de anuncios. ¿En qué campaña trabajamos hoy? `;
+        } else {
+          integrationContext = `He detectado que tienes las siguientes cuentas publicitarias vinculadas: ${connectedNames.join(", ")}. Puedo analizar tus métricas y ayudarte a optimizar tus campañas. `;
+        }
       }
       
       const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0and6ZmJpbnNybW52bHNndnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzY4MDUsImV4cCI6MjA4MTU1MjgwNX0.gvLt5ggffAwHp-HbBAqyGa18HuNZzJ5AHD6p4q6dk7E";
