@@ -16,12 +16,14 @@ export interface Integration {
   account_name: string | null;
   accountsCount?: number;
   accountDetails?: MetaAccountDetail[];
+  access_token?: string | null;
 }
 
 export interface ConnectionResult {
   success: boolean;
   accountsCount?: number;
   accountDetails?: MetaAccountDetail[];
+  accountIds?: string[];
   error?: string;
 }
 
@@ -61,6 +63,7 @@ export const useIntegrations = () => {
         status: item.status as 'connected' | 'disconnected',
         connected_at: item.connected_at,
         account_name: item.account_name,
+        access_token: (item as any).access_token || null,
       })) || []);
     } catch (error) {
       console.error('Error fetching integrations:', error);
@@ -69,15 +72,17 @@ export const useIntegrations = () => {
     }
   };
 
-  const validateMetaConnection = async (): Promise<ConnectionResult> => {
+  // Validate Meta token via edge function (receives token as parameter)
+  const validateMetaConnection = async (accessToken: string): Promise<ConnectionResult> => {
     try {
-      console.log('🔄 Validating Meta connection via edge function...');
+      console.log('🔄 Validating Meta connection with user token...');
       
       const response = await fetch(EDGE_FUNCTION_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ access_token: accessToken }),
       });
 
       const data = await response.json();
@@ -88,6 +93,7 @@ export const useIntegrations = () => {
           success: true,
           accountsCount: data.accounts,
           accountDetails: data.accountDetails,
+          accountIds: data.accountIds,
         };
       } else {
         return {
@@ -104,34 +110,83 @@ export const useIntegrations = () => {
     }
   };
 
+  // Connect Meta Ads with user-provided token (multi-tenant)
+  const connectMetaAds = async (accessToken: string): Promise<ConnectionResult> => {
+    if (!user) return { success: false, error: 'Usuario no autenticado' };
+
+    setConnecting('meta_ads');
+
+    try {
+      // 1. Validate token against Meta API
+      const validationResult = await validateMetaConnection(accessToken);
+      
+      if (!validationResult.success) {
+        setLastConnectionResult(validationResult);
+        return validationResult;
+      }
+
+      // 2. Save token and connection info to database (protected by RLS)
+      const accountName = validationResult.accountsCount 
+        ? `${validationResult.accountsCount} cuenta(s) de anuncios`
+        : 'Meta Ads';
+
+      const existingIntegration = integrations.find(i => i.platform === 'meta_ads');
+
+      const integrationData = {
+        user_id: user.id,
+        platform: 'meta_ads',
+        status: 'connected',
+        connected_at: new Date().toISOString(),
+        account_name: accountName,
+        access_token: accessToken,
+        account_ids: validationResult.accountIds || [],
+      };
+
+      if (existingIntegration) {
+        const { error } = await supabase
+          .from('user_integrations')
+          .update(integrationData)
+          .eq('id', existingIntegration.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_integrations')
+          .insert(integrationData);
+
+        if (error) throw error;
+      }
+
+      await fetchIntegrations();
+      setLastConnectionResult(validationResult);
+      return validationResult;
+    } catch (error) {
+      console.error('Error connecting Meta Ads:', error);
+      const result = { success: false, error: 'Error al guardar la conexión' };
+      setLastConnectionResult(result);
+      return result;
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  // Connect other platforms (demo mode)
   const connectPlatform = async (platform: string): Promise<ConnectionResult> => {
     if (!user) return { success: false, error: 'Usuario no autenticado' };
+
+    // For Meta Ads, this function should not be called directly
+    // Use connectMetaAds instead with the token
+    if (platform === 'meta_ads') {
+      return { success: false, error: 'Usa connectMetaAds para conectar Meta Ads' };
+    }
 
     setConnecting(platform);
 
     try {
-      let connectionResult: ConnectionResult;
-      let accountName = PLATFORM_ACCOUNTS[platform];
-
-      // For Meta Ads, validate real connection
-      if (platform === 'meta_ads') {
-        connectionResult = await validateMetaConnection();
-        
-        if (!connectionResult.success) {
-          setLastConnectionResult(connectionResult);
-          return connectionResult;
-        }
-        
-        // Update account name with real data
-        if (connectionResult.accountsCount) {
-          accountName = `${connectionResult.accountsCount} cuenta(s) de anuncios`;
-        }
-      } else {
-        // Simulate connection delay for other platforms
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        connectionResult = { success: true };
-      }
-
+      // Simulate connection delay for demo platforms
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const accountName = PLATFORM_ACCOUNTS[platform];
       const existingIntegration = integrations.find(i => i.platform === platform);
 
       if (existingIntegration) {
@@ -160,8 +215,9 @@ export const useIntegrations = () => {
       }
 
       await fetchIntegrations();
-      setLastConnectionResult(connectionResult);
-      return connectionResult;
+      const result: ConnectionResult = { success: true };
+      setLastConnectionResult(result);
+      return result;
     } catch (error) {
       console.error('Error connecting platform:', error);
       const result = { success: false, error: 'Error al guardar la conexión' };
@@ -184,6 +240,8 @@ export const useIntegrations = () => {
           status: 'disconnected',
           connected_at: null,
           account_name: null,
+          access_token: null,
+          account_ids: null,
         })
         .eq('user_id', user.id)
         .eq('platform', platform);
@@ -198,6 +256,27 @@ export const useIntegrations = () => {
       return false;
     } finally {
       setConnecting(null);
+    }
+  };
+
+  // Get user's Meta token from database
+  const getUserMetaToken = async (): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_integrations')
+        .select('access_token')
+        .eq('user_id', user.id)
+        .eq('platform', 'meta_ads')
+        .eq('status', 'connected')
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data as any)?.access_token || null;
+    } catch (error) {
+      console.error('Error fetching Meta token:', error);
+      return null;
     }
   };
 
@@ -243,8 +322,10 @@ export const useIntegrations = () => {
     connecting,
     lastConnectionResult,
     connectPlatform,
+    connectMetaAds,
     disconnectPlatform,
     getIntegration,
     getConnectedPlatforms,
+    getUserMetaToken,
   };
 };
