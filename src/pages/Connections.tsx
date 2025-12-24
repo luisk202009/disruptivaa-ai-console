@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState } from "react";
+import MetaTokenModal from "@/components/MetaTokenModal";
 
 interface PlatformConfig {
   id: string;
@@ -54,22 +55,36 @@ const platforms: PlatformConfig[] = [
 
 const Connections = () => {
   const { user } = useAuth();
-  const { getIntegration, connectPlatform, disconnectPlatform, connecting, loading } = useIntegrations();
+  const { getIntegration, connectPlatform, connectMetaAds, disconnectPlatform, connecting, loading } = useIntegrations();
   const [connectionResults, setConnectionResults] = useState<Record<string, ConnectionResult>>({});
+  const [metaModalOpen, setMetaModalOpen] = useState(false);
 
   const handleConnect = async (platformId: string) => {
+    // For Meta Ads, open the token modal instead of connecting directly
+    if (platformId === 'meta_ads') {
+      setMetaModalOpen(true);
+      return;
+    }
+
     const result = await connectPlatform(platformId);
     setConnectionResults(prev => ({ ...prev, [platformId]: result }));
     
     if (result.success) {
-      if (platformId === 'meta_ads' && result.accountsCount) {
-        toast.success(`✅ Conexión exitosa. ${result.accountsCount} cuenta(s) de anuncios detectadas.`);
-      } else {
-        toast.success('Cuenta conectada exitosamente');
-      }
+      toast.success('Cuenta conectada exitosamente');
     } else {
       toast.error(`❌ Error: ${result.error || 'Error al conectar la cuenta'}`);
     }
+  };
+
+  const handleMetaConnect = async (accessToken: string): Promise<ConnectionResult> => {
+    const result = await connectMetaAds(accessToken);
+    setConnectionResults(prev => ({ ...prev, meta_ads: result }));
+    
+    if (result.success) {
+      toast.success(`✅ Conexión exitosa. ${result.accountsCount || 0} cuenta(s) de anuncios detectadas.`);
+    }
+    
+    return result;
   };
 
   const handleDisconnect = async (platformId: string) => {
@@ -87,6 +102,7 @@ const Connections = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen flex w-full bg-background">
       <Sidebar />
       
@@ -243,7 +259,16 @@ const Connections = () => {
           </div>
         </div>
       </div>
+
+      {/* Meta Token Modal */}
+      <MetaTokenModal
+        open={metaModalOpen}
+        onOpenChange={setMetaModalOpen}
+        onConnect={handleMetaConnect}
+        isConnecting={connecting === 'meta_ads'}
+      />
     </div>
+    </>
   );
 };
 
