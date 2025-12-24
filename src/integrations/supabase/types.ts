@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       agent_messages: {
         Row: {
+          chat_id: string | null
           content: string
           created_at: string | null
           id: string
@@ -23,6 +24,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          chat_id?: string | null
           content: string
           created_at?: string | null
           id?: string
@@ -30,6 +32,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          chat_id?: string | null
           content?: string
           created_at?: string | null
           id?: string

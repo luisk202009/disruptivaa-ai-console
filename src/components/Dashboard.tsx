@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Palette, PenTool, BarChart3, Users, ImageIcon, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
@@ -69,7 +69,14 @@ const Dashboard = () => {
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isChatActive, setIsChatActive] = useState(false);
-  const { clearMessages } = useMessages();
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  
+  const { clearMessages } = useMessages(activeChatId);
+
+  // Generate a new chat ID
+  const generateChatId = useCallback(() => {
+    return crypto.randomUUID();
+  }, []);
 
   // Check if redirected from protected route or from Agents page with agent pre-selected
   useEffect(() => {
@@ -95,17 +102,32 @@ const Dashboard = () => {
     const handleNewConversation = () => {
       setSelectedAgent(null);
       setIsChatActive(false);
+      setActiveChatId(null);
       clearMessages();
     };
     window.addEventListener("newConversation", handleNewConversation);
     return () => window.removeEventListener("newConversation", handleNewConversation);
   }, [clearMessages]);
 
+  // Listen for load conversation event from sidebar
+  useEffect(() => {
+    const handleLoadConversation = (e: CustomEvent<{ chatId: string }>) => {
+      const { chatId } = e.detail;
+      console.log("Loading conversation:", chatId);
+      setActiveChatId(chatId);
+      setIsChatActive(true);
+      setSelectedAgent(null); // Clear agent selection when loading existing conversation
+    };
+    window.addEventListener("loadConversation", handleLoadConversation as EventListener);
+    return () => window.removeEventListener("loadConversation", handleLoadConversation as EventListener);
+  }, []);
+
   // Listen for logout event to clean up state
   useEffect(() => {
     const handleLogout = () => {
       setSelectedAgent(null);
       setIsChatActive(false);
+      setActiveChatId(null);
       clearMessages();
     };
     window.addEventListener("userLoggedOut", handleLogout);
@@ -118,6 +140,9 @@ const Dashboard = () => {
       return;
     }
     setSelectedAgent(agent);
+    // Generate new chat_id when selecting an agent
+    const newChatId = generateChatId();
+    setActiveChatId(newChatId);
     toast({
       title: `${agent.name} seleccionado`,
       description: `Ahora estás hablando con ${agent.name}`,
@@ -135,11 +160,18 @@ const Dashboard = () => {
   const handleClearAgent = () => {
     setSelectedAgent(null);
     setIsChatActive(false);
+    setActiveChatId(null);
   };
 
   const handleCommand = async (command: string) => {
     const lowerCommand = command.toLowerCase();
     setIsChatActive(true);
+
+    // Generate chat_id if not already set
+    if (!activeChatId) {
+      const newChatId = generateChatId();
+      setActiveChatId(newChatId);
+    }
 
     // Si no hay agente seleccionado, detectar automáticamente
     if (!selectedAgent) {
@@ -237,6 +269,7 @@ const Dashboard = () => {
                   onClearAgent={handleClearAgent}
                   onAuthRequired={handleConsoleFocus}
                   isAuthenticated={!!user}
+                  chatId={activeChatId}
                   autoFocus
                   showMessages={false}
                 />
@@ -301,6 +334,7 @@ const Dashboard = () => {
                 onClearAgent={handleClearAgent}
                 onAuthRequired={handleConsoleFocus}
                 isAuthenticated={!!user}
+                chatId={activeChatId}
                 fullHeight
               />
             </div>

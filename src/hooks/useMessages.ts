@@ -7,9 +7,10 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+  chat_id?: string;
 }
 
-export const useMessages = () => {
+export const useMessages = (chatId?: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,12 +23,19 @@ export const useMessages = () => {
       return;
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("agent_messages")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: true })
       .limit(50);
+
+    // Filter by chat_id if provided
+    if (chatId) {
+      query = query.eq("chat_id", chatId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching messages:", error);
@@ -41,12 +49,13 @@ export const useMessages = () => {
         role: msg.role as "user" | "assistant",
         content: msg.content,
         created_at: msg.created_at || new Date().toISOString(),
+        chat_id: msg.chat_id,
       }))
     );
     setLoading(false);
-  }, [user]);
+  }, [user, chatId]);
 
-  const saveMessage = async (content: string, role: "user" | "assistant" = "user") => {
+  const saveMessage = async (content: string, role: "user" | "assistant" = "user", messageChatId?: string) => {
     if (!user) {
       console.error("Cannot save message: user not authenticated");
       return null;
@@ -60,6 +69,7 @@ export const useMessages = () => {
         content,
         role,
         user_id: user.id,
+        chat_id: messageChatId || chatId || undefined,
       })
       .select()
       .single();
@@ -96,8 +106,14 @@ export const useMessages = () => {
   useEffect(() => {
     if (!user) return;
 
+    // Build filter based on chat_id
+    let filter = `user_id=eq.${user.id}`;
+    if (chatId) {
+      filter += `,chat_id=eq.${chatId}`;
+    }
+
     const channel = supabase
-      .channel("agent_messages_realtime")
+      .channel(`agent_messages_realtime_${chatId || "all"}`)
       .on(
         "postgres_changes",
         { 
@@ -109,6 +125,11 @@ export const useMessages = () => {
         (payload) => {
           console.log("New message received:", payload);
           const newMsg = payload.new as any;
+          
+          // Only add if matches current chat_id (or if no chat_id filter)
+          if (chatId && newMsg.chat_id !== chatId) {
+            return;
+          }
           
           // Add new message if it doesn't exist locally
           setMessages((prev) => {
@@ -122,6 +143,7 @@ export const useMessages = () => {
                 role: newMsg.role as "user" | "assistant",
                 content: newMsg.content,
                 created_at: newMsg.created_at || new Date().toISOString(),
+                chat_id: newMsg.chat_id,
               },
             ];
           });
@@ -132,7 +154,7 @@ export const useMessages = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, chatId]);
 
   return { messages, loading, sending, saveMessage, addLocalMessage, clearMessages, refetch: fetchMessages };
 };
