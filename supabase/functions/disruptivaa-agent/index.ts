@@ -1,10 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Allowed origins for CORS - restrict to known domains
+const ALLOWED_ORIGINS = [
+  'https://lovable.dev',
+  'https://id-preview--qtjwzfbinsrmnvlsgvtw.lovable.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+function getCorsHeaders(requestOrigin: string | null): Record<string, string> {
+  const origin = requestOrigin && ALLOWED_ORIGINS.some(allowed => 
+    requestOrigin === allowed || requestOrigin.endsWith('.lovable.app') || requestOrigin.endsWith('.lovable.dev')
+  ) ? requestOrigin : ALLOWED_ORIGINS[0];
+  
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -153,6 +168,9 @@ FORMATO DE RESPUESTA OBLIGATORIO:
 TONO: Profesional, técnico, orientado a ROI y resultados medibles.`;
 
 serve(async (req) => {
+  const requestOrigin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(requestOrigin);
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -160,7 +178,7 @@ serve(async (req) => {
   try {
     const { message, userId, agentId, agentName, systemInstruction, chatId, files } = await req.json();
     
-    console.log("📥 Request received:", { message, userId, agentId, agentName, chatId, filesCount: files?.length || 0 });
+    console.info("Request received for agent:", agentId);
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -176,7 +194,7 @@ serve(async (req) => {
     let fileContext = "";
     let fileNames: string[] = [];
     if (files && Array.isArray(files) && files.length > 0) {
-      console.log("📎 Processing attached files:", files.map((f: FileData) => f.name));
+      console.info(`Processing ${files.length} attached file(s)`);
       for (const file of files as FileData[]) {
         fileContext += parseFileContent(file);
         fileNames.push(file.name);
@@ -199,7 +217,7 @@ serve(async (req) => {
         tokenValid = await validateMetaToken(metaIntegration.access_token);
         
         if (!tokenValid) {
-          console.log("⚠️ Meta token expired or invalid");
+          console.info("Meta token validation failed");
           contextMessage = `
 ⚠️ ATENCIÓN: El token de Meta Ads ha expirado o es inválido.
 Informa al usuario que debe reconectar su cuenta desde la sección "Conexiones" para obtener datos actualizados.
@@ -208,7 +226,7 @@ NO inventes datos. Indica claramente que necesitas reconexión.`;
           metaConnected = true;
           const accountIds = metaIntegration.account_ids || [];
           
-          console.log("✅ Meta Ads connected and token valid. Fetching data from", accountIds.length, "accounts...");
+          console.info(`Meta Ads connected. Fetching data from ${accountIds.length} account(s)`);
           
           // Fetch data from up to 3 accounts for comprehensive view
           for (const accountId of accountIds.slice(0, 3)) {
@@ -217,7 +235,6 @@ NO inventes datos. Indica claramente que necesitas reconexión.`;
               accountId,
               ...accountData
             });
-            console.log(`📊 Account ${accountId}: ${accountData.campaigns.length} campaigns`);
           }
 
           // Use first account's data as primary
@@ -329,14 +346,7 @@ ${fileContext}`;
 
     finalSystemInstruction += `\n\nResponde siempre en español de manera profesional y concisa.`;
 
-    console.log("🤖 Calling Lovable AI with context:", { 
-      metaConnected, 
-      tokenValid,
-      accountsCount: allAccountsData.length,
-      campaignsCount: metaData?.campaigns?.length || 0,
-      hasFiles: files?.length || 0,
-      fileNames
-    });
+    console.info("Calling AI gateway");
 
     // Call Lovable AI
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -377,7 +387,7 @@ ${fileContext}`;
     const aiData = await response.json();
     const agentResponse = aiData.choices?.[0]?.message?.content || "Lo siento, no pude generar una respuesta.";
     
-    console.log("✅ AI Response generated successfully");
+    console.info("AI response generated");
 
     // Save assistant message to database with chat_id
     if (userId && chatId) {
@@ -391,9 +401,7 @@ ${fileContext}`;
         });
 
       if (insertError) {
-        console.error("Error saving assistant message:", insertError);
-      } else {
-        console.log("💾 Assistant message saved with chat_id:", chatId);
+        console.error("Failed to save message");
       }
     }
 
@@ -409,10 +417,10 @@ ${fileContext}`;
     );
 
   } catch (error) {
-    console.error("❌ Error in disruptivaa-agent:", error);
+    console.error("Request processing failed");
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "An error occurred processing your request" }),
+      { status: 500, headers: { ...getCorsHeaders(req.headers.get('origin')), "Content-Type": "application/json" } }
     );
   }
 });
