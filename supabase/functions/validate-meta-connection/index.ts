@@ -30,8 +30,10 @@ serve(async (req) => {
       );
     }
 
-    console.log('🔄 Validating Meta connection with user-provided token...');
-    console.log('Token prefix:', access_token.substring(0, 20) + '...');
+    console.log('🔄 Validating Meta connection...', {
+      tokenLength: access_token.length,
+      timestamp: new Date().toISOString(),
+    });
 
     // Call Meta Graph API to get ad accounts
     const metaUrl = `https://graph.facebook.com/v18.0/me/adaccounts?access_token=${access_token}&fields=id,name,account_status`;
