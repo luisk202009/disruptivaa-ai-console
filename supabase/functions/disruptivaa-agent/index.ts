@@ -167,6 +167,8 @@ FORMATO DE RESPUESTA OBLIGATORIO:
 
 TONO: Profesional, técnico, orientado a ROI y resultados medibles.`;
 
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
 serve(async (req) => {
   const requestOrigin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(requestOrigin);
@@ -176,7 +178,46 @@ serve(async (req) => {
   }
 
   try {
-    const { message, userId, agentId, agentName, systemInstruction, chatId, files } = await req.json();
+    // Extract and verify JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - missing or invalid authorization header' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error("Supabase configuration missing");
+    }
+
+    // Create Supabase client with user's JWT to verify identity
+    const supabaseUserClient = createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY,
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        }
+      }
+    );
+
+    // Verify user is authenticated and get their verified ID
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseUserClient.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - invalid token' }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use verified userId from JWT claims - NEVER trust client-provided userId
+    const userId = claimsData.claims.sub as string;
+
+    // Parse request body - ignore any userId from body for security
+    const { message, agentId, agentName, systemInstruction, chatId, files } = await req.json();
     
     console.info("Request received for agent:", agentId);
 
@@ -184,8 +225,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      throw new Error("Supabase configuration missing");
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error("Supabase service role configuration missing");
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
