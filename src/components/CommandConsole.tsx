@@ -21,6 +21,7 @@ interface CommandConsoleProps {
   showMessages?: boolean;
   fullHeight?: boolean;
   chatId?: string | null;
+  onChatIdGenerated?: (chatId: string) => void;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -49,7 +50,8 @@ const CommandConsole = ({
   autoFocus = false,
   showMessages = true,
   fullHeight = false,
-  chatId
+  chatId,
+  onChatIdGenerated
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -61,7 +63,7 @@ const CommandConsole = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const { messages, loading: messagesLoading, saveMessage } = useMessages(chatId);
+  const { messages, loading: messagesLoading, saveMessage, addOptimisticMessage, addErrorMessage } = useMessages(chatId);
   const { getConnectedPlatforms } = useIntegrations();
 
   const handleFilesSelected = (files: File[]) => {
@@ -105,11 +107,24 @@ const CommandConsole = ({
     const filesToSend = [...attachedFiles];
     setAttachedFiles([]);
     
-    // Save user message to Supabase with chat_id
-    const fileNames = filesToSend.length > 0 
+    // Generate chatId if not provided
+    let currentChatId = chatId;
+    if (!currentChatId) {
+      currentChatId = crypto.randomUUID();
+      onChatIdGenerated?.(currentChatId);
+    }
+    
+    // Build message content with file names
+    const fileNamesText = filesToSend.length > 0 
       ? `\n📎 Archivos: ${filesToSend.map(f => f.name).join(', ')}` 
       : '';
-    await saveMessage(userMessage + fileNames, "user", chatId || undefined);
+    const fullMessageContent = userMessage + fileNamesText;
+    
+    // OPTIMISTIC UI: Add user message immediately to local state
+    addOptimisticMessage(fullMessageContent, "user", currentChatId);
+    
+    // Save user message to Supabase with chat_id (async, in background)
+    saveMessage(fullMessageContent, "user", currentChatId);
     
     // Notify parent if callback provided
     onCommand?.(userMessage);
@@ -151,7 +166,7 @@ const CommandConsole = ({
         agentName: selectedAgent?.name || null,
         systemInstruction: selectedAgent?.systemInstruction || null,
         connectedPlatforms: connectedPlatforms.map(p => p.platform),
-        chatId: chatId || null,
+        chatId: currentChatId || null,
         files: filesData,
       };
       
@@ -200,6 +215,10 @@ const CommandConsole = ({
       
     } catch (error) {
       console.error("Error calling agent:", error);
+      
+      // Add error message to chat UI (visible in conversation)
+      addErrorMessage("❌ Hubo un error al procesar tu solicitud. Por favor intenta de nuevo o revisa tu conexión.");
+      
       if (!(error instanceof Error && (error.message.includes("Rate limit") || error.message.includes("Payment")))) {
         toast({
           title: "Error",

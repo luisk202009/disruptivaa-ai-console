@@ -354,6 +354,7 @@ const Dashboard = () => {
                   onAuthRequired={handleConsoleFocus}
                   isAuthenticated={!!user}
                   chatId={activeChatId}
+                  onChatIdGenerated={(id) => setActiveChatId(id)}
                   autoFocus
                   showMessages={false}
                 />
@@ -419,6 +420,7 @@ const Dashboard = () => {
                 onAuthRequired={handleConsoleFocus}
                 isAuthenticated={!!user}
                 chatId={activeChatId}
+                onChatIdGenerated={(id) => setActiveChatId(id)}
                 fullHeight
               />
             </div>

@@ -16,6 +16,32 @@ export const useMessages = (chatId?: string | null) => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  // Add message optimistically to local state
+  const addOptimisticMessage = useCallback((content: string, role: "user" | "assistant", messageChatId?: string) => {
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}-${Math.random()}`,
+      role,
+      content,
+      created_at: new Date().toISOString(),
+      chat_id: messageChatId || chatId || undefined,
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+    return tempMessage;
+  }, [chatId]);
+
+  // Add error message to chat
+  const addErrorMessage = useCallback((errorText: string) => {
+    const errorMessage: Message = {
+      id: `error-${Date.now()}`,
+      role: "assistant",
+      content: errorText,
+      created_at: new Date().toISOString(),
+      chat_id: chatId || undefined,
+    };
+    setMessages((prev) => [...prev, errorMessage]);
+    return errorMessage;
+  }, [chatId]);
+
   const fetchMessages = useCallback(async () => {
     if (!user) {
       setMessages([]);
@@ -131,10 +157,31 @@ export const useMessages = (chatId?: string | null) => {
             return;
           }
           
-          // Add new message if it doesn't exist locally
+          // Add new message if it doesn't exist locally, replace temp messages
           setMessages((prev) => {
-            const exists = prev.some((m) => m.id === newMsg.id);
-            if (exists) return prev;
+            // Check if this message already exists by ID
+            const existsById = prev.some((m) => m.id === newMsg.id);
+            if (existsById) return prev;
+            
+            // Check if there's a temp message with same content and role to replace
+            const tempIndex = prev.findIndex((m) => 
+              m.id.startsWith('temp-') && 
+              m.content === newMsg.content && 
+              m.role === newMsg.role
+            );
+            
+            if (tempIndex !== -1) {
+              // Replace temp message with real one
+              const updated = [...prev];
+              updated[tempIndex] = {
+                id: newMsg.id,
+                role: newMsg.role as "user" | "assistant",
+                content: newMsg.content,
+                created_at: newMsg.created_at || new Date().toISOString(),
+                chat_id: newMsg.chat_id,
+              };
+              return updated;
+            }
             
             return [
               ...prev,
@@ -156,5 +203,5 @@ export const useMessages = (chatId?: string | null) => {
     };
   }, [user, chatId]);
 
-  return { messages, loading, sending, saveMessage, addLocalMessage, clearMessages, refetch: fetchMessages };
+  return { messages, loading, sending, saveMessage, addLocalMessage, addOptimisticMessage, addErrorMessage, clearMessages, refetch: fetchMessages };
 };
