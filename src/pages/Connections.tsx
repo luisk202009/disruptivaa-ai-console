@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState } from "react";
-import MetaTokenModal from "@/components/MetaTokenModal";
+import MetaOAuthButton from "@/components/MetaOAuthButton";
 
 interface PlatformConfig {
   id: string;
@@ -55,15 +55,13 @@ const platforms: PlatformConfig[] = [
 
 const Connections = () => {
   const { user } = useAuth();
-  const { getIntegration, connectPlatform, connectMetaAds, disconnectPlatform, connecting, loading } = useIntegrations();
+  const { getIntegration, connectPlatform, disconnectPlatform, connecting, loading } = useIntegrations();
   const [connectionResults, setConnectionResults] = useState<Record<string, ConnectionResult>>({});
-  const [metaModalOpen, setMetaModalOpen] = useState(false);
 
   const handleConnect = async (platformId: string) => {
-    // For Meta Ads, open the token modal instead of connecting directly
+    // For Meta Ads, OAuth flow is handled by MetaOAuthButton component
     if (platformId === 'meta_ads') {
-      setMetaModalOpen(true);
-      return;
+      return; // MetaOAuthButton handles this
     }
 
     const result = await connectPlatform(platformId);
@@ -74,17 +72,6 @@ const Connections = () => {
     } else {
       toast.error(`❌ Error: ${result.error || 'Error al conectar la cuenta'}`);
     }
-  };
-
-  const handleMetaConnect = async (accessToken: string): Promise<ConnectionResult> => {
-    const result = await connectMetaAds(accessToken);
-    setConnectionResults(prev => ({ ...prev, meta_ads: result }));
-    
-    if (result.success) {
-      toast.success(`✅ Conexión exitosa. ${result.accountsCount || 0} cuenta(s) de anuncios detectadas.`);
-    }
-    
-    return result;
   };
 
   const handleDisconnect = async (platformId: string) => {
@@ -102,7 +89,6 @@ const Connections = () => {
   };
 
   return (
-    <>
     <div className="min-h-screen flex w-full bg-background">
       <Sidebar />
       
@@ -229,6 +215,8 @@ const Connections = () => {
                         )}
                         Desconectar
                       </Button>
+                    ) : platform.id === 'meta_ads' ? (
+                      <MetaOAuthButton isConnecting={isConnecting} />
                     ) : (
                       <Button
                         className="w-full gap-2"
@@ -253,22 +241,13 @@ const Connections = () => {
           {/* Info Note */}
           <div className="mt-8 p-4 rounded-lg border border-border bg-card/50">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Conexión Real:</strong> Meta Ads valida tu token de acceso directamente con la API de Facebook. 
-              Google Ads y TikTok Ads están configurados en modo demo.
+              <strong className="text-foreground">OAuth 2.0:</strong> La conexión con Meta Ads usa el flujo seguro de Facebook Login. 
+              El token de acceso tiene una duración de 60 días.
             </p>
           </div>
         </div>
       </div>
-
-      {/* Meta Token Modal */}
-      <MetaTokenModal
-        open={metaModalOpen}
-        onOpenChange={setMetaModalOpen}
-        onConnect={handleMetaConnect}
-        isConnecting={connecting === 'meta_ads'}
-      />
     </div>
-    </>
   );
 };
 

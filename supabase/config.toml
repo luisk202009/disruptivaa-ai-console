@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.disruptivaa-agent]
 verify_jwt = false
+
+[functions.meta-oauth-exchange]
+verify_jwt = false

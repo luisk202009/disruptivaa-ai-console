@@ -10,6 +10,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import Agents from "./pages/Agents";
 import Connections from "./pages/Connections";
+import MetaCallback from "./pages/MetaCallback";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -50,6 +51,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/auth/meta/callback" element={<MetaCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
