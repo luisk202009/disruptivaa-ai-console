@@ -141,11 +141,14 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
           table: "conversations",
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
+          console.log("🔄 Realtime conversation update:", payload);
           fetchConversations();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("📡 Realtime subscription status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

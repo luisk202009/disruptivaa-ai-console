@@ -133,17 +133,30 @@ const CommandConsole = ({
       const activeProjectId = getActiveProjectId();
       const title = userMessage.length > 50 ? userMessage.substring(0, 50) + "..." : userMessage;
       
-      // Create conversation record
-      try {
-        await supabase.from("conversations").insert({
+      console.log("📝 Creating new conversation:", { 
+        chatId: currentChatId, 
+        title, 
+        userId: user.id, 
+        projectId: activeProjectId 
+      });
+      
+      // Create conversation record - Supabase returns { data, error }, not exceptions
+      const { data: conversationData, error: conversationError } = await supabase
+        .from("conversations")
+        .insert({
           chat_id: currentChatId,
           title,
           user_id: user.id,
           project_id: activeProjectId,
-        });
+        })
+        .select()
+        .single();
+
+      if (conversationError) {
+        console.error("❌ Error creating conversation:", conversationError);
+      } else {
+        console.log("✅ Conversation created:", conversationData);
         onConversationCreated?.(currentChatId, title, activeProjectId);
-      } catch (err) {
-        console.error("Error creating conversation:", err);
       }
     }
     
