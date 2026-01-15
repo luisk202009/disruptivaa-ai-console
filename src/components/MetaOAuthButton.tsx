@@ -2,7 +2,7 @@ import { ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const META_APP_ID = "861442349805787";
-const SCOPES = "ads_read,ads_management,read_insights";
+const SCOPES = "ads_read,ads_management";
 
 interface MetaOAuthButtonProps {
   isConnecting: boolean;
