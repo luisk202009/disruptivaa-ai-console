@@ -258,17 +258,18 @@ serve(async (req) => {
 
     // Verify user is authenticated and get their verified ID
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseUserClient.auth.getClaims(token);
+    const { data: userData, error: userError } = await supabaseUserClient.auth.getUser(token);
     
-    if (claimsError || !claimsData?.claims?.sub) {
+    if (userError || !userData?.user?.id) {
+      console.error("Auth error:", userError?.message);
       return new Response(
         JSON.stringify({ error: 'Unauthorized - invalid token' }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Use verified userId from JWT claims - NEVER trust client-provided userId
-    const userId = claimsData.claims.sub as string;
+    // Use verified userId from JWT - NEVER trust client-provided userId
+    const userId = userData.user.id;
 
     // Parse request body - ignore any userId from body for security
     const { message, agentId, agentName, systemInstruction, chatId, files } = await req.json();
