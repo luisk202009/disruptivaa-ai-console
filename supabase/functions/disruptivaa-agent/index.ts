@@ -522,19 +522,19 @@ Ejemplo: "Según tu archivo, el CPA objetivo es $X. Tus campañas actuales muest
     
     console.info("AI response generated");
 
-    // Save assistant message to database with chat_id
-    if (userId && chatId) {
+    // Save assistant message to database - always save if userId exists
+    if (userId) {
       const { error: insertError } = await supabaseAdmin
         .from("agent_messages")
         .insert({
           content: agentResponse,
           role: "assistant",
           user_id: userId,
-          chat_id: chatId,
+          chat_id: chatId || null, // Save even if chatId is null
         });
 
       if (insertError) {
-        console.error("Failed to save message");
+        console.error("Failed to save message:", insertError.message);
       }
     }
 
