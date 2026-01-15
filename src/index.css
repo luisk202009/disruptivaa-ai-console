@@ -164,3 +164,34 @@
     @apply text-primary ml-1;
   }
 }
+
+/* Markdown Chat Styling */
+@layer components {
+  /* Table styling for chat messages */
+  .prose table {
+    @apply text-xs my-3 rounded-lg overflow-hidden;
+  }
+
+  .prose thead th {
+    @apply bg-muted/60 text-foreground font-medium text-left;
+  }
+
+  .prose tbody tr:nth-child(even) {
+    @apply bg-muted/20;
+  }
+
+  .prose tbody td {
+    @apply text-muted-foreground;
+  }
+
+  /* Ensure first heading doesn't have top margin */
+  .prose > :first-child {
+    @apply mt-0;
+  }
+
+  /* Status emoji styling */
+  .prose td:first-child,
+  .prose th:first-child {
+    @apply font-medium text-foreground;
+  }
+}

@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import FileUploadButton from "./FileUploadButton";
 import { supabase } from "@/integrations/supabase/client";
+import { MarkdownMessage } from "./MarkdownMessage";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -325,13 +326,17 @@ const CommandConsole = ({
                   </div>
                   <div
                     className={cn(
-                      "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm",
+                      "max-w-[85%] rounded-2xl text-sm",
                       msg.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-tr-sm"
-                        : "bg-zinc-800 border-2 border-[#EF7911] text-foreground rounded-tl-sm"
+                        ? "bg-primary text-primary-foreground rounded-tr-sm px-4 py-2.5"
+                        : "bg-zinc-800 border-2 border-primary text-foreground rounded-tl-sm px-4 py-3"
                     )}
                   >
-                    {msg.content}
+                    {msg.role === "assistant" ? (
+                      <MarkdownMessage content={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
               ))}
