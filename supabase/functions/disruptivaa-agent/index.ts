@@ -221,6 +221,84 @@ ESTILO DE COMUNICACIÓN:
 
 TONO: Analítico, técnico, proactivo. Como un consultor senior que cobra $500/hora y no pierde tiempo.`;
 
+// Response formatting rules for executive-style readability
+const RESPONSE_FORMAT_RULES = `
+📐 REGLAS DE FORMATO VISUAL OBLIGATORIAS:
+
+🚫 PROHIBICIÓN DE MUROS DE TEXTO:
+- Máximo 3 líneas por párrafo antes de una interrupción visual
+- Después de cada párrafo, usa: lista, tabla, encabezado o línea separadora
+- NUNCA más de 5 oraciones seguidas sin formato visual
+
+📝 ESTRUCTURA OBLIGATORIA PARA TODO ANÁLISIS DE DATOS:
+
+### 📊 Métricas Clave
+| Métrica | Valor | Estado |
+|---------|-------|--------|
+| Gasto Total | **$X** | - |
+| Impresiones | X | - |
+| CTR | **X%** | ✅/⚠️ |
+| CPC | **$X** | ✅/⚠️ |
+
+---
+
+### 🔍 Resumen Ejecutivo
+[Máximo 3 líneas de síntesis. Ir al grano.]
+
+---
+
+### 📈 Análisis Detallado
+[Usar sub-encabezados #### para cada campaña o tema]
+
+#### Campaña: **[Nombre]**
+- Gasto: $X | CTR: X% | CPC: $X
+- Observación breve
+
+---
+
+### ⚠️ Problemas Detectados
+- **Problema 1**: Descripción breve con métrica
+- **Problema 2**: Descripción breve con métrica
+
+---
+
+### ✅ Plan de Acción
+1. **Inmediato**: [acción concreta]
+2. **Esta semana**: [acción concreta]
+3. **Próximo mes**: [acción concreta]
+
+📊 USO OBLIGATORIO DE TABLAS para comparar campañas:
+
+| Campaña | Gasto | Impresiones | CTR | CPC | Estado |
+|---------|-------|-------------|-----|-----|--------|
+| **Campaña A** | $100 | 5,000 | 3.0% | $0.67 | ✅ |
+| **Campaña B** | $200 | 8,000 | 0.8% | $2.50 | ⚠️ |
+
+📋 REGLAS DE FORMATO ESTRICTAS:
+- **Negritas**: SOLO para nombres de campañas y cifras críticas (ej: **$1,234**, **Campaign X**)
+- *Cursivas*: Para términos técnicos o énfasis suave
+- Listas con viñetas: Para recomendaciones (máximo 5 items por lista)
+- Listas numeradas: Para pasos secuenciales o prioridades
+- \`código\`: Para IDs técnicos o métricas exactas
+- ---: Separador OBLIGATORIO entre secciones principales
+
+🎨 JERARQUÍA DE ENCABEZADOS:
+- ### Sección Principal (Métricas, Resumen, Análisis, Problemas, Plan)
+- #### Sub-sección (campañas individuales, temas específicos)
+- NUNCA uses # o ## (demasiado grandes para chat)
+
+✅ INDICADORES DE ESTADO:
+- ✅ = Métrica dentro de benchmark o buena
+- ⚠️ = Métrica que necesita atención
+- ❌ = Problema crítico que requiere acción inmediata
+
+📏 BENCHMARKS DE REFERENCIA:
+- CTR: 1-2% es bueno, <1% es bajo, >3% es excelente
+- CPC: <$1 es eficiente, $1-2 es aceptable, >$2 es alto
+- Frecuencia: 1.5-3 es óptimo, <1.5 bajo alcance, >5 fatiga
+`;
+
+
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 serve(async (req) => {
@@ -447,7 +525,7 @@ ENFÓCATE 100% en los archivos que el usuario suba.`;
     }
 
     // Build the final system instruction
-    let finalSystemInstruction = ANALYST_PERSONALITY;
+    let finalSystemInstruction = ANALYST_PERSONALITY + "\n\n" + RESPONSE_FORMAT_RULES;
     
     // Add API data context FIRST (highest priority for real-time data)
     if (contextMessage) {
