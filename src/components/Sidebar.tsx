@@ -9,13 +9,21 @@ import {
   Plus,
   MessageSquare,
   Bot,
-  Link2
+  Link2,
+  Folder,
+  FolderOpen,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRecentConversations } from "@/hooks/useRecentConversations";
+import { useProjects } from "@/hooks/useProjects";
+import { useConversations } from "@/hooks/useConversations";
+import { CreateProjectDialog } from "./CreateProjectDialog";
+import { ProjectItemMenu } from "./ProjectItemMenu";
+import { ConversationItemMenu } from "./ConversationItemMenu";
 import logo from "@/assets/logo-disruptivaa.png";
 import isologo from "@/assets/isologo.png";
 
@@ -47,12 +55,27 @@ const NavItem = ({ icon, label, active, collapsed, onClick, variant = "default" 
   </button>
 );
 
+// Store the active project in a way that can be accessed by other components
+let activeProjectIdGlobal: string | null = null;
+export const getActiveProjectId = () => activeProjectIdGlobal;
+
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const { conversations, loading: conversationsLoading } = useRecentConversations();
+  
+  const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects();
+  const { conversations, loading: conversationsLoading, deleteConversation, moveConversation } = useConversations(
+    selectedProjectId !== undefined ? { projectId: selectedProjectId } : {}
+  );
+
+  // Update global ref when selectedProjectId changes
+  activeProjectIdGlobal = selectedProjectId;
 
   const handleNewConversation = () => {
     navigate("/");
@@ -62,6 +85,33 @@ const Sidebar = () => {
   const handleLoadConversation = (chatId: string) => {
     navigate("/");
     window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
+  };
+
+  const handleCreateProject = async (name: string) => {
+    await createProject(name);
+  };
+
+  const handleRenameProject = async (id: string, name: string) => {
+    await updateProject(id, name);
+  };
+
+  const handleDeleteProject = async (id: string, deleteConvos: boolean) => {
+    await deleteProject(id, deleteConvos);
+    if (selectedProjectId === id) {
+      setSelectedProjectId(null);
+    }
+  };
+
+  const handleDeleteConversation = async (chatId: string) => {
+    await deleteConversation(chatId);
+  };
+
+  const handleMoveConversation = async (chatId: string, projectId: string | null) => {
+    await moveConversation(chatId, projectId);
+  };
+
+  const handleSelectProject = (projectId: string | null) => {
+    setSelectedProjectId(projectId);
   };
 
   const navItems = [
@@ -139,13 +189,95 @@ const Sidebar = () => {
         ))}
       </nav>
 
+      {/* Projects Section */}
+      {user && !collapsed && (
+        <div className="px-3 mb-2">
+          <div 
+            className="flex items-center justify-between py-2 cursor-pointer hover:bg-sidebar-accent/50 rounded-lg px-2 transition-colors"
+            onClick={() => setProjectsExpanded(!projectsExpanded)}
+          >
+            <div className="flex items-center gap-2">
+              <Folder size={14} className="text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Proyectos
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCreateProject(true);
+                }}
+                className="p-1 rounded hover:bg-sidebar-accent transition-colors"
+                title="Crear proyecto"
+              >
+                <Plus size={14} className="text-muted-foreground" />
+              </button>
+              {projectsExpanded ? (
+                <ChevronUp size={14} className="text-muted-foreground" />
+              ) : (
+                <ChevronDown size={14} className="text-muted-foreground" />
+              )}
+            </div>
+          </div>
+
+          {projectsExpanded && (
+            <div className="space-y-0.5 mt-1">
+              {/* General / No Project option */}
+              <button
+                onClick={() => handleSelectProject(null)}
+                className={cn(
+                  "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group",
+                  selectedProjectId === null
+                    ? "bg-primary/10 text-primary"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent"
+                )}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <FolderOpen size={14} className={selectedProjectId === null ? "text-primary" : "text-muted-foreground"} />
+                  <span className="truncate">General</span>
+                </div>
+              </button>
+
+              {/* Project list */}
+              {projectsLoading ? (
+                <p className="text-xs text-muted-foreground px-3 py-2">Cargando...</p>
+              ) : (
+                projects.map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => handleSelectProject(project.id)}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group cursor-pointer",
+                      selectedProjectId === project.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 truncate flex-1">
+                      <Folder size={14} className={selectedProjectId === project.id ? "text-primary" : "text-muted-foreground"} />
+                      <span className="truncate">{project.name}</span>
+                    </div>
+                    <ProjectItemMenu
+                      project={project}
+                      onRename={handleRenameProject}
+                      onDelete={handleDeleteProject}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Recent Conversations Section */}
       {user && !collapsed && (
         <div className="flex-1 overflow-hidden flex flex-col px-3">
           <div className="flex items-center gap-2 py-2 mb-1">
             <MessageSquare size={14} className="text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Conversaciones recientes
+              {selectedProjectId === null ? "Sin proyecto" : "Conversaciones"}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-0.5">
@@ -155,13 +287,19 @@ const Sidebar = () => {
               <p className="text-xs text-muted-foreground px-3 py-2">Sin conversaciones</p>
             ) : (
               conversations.map((convo) => (
-                <button
+                <div
                   key={convo.chat_id}
                   onClick={() => handleLoadConversation(convo.chat_id)}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors truncate"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors cursor-pointer group"
                 >
-                  {convo.title}
-                </button>
+                  <span className="truncate flex-1">{convo.title || "Sin título"}</span>
+                  <ConversationItemMenu
+                    conversation={convo}
+                    projects={projects}
+                    onDelete={handleDeleteConversation}
+                    onMove={handleMoveConversation}
+                  />
+                </div>
               ))
             )}
           </div>
@@ -214,6 +352,13 @@ const Sidebar = () => {
           {!collapsed && <span className="text-sm">Colapsar</span>}
         </button>
       </div>
+
+      {/* Create Project Dialog */}
+      <CreateProjectDialog
+        open={showCreateProject}
+        onOpenChange={setShowCreateProject}
+        onCreateProject={handleCreateProject}
+      />
     </aside>
   );
 };
