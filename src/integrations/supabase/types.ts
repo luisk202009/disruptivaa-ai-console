@@ -154,6 +154,39 @@ export type Database = {
           },
         ]
       }
+      dashboards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          layout_config: Json | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          layout_config?: Json | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          layout_config?: Json | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           created_at: string | null
@@ -225,6 +258,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      widgets: {
+        Row: {
+          created_at: string | null
+          dashboard_id: string
+          data_source: string
+          grid_settings: Json
+          id: string
+          metric_config: Json
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dashboard_id: string
+          data_source: string
+          grid_settings?: Json
+          id?: string
+          metric_config?: Json
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dashboard_id?: string
+          data_source?: string
+          grid_settings?: Json
+          id?: string
+          metric_config?: Json
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
