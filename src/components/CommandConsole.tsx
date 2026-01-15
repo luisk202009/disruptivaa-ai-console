@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import FileUploadButton from "./FileUploadButton";
 import { supabase } from "@/integrations/supabase/client";
 import { MarkdownMessage } from "./MarkdownMessage";
+import { getActiveProjectId } from "./Sidebar";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -23,6 +24,7 @@ interface CommandConsoleProps {
   fullHeight?: boolean;
   chatId?: string | null;
   onChatIdGenerated?: (chatId: string) => void;
+  onConversationCreated?: (chatId: string, title: string, projectId: string | null) => void;
 }
 
 const EDGE_FUNCTION_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/disruptivaa-agent";
@@ -52,7 +54,8 @@ const CommandConsole = ({
   showMessages = true,
   fullHeight = false,
   chatId,
-  onChatIdGenerated
+  onChatIdGenerated,
+  onConversationCreated
 }: CommandConsoleProps) => {
   const [command, setCommand] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -110,6 +113,7 @@ const CommandConsole = ({
     
     // Generate chatId if not provided
     let currentChatId = chatId;
+    const isNewConversation = !currentChatId;
     if (!currentChatId) {
       currentChatId = crypto.randomUUID();
       onChatIdGenerated?.(currentChatId);
@@ -123,6 +127,25 @@ const CommandConsole = ({
     
     // OPTIMISTIC UI: Add user message immediately to local state
     addOptimisticMessage(fullMessageContent, "user", currentChatId);
+    
+    // Create conversation in DB if this is a new conversation
+    if (isNewConversation) {
+      const activeProjectId = getActiveProjectId();
+      const title = userMessage.length > 50 ? userMessage.substring(0, 50) + "..." : userMessage;
+      
+      // Create conversation record
+      try {
+        await supabase.from("conversations").insert({
+          chat_id: currentChatId,
+          title,
+          user_id: user.id,
+          project_id: activeProjectId,
+        });
+        onConversationCreated?.(currentChatId, title, activeProjectId);
+      } catch (err) {
+        console.error("Error creating conversation:", err);
+      }
+    }
     
     // Save user message to Supabase with chat_id (async, in background)
     saveMessage(fullMessageContent, "user", currentChatId);

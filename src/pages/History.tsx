@@ -4,6 +4,7 @@ import { MessageSquare, Bot, User, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Sidebar from "@/components/Sidebar";
+import { MarkdownMessage } from "@/components/MarkdownMessage";
 
 interface Message {
   id: string;
@@ -87,9 +88,13 @@ const History = () => {
                         {format(new Date(msg.created_at), "d MMM yyyy, HH:mm", { locale: es })}
                       </span>
                     </div>
-                    <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words">
-                      {msg.content}
-                    </p>
+                    {msg.role === "assistant" ? (
+                      <MarkdownMessage content={msg.content} />
+                    ) : (
+                      <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words">
+                        {msg.content}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
