@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, forwardRef } from "react";
 import { Paperclip, X, FileText, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +25,12 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const FileUploadButton = ({
+const FileUploadButton = forwardRef<HTMLDivElement, FileUploadButtonProps>(({
   onFilesSelected,
   attachedFiles,
   onRemoveFile,
   disabled = false,
-}: FileUploadButtonProps) => {
+}, ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -60,7 +60,7 @@ const FileUploadButton = ({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={ref} className="flex flex-col gap-2">
       {/* File previews */}
       {attachedFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-2">
@@ -116,6 +116,8 @@ const FileUploadButton = ({
       </button>
     </div>
   );
-};
+});
+
+FileUploadButton.displayName = "FileUploadButton";
 
 export default FileUploadButton;

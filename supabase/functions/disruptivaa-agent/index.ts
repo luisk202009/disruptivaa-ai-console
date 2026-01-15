@@ -5,13 +5,19 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const ALLOWED_ORIGINS = [
   'https://lovable.dev',
   'https://id-preview--qtjwzfbinsrmnvlsgvtw.lovable.app',
+  'https://disruptivaa.lovable.app',
+  'https://agentes.disruptivaa.com',
   'http://localhost:5173',
   'http://localhost:3000',
 ];
 
 function getCorsHeaders(requestOrigin: string | null): Record<string, string> {
   const origin = requestOrigin && ALLOWED_ORIGINS.some(allowed => 
-    requestOrigin === allowed || requestOrigin.endsWith('.lovable.app') || requestOrigin.endsWith('.lovable.dev')
+    requestOrigin === allowed || 
+    requestOrigin.endsWith('.lovable.app') || 
+    requestOrigin.endsWith('.lovable.dev') ||
+    requestOrigin.endsWith('.lovableproject.com') ||
+    requestOrigin.endsWith('.disruptivaa.com')
   ) ? requestOrigin : ALLOWED_ORIGINS[0];
   
   return {
