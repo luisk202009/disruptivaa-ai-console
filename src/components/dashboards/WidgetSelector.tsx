@@ -13,13 +13,20 @@ import {
   BarChart3,
   PieChart,
   Activity,
-  Table
+  Table,
+  Building2,
+  CheckCircle2,
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { Widget, WidgetType, MetricType, MetricConfig, GridSettings } from "@/hooks/useWidgets";
 import { METRIC_LABELS } from "@/hooks/useMetaMetrics";
+import { MetaAccountDetail } from "@/hooks/useIntegrations";
 import { cn } from "@/lib/utils";
 
 interface WidgetSelectorProps {
+  accounts: MetaAccountDetail[];
+  accountsLoading?: boolean;
   onAddWidget: (widget: Omit<Widget, "id" | "created_at" | "updated_at" | "dashboard_id">) => void;
   onClose: () => void;
 }
@@ -119,10 +126,13 @@ const DEFAULT_GRID_SETTINGS: Record<WidgetType, GridSettings> = {
   table: { x: 0, y: 0, w: 6, h: 4, minW: 4, minH: 3 },
 };
 
-export const WidgetSelector = ({ onAddWidget, onClose }: WidgetSelectorProps) => {
+type Step = "metric" | "type" | "account";
+
+export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose }: WidgetSelectorProps) => {
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
   const [selectedType, setSelectedType] = useState<WidgetType | null>(null);
-  const [step, setStep] = useState<"metric" | "type">("metric");
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("metric");
 
   const handleSelectMetric = (metric: MetricType, suggestedType: WidgetType) => {
     setSelectedMetric(metric);
@@ -133,6 +143,16 @@ export const WidgetSelector = ({ onAddWidget, onClose }: WidgetSelectorProps) =>
   const handleSelectChart = (type: WidgetType) => {
     setSelectedMetric("impressions"); // Default metric for charts
     setSelectedType(type);
+    setStep("account");
+  };
+
+  const handleSelectType = (type: WidgetType) => {
+    setSelectedType(type);
+    setStep("account");
+  };
+
+  const handleSelectAccount = (accountId: string) => {
+    setSelectedAccount(accountId);
   };
 
   const handleAdd = () => {
@@ -142,6 +162,7 @@ export const WidgetSelector = ({ onAddWidget, onClose }: WidgetSelectorProps) =>
       metric: selectedMetric,
       date_preset: "last_7d",
       comparison: true,
+      account_id: selectedAccount || undefined,
     };
 
     const widget: Omit<Widget, "id" | "created_at" | "updated_at" | "dashboard_id"> = {
@@ -155,110 +176,204 @@ export const WidgetSelector = ({ onAddWidget, onClose }: WidgetSelectorProps) =>
     onAddWidget(widget);
   };
 
+  const canAdd = selectedMetric && selectedType;
+  const hasAccounts = accounts.length > 0;
+
+  const renderAccountStep = () => (
+    <div className="space-y-4 mt-4">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        <Building2 size={16} />
+        <span>Selecciona una cuenta de anuncios</span>
+      </div>
+      
+      {accountsLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 size={24} className="animate-spin text-muted-foreground" />
+        </div>
+      ) : !hasAccounts ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <AlertCircle size={32} className="text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">
+            No hay cuentas de Meta Ads conectadas.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Puedes añadir el widget sin cuenta y configurarlo después.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2 max-h-[300px] overflow-auto">
+          {accounts.map((account) => (
+            <Card
+              key={account.id}
+              className={cn(
+                "cursor-pointer transition-all hover:border-primary/50",
+                selectedAccount === account.id && "border-primary bg-primary/5"
+              )}
+              onClick={() => handleSelectAccount(account.id)}
+            >
+              <CardHeader className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      <Building2 size={20} />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{account.name}</CardTitle>
+                      <CardDescription className="text-sm">
+                        ID: {account.id}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  {selectedAccount === account.id && (
+                    <CheckCircle2 size={20} className="text-primary" />
+                  )}
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="h-full flex flex-col">
       <SheetHeader className="pb-4">
         <SheetTitle>Añadir Widget</SheetTitle>
         <SheetDescription>
-          Selecciona una métrica o tipo de gráfico para añadir a tu panel.
+          {step === "metric" && "Selecciona una métrica o tipo de gráfico."}
+          {step === "type" && "Selecciona cómo visualizar la métrica."}
+          {step === "account" && "Selecciona la cuenta de anuncios (opcional)."}
         </SheetDescription>
       </SheetHeader>
 
-      <Tabs defaultValue="metrics" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="metrics">Métricas</TabsTrigger>
-          <TabsTrigger value="charts">Gráficos</TabsTrigger>
-        </TabsList>
+      {/* Progress indicator */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className={cn(
+          "h-1 flex-1 rounded-full transition-colors",
+          step === "metric" ? "bg-primary" : "bg-primary"
+        )} />
+        <div className={cn(
+          "h-1 flex-1 rounded-full transition-colors",
+          step === "type" || step === "account" ? "bg-primary" : "bg-muted"
+        )} />
+        <div className={cn(
+          "h-1 flex-1 rounded-full transition-colors",
+          step === "account" ? "bg-primary" : "bg-muted"
+        )} />
+      </div>
 
-        <TabsContent value="metrics" className="flex-1 overflow-auto mt-4">
-          <div className="space-y-2">
-            {METRIC_OPTIONS.map((option) => (
-              <Card
-                key={option.metric}
-                className={cn(
-                  "cursor-pointer transition-all hover:border-primary/50",
-                  selectedMetric === option.metric && step === "type" && "border-primary bg-primary/5"
-                )}
-                onClick={() => handleSelectMetric(option.metric, option.suggestedType)}
-              >
-                <CardHeader className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      {option.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{METRIC_LABELS[option.metric]}</CardTitle>
-                      <CardDescription className="text-sm">{option.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
+      {step === "account" ? (
+        <div className="flex-1 overflow-auto">
+          {renderAccountStep()}
+        </div>
+      ) : (
+        <Tabs defaultValue="metrics" className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="metrics">Métricas</TabsTrigger>
+            <TabsTrigger value="charts">Gráficos</TabsTrigger>
+          </TabsList>
 
-          {step === "type" && selectedMetric && (
-            <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-3">Tipo de visualización</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { type: "kpi" as const, label: "KPI", icon: <TrendingUp size={16} /> },
-                  { type: "line" as const, label: "Línea", icon: <Activity size={16} /> },
-                  { type: "bar" as const, label: "Barras", icon: <BarChart3 size={16} /> },
-                ].map((opt) => (
-                  <Button
-                    key={opt.type}
-                    variant={selectedType === opt.type ? "default" : "outline"}
-                    className="justify-start gap-2"
-                    onClick={() => setSelectedType(opt.type)}
-                  >
-                    {opt.icon}
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
+          <TabsContent value="metrics" className="flex-1 overflow-auto mt-4">
+            <div className="space-y-2">
+              {METRIC_OPTIONS.map((option) => (
+                <Card
+                  key={option.metric}
+                  className={cn(
+                    "cursor-pointer transition-all hover:border-primary/50",
+                    selectedMetric === option.metric && step === "type" && "border-primary bg-primary/5"
+                  )}
+                  onClick={() => handleSelectMetric(option.metric, option.suggestedType)}
+                >
+                  <CardHeader className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        {option.icon}
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{METRIC_LABELS[option.metric]}</CardTitle>
+                        <CardDescription className="text-sm">{option.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
             </div>
-          )}
-        </TabsContent>
 
-        <TabsContent value="charts" className="flex-1 overflow-auto mt-4">
-          <div className="space-y-2">
-            {CHART_OPTIONS.map((option) => (
-              <Card
-                key={option.type}
-                className={cn(
-                  "cursor-pointer transition-all hover:border-primary/50",
-                  selectedType === option.type && "border-primary bg-primary/5"
-                )}
-                onClick={() => handleSelectChart(option.type)}
-              >
-                <CardHeader className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      {option.icon}
+            {step === "type" && selectedMetric && (
+              <div className="mt-6 pt-6 border-t">
+                <h4 className="font-medium mb-3">Tipo de visualización</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { type: "kpi" as const, label: "KPI", icon: <TrendingUp size={16} /> },
+                    { type: "line" as const, label: "Línea", icon: <Activity size={16} /> },
+                    { type: "bar" as const, label: "Barras", icon: <BarChart3 size={16} /> },
+                  ].map((opt) => (
+                    <Button
+                      key={opt.type}
+                      variant={selectedType === opt.type ? "default" : "outline"}
+                      className="justify-start gap-2"
+                      onClick={() => handleSelectType(opt.type)}
+                    >
+                      {opt.icon}
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="charts" className="flex-1 overflow-auto mt-4">
+            <div className="space-y-2">
+              {CHART_OPTIONS.map((option) => (
+                <Card
+                  key={option.type}
+                  className={cn(
+                    "cursor-pointer transition-all hover:border-primary/50",
+                    selectedType === option.type && "border-primary bg-primary/5"
+                  )}
+                  onClick={() => handleSelectChart(option.type)}
+                >
+                  <CardHeader className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        {option.icon}
+                      </div>
+                      <div>
+                        <CardTitle className="text-base">{option.label}</CardTitle>
+                        <CardDescription className="text-sm">{option.description}</CardDescription>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-base">{option.label}</CardTitle>
-                      <CardDescription className="text-sm">{option.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
 
       <div className="pt-4 border-t mt-4">
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={onClose}>
-            Cancelar
-          </Button>
+          {step !== "metric" ? (
+            <Button 
+              variant="outline" 
+              className="flex-1" 
+              onClick={() => setStep(step === "account" ? "type" : "metric")}
+            >
+              Atrás
+            </Button>
+          ) : (
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              Cancelar
+            </Button>
+          )}
           <Button 
             className="flex-1" 
-            onClick={handleAdd}
-            disabled={!selectedMetric || !selectedType}
+            onClick={step === "account" ? handleAdd : () => setStep("account")}
+            disabled={!canAdd}
           >
-            Añadir Widget
+            {step === "account" ? "Añadir Widget" : "Siguiente"}
           </Button>
         </div>
       </div>

@@ -316,6 +316,54 @@ export const useIntegrations = () => {
     };
   }, [user]);
 
+  // Fetch Meta account details from the database
+  const getMetaAccountDetails = async (): Promise<MetaAccountDetail[]> => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('user_integrations')
+        .select('account_ids')
+        .eq('user_id', user.id)
+        .eq('platform', 'meta_ads')
+        .eq('status', 'connected')
+        .maybeSingle();
+
+      if (error || !data?.account_ids?.length) return [];
+
+      // Fetch account names from Meta API via edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return [];
+
+      const response = await fetch(
+        "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/fetch-meta-accounts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ account_ids: data.account_ids }),
+        }
+      );
+
+      if (!response.ok) {
+        // Fallback: return accounts without names
+        return data.account_ids.map((id: string) => ({
+          id,
+          name: `Cuenta ${id}`,
+          status: "active",
+        }));
+      }
+
+      const result = await response.json();
+      return result.accounts || [];
+    } catch (error) {
+      console.error('Error fetching Meta account details:', error);
+      return [];
+    }
+  };
+
   return {
     integrations,
     loading,
@@ -327,5 +375,6 @@ export const useIntegrations = () => {
     getIntegration,
     getConnectedPlatforms,
     getUserMetaToken,
+    getMetaAccountDetails,
   };
 };
