@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MoreVertical, GripVertical, Pencil, Trash2, RefreshCw, AlertCircle } from "lucide-react";
+import { MoreVertical, GripVertical, Pencil, Trash2, RefreshCw, AlertCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import { BarChartWidget } from "./BarChartWidget";
 import { PieChartWidget } from "./PieChartWidget";
 import { AreaChartWidget } from "./AreaChartWidget";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface DashboardWidgetProps {
   widget: Widget;
@@ -57,7 +58,31 @@ export const DashboardWidget = ({
     loadData();
   }, [widget.metric_config, globalDatePreset]);
 
+  // Check if account is configured
+  const hasAccountConfigured = !!widget.metric_config.account_id;
+
   const renderContent = () => {
+    // Show empty state if no account is configured
+    if (!hasAccountConfigured) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+            <Settings size={24} className="text-muted-foreground" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium">Configurar métrica</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Selecciona una cuenta de anuncios
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
+            <Settings size={14} />
+            Configurar
+          </Button>
+        </div>
+      );
+    }
+
     if (loading) {
       return (
         <div className="flex-1 flex items-center justify-center">
@@ -106,6 +131,9 @@ export const DashboardWidget = ({
     }
   };
 
+  // Get demo indicator
+  const isDemo = data && (data as any).is_demo;
+
   return (
     <div className={cn(
       "h-full flex flex-col glass rounded-xl overflow-hidden",
@@ -120,6 +148,11 @@ export const DashboardWidget = ({
           <h3 className="font-medium text-sm text-foreground truncate">
             {widget.title}
           </h3>
+          {isDemo && (
+            <Badge variant="secondary" className="text-xs">
+              Demo
+            </Badge>
+          )}
         </div>
         
         <DropdownMenu>

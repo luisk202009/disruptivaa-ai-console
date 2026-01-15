@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/Sidebar";
 import { useDashboards } from "@/hooks/useDashboards";
 import { useWidgets, Widget, GridSettings, DatePreset } from "@/hooks/useWidgets";
+import { useIntegrations, MetaAccountDetail } from "@/hooks/useIntegrations";
 import { DashboardCanvas } from "@/components/dashboards/DashboardCanvas";
 import { WidgetSelector } from "@/components/dashboards/WidgetSelector";
 import { WidgetSettings } from "@/components/dashboards/WidgetSettings";
@@ -25,13 +26,37 @@ const DashboardView = () => {
   const { widgets, loading: widgetsLoading, addWidget, updateWidget, updateWidgetPositions, removeWidget } = useWidgets({
     dashboardId,
   });
+  const { getMetaAccountDetails } = useIntegrations();
   
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
   const [globalDatePreset, setGlobalDatePreset] = useState<DatePreset>("last_7d");
+  
+  // Meta accounts state
+  const [accounts, setAccounts] = useState<MetaAccountDetail[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
 
   const dashboard = dashboards.find((d) => d.id === dashboardId);
+
+  // Load Meta accounts when needed
+  useEffect(() => {
+    const loadAccounts = async () => {
+      setAccountsLoading(true);
+      try {
+        const accountDetails = await getMetaAccountDetails();
+        setAccounts(accountDetails);
+      } catch (error) {
+        console.error("Error loading accounts:", error);
+      } finally {
+        setAccountsLoading(false);
+      }
+    };
+
+    if (showWidgetSelector || showWidgetSettings) {
+      loadAccounts();
+    }
+  }, [showWidgetSelector, showWidgetSettings]);
 
   useEffect(() => {
     if (!dashboardLoading && !dashboard) {
@@ -126,6 +151,8 @@ const DashboardView = () => {
               </SheetTrigger>
               <SheetContent className="w-[400px] sm:w-[540px]">
                 <WidgetSelector
+                  accounts={accounts}
+                  accountsLoading={accountsLoading}
                   onAddWidget={handleAddWidget}
                   onClose={() => setShowWidgetSelector(false)}
                 />
@@ -152,6 +179,8 @@ const DashboardView = () => {
             {selectedWidget && (
               <WidgetSettings
                 widget={selectedWidget}
+                accounts={accounts}
+                accountsLoading={accountsLoading}
                 onUpdate={handleUpdateWidget}
                 onClose={() => {
                   setShowWidgetSettings(false);

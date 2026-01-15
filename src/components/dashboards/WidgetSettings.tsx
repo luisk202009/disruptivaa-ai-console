@@ -13,9 +13,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Widget, WidgetType, MetricType, DatePreset } from "@/hooks/useWidgets";
 import { METRIC_LABELS, DATE_PRESET_LABELS } from "@/hooks/useMetaMetrics";
+import { MetaAccountDetail } from "@/hooks/useIntegrations";
+import { AlertCircle, Building2 } from "lucide-react";
 
 interface WidgetSettingsProps {
   widget: Widget;
+  accounts: MetaAccountDetail[];
+  accountsLoading?: boolean;
   onUpdate: (updates: Partial<Pick<Widget, "title" | "type" | "metric_config">>) => void;
   onClose: () => void;
 }
@@ -29,13 +33,14 @@ const WIDGET_TYPE_LABELS: Record<WidgetType, string> = {
   table: "Tabla",
 };
 
-export const WidgetSettings = ({ widget, onUpdate, onClose }: WidgetSettingsProps) => {
+export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, onClose }: WidgetSettingsProps) => {
   const [title, setTitle] = useState(widget.title);
   const [type, setType] = useState<WidgetType>(widget.type);
   const [metric, setMetric] = useState<MetricType>(widget.metric_config.metric);
   const [datePreset, setDatePreset] = useState<DatePreset>(widget.metric_config.date_preset);
   const [comparison, setComparison] = useState(widget.metric_config.comparison ?? true);
   const [goal, setGoal] = useState<string>(widget.metric_config.goal?.toString() || "");
+  const [accountId, setAccountId] = useState<string>(widget.metric_config.account_id || "");
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
@@ -50,12 +55,15 @@ export const WidgetSettings = ({ widget, onUpdate, onClose }: WidgetSettingsProp
           date_preset: datePreset,
           comparison,
           goal: goal ? parseFloat(goal) : undefined,
+          account_id: accountId || undefined,
         },
       });
     } finally {
       setLoading(false);
     }
   };
+
+  const hasNoAccounts = !accountsLoading && accounts.length === 0;
 
   return (
     <div className="h-full flex flex-col">
@@ -67,6 +75,40 @@ export const WidgetSettings = ({ widget, onUpdate, onClose }: WidgetSettingsProp
       </SheetHeader>
 
       <div className="flex-1 space-y-6 overflow-auto">
+        {/* Account Selector */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Building2 size={14} />
+            Cuenta de anuncios
+          </Label>
+          {hasNoAccounts ? (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+              <AlertCircle size={16} />
+              <span>No hay cuentas conectadas. Conecta Meta Ads primero.</span>
+            </div>
+          ) : (
+            <Select 
+              value={accountId} 
+              onValueChange={setAccountId}
+              disabled={accountsLoading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={accountsLoading ? "Cargando cuentas..." : "Seleccionar cuenta"} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Selecciona la cuenta de la que obtener los datos
+          </p>
+        </div>
+
         {/* Title */}
         <div className="space-y-2">
           <Label htmlFor="widget-title">Título</Label>
