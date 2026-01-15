@@ -11,6 +11,8 @@ import Auth from "./pages/Auth";
 import Agents from "./pages/Agents";
 import Connections from "./pages/Connections";
 import MetaCallback from "./pages/MetaCallback";
+import Dashboards from "./pages/Dashboards";
+import DashboardView from "./pages/DashboardView";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -52,6 +54,22 @@ const App = () => (
               }
             />
             <Route path="/auth/meta/callback" element={<MetaCallback />} />
+            <Route
+              path="/dashboards"
+              element={
+                <ProtectedRoute>
+                  <Dashboards />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboards/:dashboardId"
+              element={
+                <ProtectedRoute>
+                  <DashboardView />
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
