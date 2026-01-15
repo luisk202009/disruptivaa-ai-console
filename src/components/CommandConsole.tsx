@@ -9,6 +9,7 @@ import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import FileUploadButton from "./FileUploadButton";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CommandConsoleProps {
   onCommand?: (command: string) => void;
@@ -118,6 +119,20 @@ const CommandConsole = ({
     try {
       const connectedPlatforms = getConnectedPlatforms();
       
+      // Get the user's JWT token for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession();
+      const userToken = session?.access_token;
+      
+      if (!userToken) {
+        toast({
+          title: "Sesión expirada",
+          description: "Por favor inicia sesión de nuevo.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       // Convert attached files to base64
       const filesData = await Promise.all(
         filesToSend.map(async (file) => ({
@@ -132,7 +147,6 @@ const CommandConsole = ({
       
       const requestBody = {
         message: userMessage,
-        userId: user.id,
         agentId: selectedAgent?.id || null,
         agentName: selectedAgent?.name || null,
         systemInstruction: selectedAgent?.systemInstruction || null,
@@ -148,7 +162,7 @@ const CommandConsole = ({
         headers: {
           "Content-Type": "application/json",
           "apikey": supabaseAnonKey,
-          "Authorization": `Bearer ${supabaseAnonKey}`,
+          "Authorization": `Bearer ${userToken}`,
         },
         body: JSON.stringify(requestBody),
       });

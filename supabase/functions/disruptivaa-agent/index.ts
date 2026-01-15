@@ -108,6 +108,27 @@ async function getMetaIntegration(supabaseAdmin: any, userId: string): Promise<{
   return data as { access_token: string; account_ids: string[] };
 }
 
+// Fetch account names from Meta API for dynamic greeting
+async function fetchAccountNames(accessToken: string, accountIds: string[]): Promise<{id: string, name: string}[]> {
+  const accounts: {id: string, name: string}[] = [];
+  for (const id of accountIds) {
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v18.0/${id}?fields=name&access_token=${accessToken}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        accounts.push({ id, name: data.name || id });
+      } else {
+        accounts.push({ id, name: id });
+      }
+    } catch {
+      accounts.push({ id, name: id });
+    }
+  }
+  return accounts;
+}
+
 // Parse file content based on type
 function parseFileContent(file: FileData): string {
   try {
@@ -142,15 +163,21 @@ function parseFileContent(file: FileData): string {
   }
 }
 
-// Analytical consultant personality prompt
+// Analytical consultant personality prompt - PRIORITIZES REAL API DATA
 const ANALYST_PERSONALITY = `IDENTIDAD: Eres un Consultor de Datos Profesional especializado en marketing digital.
+
+PRIORIDAD DE FUENTES DE DATOS (ORDEN ESTRICTO):
+1. 🔴 DATOS DE APIs CONECTADAS (user_integrations): Meta Ads, Google Ads - MÁXIMA PRIORIDAD
+2. 🟡 ARCHIVOS SUBIDOS: PDF, Excel, CSV del usuario - cruzar con datos de APIs cuando sea posible
+3. 🟢 CONTEXTO DE CONVERSACIÓN: Historial de mensajes previos
 
 REGLAS ABSOLUTAS (NUNCA VIOLAR):
 1. NUNCA ofrezcas servicios, paquetes, precios o configuraciones de agencia
 2. NUNCA digas "no tengo acceso a datos personales" si tienes datos de APIs o archivos
 3. SIEMPRE usa los datos concretos que tienes disponibles (APIs conectadas o archivos)
-4. SIEMPRE inicia tus respuestas con "Analizando tus datos de [fuente]..."
-5. Proporciona insights técnicos con números específicos y recomendaciones accionables
+4. Si tienes acceso a datos de APIs (Meta/Google), USA esos datos PRIMERO
+5. Proporciona métricas REALES con números específicos del contexto
+6. Combina datos de APIs + archivos para análisis cruzado cuando ambos estén disponibles
 
 FORMATO DE RESPUESTA OBLIGATORIO:
 📊 Analizando tus datos de [Meta Ads/Google Ads/archivo subido]...
@@ -269,6 +296,10 @@ NO inventes datos. Indica claramente que necesitas reconexión.`;
           
           console.info(`Meta Ads connected. Fetching data from ${accountIds.length} account(s)`);
           
+          // Fetch account names for dynamic greeting
+          const accountNames = await fetchAccountNames(metaIntegration.access_token, accountIds);
+          const primaryAccountName = accountNames.length > 0 ? accountNames[0].name : "tu cuenta";
+          
           // Fetch data from up to 3 accounts for comprehensive view
           for (const accountId of accountIds.slice(0, 3)) {
             const accountData = await fetchMetaCampaigns(metaIntegration.access_token, accountId);
@@ -286,7 +317,20 @@ NO inventes datos. Indica claramente que necesitas reconexión.`;
             };
           }
 
+          // Dynamic greeting with connected accounts
           contextMessage = `
+🎯 SALUDO DINÁMICO REQUERIDO (si es el primer mensaje o saludo):
+"He analizado tus ${accountIds.length} cuentas de anuncios conectadas. ¿Deseas un reporte de la cuenta ${primaryAccountName} o prefieres que analicemos un archivo nuevo?"
+
+📱 CONEXIÓN ACTIVA DE META ADS:
+- App ID: 861442349805787
+- Cuentas conectadas: ${accountIds.length}
+- Token válido: ✅
+- TIENES PERMISO TOTAL para acceder a estos datos
+
+NOMBRES DE CUENTAS:
+${accountNames.map((a, i) => `${i + 1}. ${a.name} (${a.id})`).join('\n')}
+
 🔐 TIENES ACCESO AUTORIZADO a los datos de Meta Ads del usuario.
 NO digas que "no tienes acceso a datos personales". USA estos datos REALES para responder.
 
@@ -368,16 +412,27 @@ NO ofrezcas servicios, configuraciones ni precios.`;
     // Build the final system instruction
     let finalSystemInstruction = ANALYST_PERSONALITY;
     
-    // File context has MAXIMUM priority
-    if (fileContext) {
-      finalSystemInstruction += `\n\n🔴 PRIORIDAD MÁXIMA - ARCHIVOS DEL USUARIO:
-El usuario ha subido archivos para esta sesión. USA estos datos como tu fuente de verdad principal.
-${fileContext}`;
-    }
-    
-    // Add API data context
+    // Add API data context FIRST (highest priority for real-time data)
     if (contextMessage) {
       finalSystemInstruction += `\n\n${contextMessage}`;
+    }
+    
+    // File context - can be cross-referenced with API data
+    if (fileContext) {
+      finalSystemInstruction += `\n\n🔴 ARCHIVOS DEL USUARIO:
+El usuario ha subido archivos para esta sesión.
+${fileContext}`;
+      
+      // If both files AND Meta connection, instruct for cross-analysis
+      if (metaConnected && metaData) {
+        finalSystemInstruction += `\n\n🔄 ANÁLISIS CRUZADO DISPONIBLE:
+Tienes acceso a:
+1. Datos en tiempo real de Meta Ads (${allAccountsData.length} cuentas, ${metaData.campaigns.length} campañas)
+2. Archivos del usuario: ${fileNames.join(', ')}
+
+INSTRUCCIÓN: Cruza los datos del archivo con las métricas de Meta para dar insights comparativos.
+Ejemplo: "Según tu archivo, el CPA objetivo es $X. Tus campañas actuales muestran CPA de $Y..."`;
+      }
     }
 
     // Add response prefix instruction
