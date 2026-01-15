@@ -1,20 +1,16 @@
 import { useMemo } from "react";
-import GridLayout from "react-grid-layout";
+import { 
+  GridLayout, 
+  useContainerWidth,
+  verticalCompactor,
+  type Layout,
+  type LayoutItem
+} from "react-grid-layout";
 import { Widget, GridSettings, DatePreset } from "@/hooks/useWidgets";
 import { DashboardWidget } from "./widgets/DashboardWidget";
 import { LayoutGrid } from "lucide-react";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-
-interface LayoutItem {
-  i: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  minW?: number;
-  minH?: number;
-}
 
 interface DashboardCanvasProps {
   widgets: Widget[];
@@ -33,9 +29,13 @@ export const DashboardCanvas = ({
   onEditWidget,
   onDeleteWidget,
 }: DashboardCanvasProps) => {
-  const layout: LayoutItem[] = useMemo(
+  const { width, containerRef, mounted } = useContainerWidth({
+    initialWidth: 1200,
+  });
+
+  const layout: Layout = useMemo(
     () =>
-      widgets.map((widget) => ({
+      widgets.map((widget): LayoutItem => ({
         i: widget.id,
         x: widget.grid_settings.x,
         y: widget.grid_settings.y,
@@ -47,7 +47,7 @@ export const DashboardCanvas = ({
     [widgets]
   );
 
-  const handleLayoutChange = (newLayout: LayoutItem[]) => {
+  const handleLayoutChange = (newLayout: Layout) => {
     const updates = newLayout.map((item) => ({
       id: item.i,
       grid_settings: {
@@ -90,29 +90,45 @@ export const DashboardCanvas = ({
   }
 
   return (
-    <GridLayout
-      className="layout"
-      layout={layout}
-      cols={12}
-      rowHeight={80}
-      width={1200}
-      onLayoutChange={handleLayoutChange}
-      draggableHandle=".widget-drag-handle"
-      isResizable={true}
-      isDraggable={true}
-      compactType="vertical"
-      preventCollision={false}
-    >
-      {widgets.map((widget) => (
-        <div key={widget.id}>
-          <DashboardWidget
-            widget={widget}
-            globalDatePreset={globalDatePreset}
-            onEdit={() => onEditWidget(widget)}
-            onDelete={() => onDeleteWidget(widget.id)}
-          />
-        </div>
-      ))}
-    </GridLayout>
+    <div ref={containerRef}>
+      {mounted && (
+        <GridLayout
+          className="layout"
+          width={width}
+          layout={layout}
+          gridConfig={{
+            cols: 12,
+            rowHeight: 80,
+            margin: [16, 16],
+            containerPadding: [0, 0],
+            maxRows: Infinity,
+          }}
+          dragConfig={{
+            enabled: true,
+            bounded: false,
+            handle: ".widget-drag-handle",
+            threshold: 3,
+          }}
+          resizeConfig={{
+            enabled: true,
+            handles: ["se"],
+          }}
+          compactor={verticalCompactor}
+          onLayoutChange={handleLayoutChange}
+          autoSize={true}
+        >
+          {widgets.map((widget) => (
+            <div key={widget.id}>
+              <DashboardWidget
+                widget={widget}
+                globalDatePreset={globalDatePreset}
+                onEdit={() => onEditWidget(widget)}
+                onDelete={() => onDeleteWidget(widget.id)}
+              />
+            </div>
+          ))}
+        </GridLayout>
+      )}
+    </div>
   );
 };
