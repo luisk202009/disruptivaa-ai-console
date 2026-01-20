@@ -21,7 +21,6 @@ interface DateRange {
 // Calculate date ranges based on preset
 function calculateDateRanges(datePreset: string): { current: DateRange; previous: DateRange } {
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
   
   let currentSince: Date;
   let currentUntil: Date = today;
@@ -103,6 +102,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error("❌ No authorization header provided");
       return new Response(
         JSON.stringify({ error: "No authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -120,17 +120,22 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
+      console.error("❌ Invalid user:", userError?.message);
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    console.log(`👤 User authenticated: ${user.id}`);
+
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
 
-    // Get user's Meta integration
-    const { data: integration } = await supabaseAdmin
+    console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
+
+    // Get user's Meta integration using service role key
+    const { data: integration, error: integrationError } = await supabaseAdmin
       .from("user_integrations")
       .select("access_token, account_ids")
       .eq("user_id", user.id)
@@ -138,17 +143,42 @@ serve(async (req) => {
       .eq("status", "connected")
       .single();
 
-    if (!integration?.access_token || !integration.account_ids?.length) {
-      // Return demo data if no integration
+    if (integrationError) {
+      console.error("❌ Error fetching integration:", integrationError.message);
+    }
+
+    if (!integration?.access_token) {
+      console.error("❌ No access token found for user");
       return new Response(
-        JSON.stringify(generateDemoData(metric, date_preset)),
+        JSON.stringify({ 
+          error: "No Meta Ads integration found",
+          is_demo: true,
+          value: 0,
+          data_points: []
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    if (!integration.account_ids?.length) {
+      console.error("❌ No account IDs found for user");
+      return new Response(
+        JSON.stringify({ 
+          error: "No ad accounts connected",
+          is_demo: true,
+          value: 0,
+          data_points: []
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`✅ Found integration with ${integration.account_ids.length} accounts`);
+
     // Validate account_id is owned by user
     const targetAccountId = account_id || integration.account_ids[0];
     if (!integration.account_ids.includes(targetAccountId)) {
+      console.error(`❌ Account ${targetAccountId} not in user's accounts: ${integration.account_ids.join(", ")}`);
       return new Response(
         JSON.stringify({ error: "Invalid account ID" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -159,7 +189,7 @@ serve(async (req) => {
     const field = metricFieldMap[metric] || "impressions";
     const dateRanges = calculateDateRanges(date_preset);
 
-    console.log(`📊 Fetching ${metric} for account ${targetAccountId}`);
+    console.log(`📊 Fetching ${metric} (field: ${field}) for account ${targetAccountId}`);
     console.log(`📅 Current period: ${dateRanges.current.since} to ${dateRanges.current.until}`);
     console.log(`📅 Previous period: ${dateRanges.previous.since} to ${dateRanges.previous.until}`);
 
@@ -173,12 +203,18 @@ serve(async (req) => {
     );
 
     if ("error" in currentDataPoints) {
-      console.error("Meta API error (current):", currentDataPoints.error);
+      console.error("❌ Meta API error (current):", currentDataPoints.error);
       return new Response(
-        JSON.stringify(generateDemoData(metric, date_preset)),
+        JSON.stringify({ 
+          error: currentDataPoints.error,
+          value: 0,
+          data_points: []
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`✅ Fetched ${currentDataPoints.length} data points for current period`);
 
     // Calculate current total value
     const currentValue = currentDataPoints.reduce((sum, dp) => sum + dp.value, 0);
@@ -199,6 +235,7 @@ serve(async (req) => {
 
       if (!("error" in previousDataPoints)) {
         previousValue = previousDataPoints.reduce((sum, dp) => sum + dp.value, 0);
+        console.log(`✅ Previous period value: ${previousValue}`);
         
         if (previousValue > 0) {
           changePercent = ((currentValue - previousValue) / previousValue) * 100;
@@ -218,8 +255,10 @@ serve(async (req) => {
         accountName = accountData.name;
       }
     } catch (e) {
-      console.warn("Could not fetch account name:", e);
+      console.warn("⚠️ Could not fetch account name:", e);
     }
+
+    console.log(`✅ Successfully fetched metrics for ${accountName}`);
 
     return new Response(
       JSON.stringify({
@@ -229,11 +268,12 @@ serve(async (req) => {
         trend,
         data_points: currentDataPoints,
         account_name: accountName,
+        is_demo: false,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error fetching metric:", error);
+    console.error("❌ Error fetching metric:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -255,11 +295,14 @@ async function fetchInsightsWithDailyBreakdown(
   insightsUrl.searchParams.append("time_range", JSON.stringify({ since, until }));
   insightsUrl.searchParams.append("time_increment", "1"); // Daily breakdown
 
+  console.log(`🔗 Fetching from Meta API: ${insightsUrl.toString().replace(accessToken, "***")}`);
+
   try {
     const response = await fetch(insightsUrl.toString());
     const data = await response.json();
 
     if (data.error) {
+      console.error("❌ Meta API error:", data.error);
       return { error: data.error.message };
     }
 
@@ -269,49 +312,11 @@ async function fetchInsightsWithDailyBreakdown(
       value: parseFloat(item[field] || "0"),
     }));
 
+    console.log(`✅ Parsed ${dataPoints.length} data points from Meta response`);
+
     return dataPoints;
   } catch (error) {
+    console.error("❌ Fetch error:", error);
     return { error: error instanceof Error ? error.message : "Unknown error" };
   }
-}
-
-function generateDemoData(metric: string, datePreset: string) {
-  const baseValues: Record<string, number> = {
-    impressions: 150000,
-    clicks: 4500,
-    spend: 1250.50,
-    reach: 85000,
-    ctr: 2.35,
-    cpc: 0.28,
-    cpm: 8.50,
-  };
-
-  const value = baseValues[metric] || 1000;
-  const previousValue = value * (0.85 + Math.random() * 0.3);
-  const changePercent = ((value - previousValue) / previousValue) * 100;
-
-  return {
-    value,
-    previous_value: previousValue,
-    change_percent: changePercent,
-    trend: changePercent > 0 ? "up" : changePercent < 0 ? "down" : "neutral",
-    data_points: generateDataPoints(value, datePreset),
-    is_demo: true,
-  };
-}
-
-function generateDataPoints(baseValue: number, datePreset: string) {
-  const dayCount = datePreset === "last_30d" ? 30 : datePreset === "last_7d" ? 7 : 1;
-  const points = [];
-  
-  for (let i = dayCount - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    points.push({
-      date: date.toLocaleDateString("es-MX", { weekday: "short", day: "numeric" }),
-      value: (baseValue / dayCount) * (0.7 + Math.random() * 0.6),
-    });
-  }
-
-  return points;
 }
