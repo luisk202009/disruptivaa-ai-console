@@ -170,6 +170,10 @@ export const DashboardWidget = ({
     }
   };
 
+  // Get display account name
+  const accountName = widget.metric_config.account_name || 
+    (widget.metric_config.account_id ? `Cuenta ${widget.metric_config.account_id}` : null);
+
   return (
     <div className={cn(
       "h-full flex flex-col glass rounded-xl overflow-hidden",
@@ -177,18 +181,25 @@ export const DashboardWidget = ({
     )}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className="widget-drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-muted/50">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="widget-drag-handle cursor-grab active:cursor-grabbing p-1 -ml-1 rounded hover:bg-muted/50 flex-shrink-0">
             <GripVertical size={14} className="text-muted-foreground" />
           </div>
-          <h3 className="font-medium text-sm text-foreground truncate">
-            {widget.title}
-          </h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-medium text-sm text-foreground truncate">
+              {widget.title}
+            </h3>
+            {accountName && (
+              <p className="text-xs text-muted-foreground truncate">
+                {accountName}
+              </p>
+            )}
+          </div>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7">
+            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
               <MoreVertical size={14} />
             </Button>
           </DropdownMenuTrigger>
