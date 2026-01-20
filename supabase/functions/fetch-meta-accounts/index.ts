@@ -10,6 +10,11 @@ interface AccountRequest {
   account_ids: string[];
 }
 
+// Normalize account ID - remove 'act_' prefix if already present
+function normalizeAccountId(accountId: string): string {
+  return accountId.startsWith("act_") ? accountId.slice(4) : accountId;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -67,39 +72,48 @@ serve(async (req) => {
       );
     }
 
+    // Normalize all account IDs for comparison
+    const normalizedRequestIds = account_ids.map(normalizeAccountId);
+    const normalizedUserAccounts = (integration.account_ids || []).map(normalizeAccountId);
+
     // Verify requested accounts belong to user
-    const validAccountIds = account_ids.filter((id) =>
-      integration.account_ids?.includes(id)
+    const validAccountIds = normalizedRequestIds.filter((id) =>
+      normalizedUserAccounts.includes(id)
     );
+
+    console.log(`📊 Fetching ${validAccountIds.length} account details`);
 
     // Fetch account details from Meta API
     const accounts = await Promise.all(
-      validAccountIds.map(async (accountId) => {
+      validAccountIds.map(async (cleanAccountId) => {
         try {
+          // Use normalized ID with act_ prefix for API call
           const response = await fetch(
-            `https://graph.facebook.com/v21.0/act_${accountId}?fields=name,account_status&access_token=${integration.access_token}`
+            `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name,account_status&access_token=${integration.access_token}`
           );
           const data = await response.json();
 
           if (data.error) {
-            console.error(`Error fetching account ${accountId}:`, data.error);
+            console.error(`Error fetching account ${cleanAccountId}:`, data.error);
             return {
-              id: accountId,
-              name: `Cuenta ${accountId}`,
+              id: cleanAccountId,
+              name: `Cuenta ${cleanAccountId}`,
               status: "unknown",
             };
           }
 
+          console.log(`✅ Account ${cleanAccountId}: ${data.name}`);
+
           return {
-            id: accountId,
-            name: data.name || `Cuenta ${accountId}`,
+            id: cleanAccountId,
+            name: data.name || `Cuenta ${cleanAccountId}`,
             status: data.account_status === 1 ? "active" : "inactive",
           };
         } catch (error) {
-          console.error(`Error fetching account ${accountId}:`, error);
+          console.error(`Error fetching account ${cleanAccountId}:`, error);
           return {
-            id: accountId,
-            name: `Cuenta ${accountId}`,
+            id: cleanAccountId,
+            name: `Cuenta ${cleanAccountId}`,
             status: "unknown",
           };
         }

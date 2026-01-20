@@ -12,6 +12,7 @@ export interface MetricConfig {
   metric: MetricType;
   date_preset: DatePreset;
   account_id?: string;
+  account_name?: string;
   campaign_id?: string;
   comparison?: boolean;
   goal?: number;

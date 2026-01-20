@@ -43,9 +43,18 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
   const [accountId, setAccountId] = useState<string>(widget.metric_config.account_id || "");
   const [loading, setLoading] = useState(false);
 
+  // Get account name for the selected account
+  const getAccountName = (id: string): string => {
+    const account = accounts.find((a) => a.id === id);
+    return account?.name || "";
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Save both account_id and account_name
+      const selectedAccountName = accountId ? getAccountName(accountId) : undefined;
+      
       await onUpdate({
         title,
         type,
@@ -56,6 +65,7 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
           comparison,
           goal: goal ? parseFloat(goal) : undefined,
           account_id: accountId || undefined,
+          account_name: selectedAccountName,
         },
       });
     } finally {
