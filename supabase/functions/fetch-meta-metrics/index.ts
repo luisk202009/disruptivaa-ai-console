@@ -94,6 +94,11 @@ const metricFieldMap: Record<string, string> = {
   cpm: "cpm",
 };
 
+// Normalize account ID - remove 'act_' prefix if already present to avoid duplication
+function normalizeAccountId(accountId: string): string {
+  return accountId.startsWith("act_") ? accountId.slice(4) : accountId;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -177,7 +182,12 @@ serve(async (req) => {
 
     // Validate account_id is owned by user
     const targetAccountId = account_id || integration.account_ids[0];
-    if (!integration.account_ids.includes(targetAccountId)) {
+    
+    // Normalize account IDs for comparison (strip act_ prefix if present)
+    const normalizedTargetId = normalizeAccountId(targetAccountId);
+    const normalizedUserAccounts = integration.account_ids.map(normalizeAccountId);
+    
+    if (!normalizedUserAccounts.includes(normalizedTargetId)) {
       console.error(`❌ Account ${targetAccountId} not in user's accounts: ${integration.account_ids.join(", ")}`);
       return new Response(
         JSON.stringify({ error: "Invalid account ID" }),
@@ -188,14 +198,17 @@ serve(async (req) => {
     const accessToken = integration.access_token;
     const field = metricFieldMap[metric] || "impressions";
     const dateRanges = calculateDateRanges(date_preset);
+    
+    // Use normalized ID for API calls (without act_ prefix - we add it ourselves)
+    const cleanAccountId = normalizedTargetId;
 
-    console.log(`📊 Fetching ${metric} (field: ${field}) for account ${targetAccountId}`);
+    console.log(`📊 Fetching ${metric} (field: ${field}) for account act_${cleanAccountId}`);
     console.log(`📅 Current period: ${dateRanges.current.since} to ${dateRanges.current.until}`);
     console.log(`📅 Previous period: ${dateRanges.previous.since} to ${dateRanges.previous.until}`);
 
     // Fetch current period data with daily breakdown
     const currentDataPoints = await fetchInsightsWithDailyBreakdown(
-      targetAccountId,
+      cleanAccountId,
       accessToken,
       field,
       dateRanges.current.since,
@@ -226,7 +239,7 @@ serve(async (req) => {
 
     if (comparison) {
       const previousDataPoints = await fetchInsightsWithDailyBreakdown(
-        targetAccountId,
+        cleanAccountId,
         accessToken,
         field,
         dateRanges.previous.since,
@@ -245,10 +258,10 @@ serve(async (req) => {
     }
 
     // Get account name
-    let accountName = `Cuenta ${targetAccountId}`;
+    let accountName = `Cuenta act_${cleanAccountId}`;
     try {
       const accountResponse = await fetch(
-        `https://graph.facebook.com/v21.0/act_${targetAccountId}?fields=name&access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name&access_token=${accessToken}`
       );
       const accountData = await accountResponse.json();
       if (accountData.name) {
