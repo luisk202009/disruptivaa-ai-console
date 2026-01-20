@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { Widget } from "@/hooks/useWidgets";
 import { MetricData, useMetaMetrics } from "@/hooks/useMetaMetrics";
+import { AlertTriangle } from "lucide-react";
 
 interface LineChartWidgetProps {
   widget: Widget;
@@ -19,10 +20,17 @@ export const LineChartWidget = ({ widget, data }: LineChartWidgetProps) => {
   const { formatValue } = useMetaMetrics();
   const { metric } = widget.metric_config;
 
-  // Generate sample data if no data_points
-  const chartData = data.data_points?.length
-    ? data.data_points
-    : generateSampleData(data.value);
+  // Only use real data_points - no fallback to mock data
+  const chartData = data.data_points || [];
+
+  if (chartData.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+        <AlertTriangle size={24} />
+        <p className="text-sm text-center">Sin datos disponibles para el período seleccionado</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 min-h-0">
@@ -64,12 +72,3 @@ export const LineChartWidget = ({ widget, data }: LineChartWidgetProps) => {
     </div>
   );
 };
-
-// Helper to generate sample data for demo
-function generateSampleData(baseValue: number) {
-  const days = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
-  return days.map((date, i) => ({
-    date,
-    value: baseValue * (0.7 + Math.random() * 0.6) * ((i + 3) / 7),
-  }));
-}
