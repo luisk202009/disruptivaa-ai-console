@@ -237,8 +237,9 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
   );
 
   return (
-    <div className="h-full flex flex-col">
-      <SheetHeader className="pb-4">
+    <div className="h-full max-h-[85vh] flex flex-col">
+      {/* Header - Fixed */}
+      <SheetHeader className="pb-4 flex-shrink-0">
         <SheetTitle>Añadir Widget</SheetTitle>
         <SheetDescription>
           {step === "metric" && "Selecciona una métrica o tipo de gráfico."}
@@ -247,8 +248,8 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
         </SheetDescription>
       </SheetHeader>
 
-      {/* Progress indicator */}
-      <div className="flex items-center gap-2 mb-4">
+      {/* Progress indicator - Fixed */}
+      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <div className={cn(
           "h-1 flex-1 rounded-full transition-colors",
           step === "metric" ? "bg-primary" : "bg-primary"
@@ -263,97 +264,152 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
         )} />
       </div>
 
-      {step === "account" ? (
-        <div className="flex-1 overflow-auto">
-          {renderAccountStep()}
-        </div>
-      ) : (
-        <Tabs defaultValue="metrics" className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="metrics">Métricas</TabsTrigger>
-            <TabsTrigger value="charts">Gráficos</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="metrics" className="flex-1 overflow-auto mt-4">
-            <div className="space-y-2">
-              {METRIC_OPTIONS.map((option) => (
-                <Card
-                  key={option.metric}
-                  className={cn(
-                    "cursor-pointer transition-all hover:border-primary/50",
-                    selectedMetric === option.metric && step === "type" && "border-primary bg-primary/5"
-                  )}
-                  onClick={() => handleSelectMetric(option.metric, option.suggestedType)}
-                >
-                  <CardHeader className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        {option.icon}
-                      </div>
-                      <div>
-                        <CardTitle className="text-base">{METRIC_LABELS[option.metric]}</CardTitle>
-                        <CardDescription className="text-sm">{option.description}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+      {/* Content - Scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto pb-6">
+        {step === "account" ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Building2 size={16} />
+              <span>Selecciona una cuenta de anuncios</span>
             </div>
-
-            {step === "type" && selectedMetric && (
-              <div className="mt-6 pt-6 border-t">
-                <h4 className="font-medium mb-3">Tipo de visualización</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { type: "kpi" as const, label: "KPI", icon: <TrendingUp size={16} /> },
-                    { type: "line" as const, label: "Línea", icon: <Activity size={16} /> },
-                    { type: "bar" as const, label: "Barras", icon: <BarChart3 size={16} /> },
-                  ].map((opt) => (
-                    <Button
-                      key={opt.type}
-                      variant={selectedType === opt.type ? "default" : "outline"}
-                      className="justify-start gap-2"
-                      onClick={() => handleSelectType(opt.type)}
-                    >
-                      {opt.icon}
-                      {opt.label}
-                    </Button>
-                  ))}
-                </div>
+            
+            {accountsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 size={24} className="animate-spin text-muted-foreground" />
+              </div>
+            ) : !hasAccounts ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <AlertCircle size={32} className="text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  No hay cuentas de Meta Ads conectadas.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Puedes añadir el widget sin cuenta y configurarlo después.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {accounts.map((account) => (
+                  <Card
+                    key={account.id}
+                    className={cn(
+                      "cursor-pointer transition-all hover:border-primary/50",
+                      selectedAccount === account.id && "border-primary bg-primary/5"
+                    )}
+                    onClick={() => handleSelectAccount(account.id)}
+                  >
+                    <CardHeader className="p-3 sm:p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <Building2 size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <CardTitle className="text-sm sm:text-base truncate">{account.name}</CardTitle>
+                            <CardDescription className="text-xs sm:text-sm truncate">
+                              ID: {account.id}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        {selectedAccount === account.id && (
+                          <CheckCircle2 size={20} className="text-primary flex-shrink-0" />
+                        )}
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
               </div>
             )}
-          </TabsContent>
+          </div>
+        ) : (
+          <Tabs defaultValue="metrics" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+              <TabsTrigger value="metrics">Métricas</TabsTrigger>
+              <TabsTrigger value="charts">Gráficos</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="charts" className="flex-1 overflow-auto mt-4">
-            <div className="space-y-2">
-              {CHART_OPTIONS.map((option) => (
-                <Card
-                  key={option.type}
-                  className={cn(
-                    "cursor-pointer transition-all hover:border-primary/50",
-                    selectedType === option.type && "border-primary bg-primary/5"
-                  )}
-                  onClick={() => handleSelectChart(option.type)}
-                >
-                  <CardHeader className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        {option.icon}
+            <TabsContent value="metrics" className="mt-4 flex-1">
+              <div className="space-y-2">
+                {METRIC_OPTIONS.map((option) => (
+                  <Card
+                    key={option.metric}
+                    className={cn(
+                      "cursor-pointer transition-all hover:border-primary/50",
+                      selectedMetric === option.metric && step === "type" && "border-primary bg-primary/5"
+                    )}
+                    onClick={() => handleSelectMetric(option.metric, option.suggestedType)}
+                  >
+                    <CardHeader className="p-3 sm:p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                          {option.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <CardTitle className="text-sm sm:text-base">{METRIC_LABELS[option.metric]}</CardTitle>
+                          <CardDescription className="text-xs sm:text-sm">{option.description}</CardDescription>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-base">{option.label}</CardTitle>
-                        <CardDescription className="text-sm">{option.description}</CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      )}
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
 
-      <div className="pt-4 border-t mt-4">
+              {step === "type" && selectedMetric && (
+                <div className="mt-6 pt-6 border-t">
+                  <h4 className="font-medium mb-3 text-sm sm:text-base">Tipo de visualización</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { type: "kpi" as const, label: "KPI", icon: <TrendingUp size={16} /> },
+                      { type: "line" as const, label: "Línea", icon: <Activity size={16} /> },
+                      { type: "bar" as const, label: "Barras", icon: <BarChart3 size={16} /> },
+                    ].map((opt) => (
+                      <Button
+                        key={opt.type}
+                        variant={selectedType === opt.type ? "default" : "outline"}
+                        className="justify-start gap-2"
+                        onClick={() => handleSelectType(opt.type)}
+                      >
+                        {opt.icon}
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="charts" className="mt-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {CHART_OPTIONS.map((option) => (
+                  <Card
+                    key={option.type}
+                    className={cn(
+                      "cursor-pointer transition-all hover:border-primary/50",
+                      selectedType === option.type && "border-primary bg-primary/5"
+                    )}
+                    onClick={() => handleSelectChart(option.type)}
+                  >
+                    <CardHeader className="p-3 sm:p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                          {option.icon}
+                        </div>
+                        <div className="min-w-0">
+                          <CardTitle className="text-sm sm:text-base">{option.label}</CardTitle>
+                          <CardDescription className="text-xs sm:text-sm">{option.description}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
+      </div>
+
+      {/* Footer - Sticky */}
+      <div className="pt-4 border-t flex-shrink-0 bg-background">
         <div className="flex gap-2">
           {step !== "metric" ? (
             <Button 
