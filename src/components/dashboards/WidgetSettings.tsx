@@ -76,15 +76,17 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
   const hasNoAccounts = !accountsLoading && accounts.length === 0;
 
   return (
-    <div className="h-full flex flex-col">
-      <SheetHeader className="pb-4">
+    <div className="h-full max-h-[85vh] flex flex-col">
+      {/* Header - Fixed */}
+      <SheetHeader className="pb-4 flex-shrink-0">
         <SheetTitle>Configurar Widget</SheetTitle>
         <SheetDescription>
           Personaliza la visualización y los datos de tu widget.
         </SheetDescription>
       </SheetHeader>
 
-      <div className="flex-1 space-y-6 overflow-auto">
+      {/* Content - Scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto pb-6 space-y-6">
         {/* Account Selector */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
@@ -105,7 +107,7 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
               <SelectTrigger>
                 <SelectValue placeholder={accountsLoading ? "Cargando cuentas..." : "Seleccionar cuenta"} />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[200px]">
                 {accounts.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name}
@@ -185,7 +187,7 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
             <Label>Mostrar comparación</Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Comparar con el período anterior
             </p>
           </div>
@@ -210,7 +212,8 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
         )}
       </div>
 
-      <div className="pt-4 border-t mt-4">
+      {/* Footer - Sticky */}
+      <div className="pt-4 border-t flex-shrink-0 bg-background">
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>
             Cancelar
