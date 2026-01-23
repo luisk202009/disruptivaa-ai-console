@@ -108,12 +108,12 @@ const Sidebar = () => {
     window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
   };
 
-  const handleCreateProject = async (name: string) => {
-    await createProject(name);
+  const handleCreateProject = async (name: string, color: string) => {
+    await createProject(name, color);
   };
 
-  const handleRenameProject = async (id: string, name: string) => {
-    await updateProject(id, name);
+  const handleRenameProject = async (id: string, name: string, color: string) => {
+    await updateProject(id, { name, color });
   };
 
   const handleDeleteProject = async (id: string, deleteConvos: boolean) => {
@@ -132,7 +132,11 @@ const Sidebar = () => {
   };
 
   const handleSelectProject = (projectId: string | null) => {
-    setSelectedProjectId(projectId);
+    if (projectId) {
+      navigate(`/project/${projectId}`);
+    } else {
+      setSelectedProjectId(null);
+    }
   };
 
   // Navigation items - Only main navigation (4 items)
@@ -140,13 +144,14 @@ const Sidebar = () => {
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: "Dashboard", path: "/" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: "Paneles", path: "/dashboards" },
     { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: "Agentes AI", path: "/agents" },
-    { id: "history", icon: <History size={18} strokeWidth={1.5} />, label: "Historial", path: "/history" },
+    { id: "conversations", icon: <MessageSquare size={18} strokeWidth={1.5} />, label: "Conversaciones", path: "/conversations" },
   ];
 
   const getActiveItem = () => {
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
-    if (location.pathname === "/history") return "history";
+    if (location.pathname === "/conversations") return "conversations";
+    if (location.pathname.startsWith("/project/")) return "project";
     return "dashboard";
   };
 
@@ -268,7 +273,7 @@ const Sidebar = () => {
                     )}
                   >
                     <div className="flex items-center gap-2 truncate flex-1">
-                      <Folder size={14} strokeWidth={1.5} className="shrink-0" />
+                      <Folder size={14} strokeWidth={1.5} className="shrink-0" style={{ color: project.color }} />
                       <span className="truncate tracking-wide">{project.name}</span>
                     </div>
                     {selectedProjectId === project.id && (

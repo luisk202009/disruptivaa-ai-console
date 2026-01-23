@@ -12,12 +12,20 @@ export interface Conversation {
   updated_at: string;
 }
 
+export interface ConversationWithProject extends Conversation {
+  project?: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
+}
+
 interface UseConversationsOptions {
   projectId?: string | null; // null = show only unassigned, undefined = show all
 }
 
 export const useConversations = (options: UseConversationsOptions = {}) => {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<ConversationWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -31,7 +39,10 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     try {
       let query = supabase
         .from("conversations")
-        .select("*")
+        .select(`
+          *,
+          project:projects(id, name, color)
+        `)
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
         .limit(50);
