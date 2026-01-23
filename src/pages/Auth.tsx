@@ -7,33 +7,32 @@ const Auth = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#3D3D3D] p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        {/* Back button */}
+        {/* Back button - discreto */}
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 mb-12 transition-colors"
         >
-          <ArrowLeft size={20} />
-          <span>Volver al Dashboard</span>
+          <ArrowLeft size={18} strokeWidth={1.5} />
+          <span className="text-sm tracking-wide">Volver</span>
         </button>
 
-        {/* Card */}
-        <div className="glass-strong rounded-3xl p-8">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <img src={logo} alt="Disruptivaa" className="h-10" />
-          </div>
+        {/* Logo centrado */}
+        <div className="flex justify-center mb-10">
+          <img src={logo} alt="Disruptivaa" className="h-8" />
+        </div>
 
-          {/* Title */}
-          <h1 className="text-2xl font-bold text-foreground text-center mb-2">
-            Bienvenido a Disruptivaa
-          </h1>
-          <p className="text-muted-foreground text-center mb-8">
-            Accede a tus agentes AI y conecta tus campañas
-          </p>
+        {/* Titulo - tipografia limpia */}
+        <h1 className="text-2xl font-semibold text-white text-center mb-2 tracking-tight">
+          Bienvenido
+        </h1>
+        <p className="text-zinc-500 text-center mb-10 text-sm tracking-wide">
+          Accede a tus agentes AI y conecta tus campañas
+        </p>
 
-          {/* Auth Form with Tabs */}
+        {/* Contenedor del form - borde muy sutil */}
+        <div className="rounded-xl border border-white/[0.05] bg-zinc-900/30 p-8">
           <AuthForm onSuccess={() => navigate("/")} defaultTab="login" />
         </div>
       </div>
