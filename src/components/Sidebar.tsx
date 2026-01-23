@@ -27,6 +27,13 @@ import { ProjectItemMenu } from "./ProjectItemMenu";
 import { ConversationItemMenu } from "./ConversationItemMenu";
 import logo from "@/assets/logo-disruptivaa.png";
 import isologo from "@/assets/isologo.png";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -41,27 +48,27 @@ const NavItem = ({ icon, label, active, collapsed, onClick, variant = "default" 
   <button
     onClick={onClick}
     className={cn(
-      "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 relative",
+      "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 relative group",
       variant === "primary" 
         ? "bg-primary text-black font-semibold hover:bg-primary/90" 
-        : "hover:bg-sidebar-accent/50",
-      !active && variant === "default" && "text-sidebar-foreground hover:text-foreground"
+        : "hover:bg-white/[0.04]",
+      !active && variant === "default" && "text-zinc-500 hover:text-zinc-200"
     )}
   >
-    {/* Active indicator - thin orange line */}
+    {/* Active indicator - thin gray line (not orange) */}
     {active && variant === "default" && (
-      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-zinc-400 rounded-full" />
     )}
     <span className={cn(
       "transition-colors",
-      active && variant === "default" ? "text-foreground" : ""
+      active && variant === "default" ? "text-white" : "group-hover:text-zinc-200"
     )}>
       {icon}
     </span>
     {!collapsed && (
       <span className={cn(
-        "font-medium text-sm transition-colors",
-        active && variant === "default" && "text-foreground"
+        "text-sm tracking-wide transition-colors",
+        active && variant === "default" ? "text-white font-medium" : ""
       )}>
         {label}
       </span>
@@ -128,22 +135,18 @@ const Sidebar = () => {
     setSelectedProjectId(projectId);
   };
 
+  // Navigation items - Only main navigation (4 items)
   const navItems = [
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: "Dashboard", path: "/" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: "Paneles", path: "/dashboards" },
     { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: "Agentes AI", path: "/agents" },
     { id: "history", icon: <History size={18} strokeWidth={1.5} />, label: "Historial", path: "/history" },
-    { id: "connections", icon: <Link2 size={18} strokeWidth={1.5} />, label: "Conexiones", path: "/connections" },
-    { id: "settings", icon: <Settings size={18} strokeWidth={1.5} />, label: "Configuración", path: "/settings" },
-    { id: "help", icon: <HelpCircle size={18} strokeWidth={1.5} />, label: "Ayuda", path: "/" },
   ];
 
   const getActiveItem = () => {
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/history") return "history";
-    if (location.pathname === "/connections") return "connections";
-    if (location.pathname === "/settings") return "settings";
     return "dashboard";
   };
 
@@ -191,8 +194,8 @@ const Sidebar = () => {
         />
       </div>
 
-      {/* Navigation */}
-      <nav className="px-4 py-4 space-y-1">
+      {/* Navigation - Main Group (4 items only) */}
+      <nav className="px-4 py-4 space-y-1.5">
         {navItems.map((item) => (
           <NavItem
             key={item.id}
@@ -205,62 +208,53 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* Projects Section */}
+      {/* Projects Section - With mt-8 for generous separation */}
       {user && !collapsed && (
-        <div className="px-4 mb-3">
-          <div 
-            className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-sidebar-accent/40 rounded-lg px-2 transition-colors"
-            onClick={() => setProjectsExpanded(!projectsExpanded)}
-          >
-            <div className="flex items-center gap-2">
-              <Folder size={14} strokeWidth={1.5} className="text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Proyectos
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowCreateProject(true);
-                }}
-                className="p-1 rounded hover:bg-sidebar-accent transition-colors"
-                title="Crear proyecto"
-              >
-                <Plus size={14} strokeWidth={1.5} className="text-muted-foreground" />
-              </button>
+        <div className="px-4 mt-8 mb-3">
+          <div className="flex items-center justify-between py-2.5">
+            <button
+              onClick={() => setProjectsExpanded(!projectsExpanded)}
+              className="flex items-center gap-2 text-xs font-medium text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors"
+            >
               {projectsExpanded ? (
-                <ChevronUp size={14} strokeWidth={1.5} className="text-muted-foreground" />
+                <ChevronDown size={14} strokeWidth={1.5} />
               ) : (
-                <ChevronDown size={14} strokeWidth={1.5} className="text-muted-foreground" />
+                <ChevronRight size={14} strokeWidth={1.5} />
               )}
-            </div>
+              Proyectos
+            </button>
+            <button
+              onClick={() => setShowCreateProject(true)}
+              className="p-1 rounded hover:bg-white/[0.04] text-zinc-500 hover:text-zinc-200 transition-colors"
+            >
+              <Plus size={14} strokeWidth={1.5} />
+            </button>
           </div>
 
           {projectsExpanded && (
-            <div className="space-y-0.5 mt-1">
+            <div className="space-y-1 mt-2">
               {/* General / No Project option */}
               <button
                 onClick={() => handleSelectProject(null)}
                 className={cn(
                   "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors group",
                   selectedProjectId === null
-                    ? "text-foreground"
-                    : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40"
+                    ? "text-white bg-white/[0.05]"
+                    : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
                 )}
               >
                 <div className="flex items-center gap-2 truncate">
-                  <FolderOpen size={14} strokeWidth={1.5} className={selectedProjectId === null ? "text-foreground" : "text-muted-foreground"} />
-                  <span className="truncate">General</span>
+                  <FolderOpen size={14} strokeWidth={1.5} className="shrink-0" />
+                  <span className="truncate tracking-wide">General</span>
                 </div>
                 {selectedProjectId === null && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
                 )}
               </button>
 
               {/* Project list */}
               {projectsLoading ? (
-                <p className="text-xs text-muted-foreground px-3 py-2.5">Cargando...</p>
+                <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">Cargando...</p>
               ) : (
                 projects.map((project) => (
                   <div
@@ -269,16 +263,16 @@ const Sidebar = () => {
                     className={cn(
                       "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors group cursor-pointer",
                       selectedProjectId === project.id
-                        ? "text-foreground"
-                        : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40"
+                        ? "text-white bg-white/[0.05]"
+                        : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
                     )}
                   >
                     <div className="flex items-center gap-2 truncate flex-1">
-                      <Folder size={14} strokeWidth={1.5} className={selectedProjectId === project.id ? "text-foreground" : "text-muted-foreground"} />
-                      <span className="truncate">{project.name}</span>
+                      <Folder size={14} strokeWidth={1.5} className="shrink-0" />
+                      <span className="truncate tracking-wide">{project.name}</span>
                     </div>
                     {selectedProjectId === project.id && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mr-1" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0 mr-1" />
                     )}
                     <ProjectItemMenu
                       project={project}
@@ -297,24 +291,24 @@ const Sidebar = () => {
       {user && !collapsed && (
         <div className="flex-1 overflow-hidden flex flex-col px-4">
           <div className="flex items-center gap-2 py-2.5 mb-2">
-            <MessageSquare size={14} strokeWidth={1.5} className="text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-500" />
+            <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
               {selectedProjectId === null ? "Sin proyecto" : "Conversaciones"}
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto space-y-0.5">
+          <div className="flex-1 overflow-y-auto space-y-1">
             {conversationsLoading ? (
-              <p className="text-xs text-muted-foreground px-3 py-2.5">Cargando...</p>
+              <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">Cargando...</p>
             ) : conversations.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-2.5">Sin conversaciones</p>
+              <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">Sin conversaciones</p>
             ) : (
               conversations.map((convo) => (
                 <div
                   key={convo.chat_id}
                   onClick={() => handleLoadConversation(convo.chat_id)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40 transition-colors cursor-pointer group"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors cursor-pointer group"
                 >
-                  <span className="truncate flex-1">{convo.title || "Sin título"}</span>
+                  <span className="truncate flex-1 tracking-wide">{convo.title || "Sin título"}</span>
                   <ConversationItemMenu
                     conversation={convo}
                     projects={projects}
@@ -328,39 +322,83 @@ const Sidebar = () => {
         </div>
       )}
 
-      {/* User Section at Bottom */}
+      {/* Spacer */}
+      <div className="flex-grow" />
+
+      {/* Profile Dropdown - User section with menu */}
       {user && (
-        <div className={cn(
-          "p-4 border-t border-white/[0.04]",
-          collapsed ? "flex justify-center" : ""
-        )}>
-          <div className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-sidebar-accent/40",
-            collapsed && "justify-center p-2"
-          )}>
-            <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold text-zinc-200 shrink-0">
-              {getUserDisplayName()?.charAt(0).toUpperCase()}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {getUserDisplayName()}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user.email}
-                </p>
-              </div>
-            )}
-            {!collapsed && (
+        <div className={cn("p-4", collapsed ? "flex justify-center" : "")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button
-                onClick={signOut}
-                className="p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors"
-                title="Cerrar sesión"
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                  "hover:bg-white/[0.04] cursor-pointer",
+                  collapsed && "justify-center p-2"
+                )}
               >
-                <LogOut size={16} strokeWidth={1.5} className="text-muted-foreground" />
+                {/* Avatar */}
+                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium text-zinc-300 shrink-0">
+                  {getUserDisplayName()?.charAt(0).toUpperCase()}
+                </div>
+
+                {!collapsed && (
+                  <>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium text-zinc-200 truncate tracking-wide">
+                        {getUserDisplayName()}
+                      </p>
+                      <p className="text-xs text-zinc-500 truncate">
+                        {user.email}
+                      </p>
+                    </div>
+                    <ChevronUp size={14} strokeWidth={1.5} className="text-zinc-500" />
+                  </>
+                )}
               </button>
-            )}
-          </div>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              side="top"
+              align="start"
+              sideOffset={8}
+              className="w-56 bg-zinc-900 border-zinc-800"
+            >
+              <DropdownMenuItem
+                onClick={() => navigate("/connections")}
+                className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-300 hover:text-white focus:text-white focus:bg-white/[0.04]"
+              >
+                <Link2 size={16} strokeWidth={1.5} />
+                <span className="tracking-wide">Gestionar Conexiones</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => navigate("/settings")}
+                className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-300 hover:text-white focus:text-white focus:bg-white/[0.04]"
+              >
+                <Settings size={16} strokeWidth={1.5} />
+                <span className="tracking-wide">Configuración de Cuenta</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => window.open("https://help.disruptivaa.com", "_blank")}
+                className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-300 hover:text-white focus:text-white focus:bg-white/[0.04]"
+              >
+                <HelpCircle size={16} strokeWidth={1.5} />
+                <span className="tracking-wide">Centro de Ayuda</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="bg-zinc-800" />
+
+              <DropdownMenuItem
+                onClick={signOut}
+                className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-400 hover:text-red-400 focus:text-red-400 focus:bg-white/[0.04]"
+              >
+                <LogOut size={16} strokeWidth={1.5} />
+                <span className="tracking-wide">Cerrar Sesión</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
 
@@ -368,10 +406,9 @@ const Sidebar = () => {
       <div className="p-4 border-t border-white/[0.04]">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40 transition-colors"
+          className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors"
         >
           {collapsed ? <ChevronRight size={18} strokeWidth={1.5} /> : <ChevronLeft size={18} strokeWidth={1.5} />}
-          {!collapsed && <span className="text-sm">Colapsar</span>}
         </button>
       </div>
 
