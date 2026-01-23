@@ -31,6 +31,7 @@ const WIDGET_TYPE_LABELS: Record<WidgetType, string> = {
   pie: "Gráfico Circular",
   area: "Gráfico de Área",
   table: "Tabla",
+  goal_tracker: "Seguimiento de Meta",
 };
 
 export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, onClose }: WidgetSettingsProps) => {

@@ -124,6 +124,7 @@ const DEFAULT_GRID_SETTINGS: Record<WidgetType, GridSettings> = {
   pie: { x: 0, y: 0, w: 4, h: 3, minW: 3, minH: 3 },
   area: { x: 0, y: 0, w: 6, h: 3, minW: 4, minH: 3 },
   table: { x: 0, y: 0, w: 6, h: 4, minW: 4, minH: 3 },
+  goal_tracker: { x: 0, y: 0, w: 3, h: 3, minW: 2, minH: 3 },
 };
 
 type Step = "metric" | "type" | "account";

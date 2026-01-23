@@ -187,6 +187,47 @@ export type Database = {
         }
         Relationships: []
       }
+      project_goals: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          id: string
+          metric_key: string
+          period: string | null
+          project_id: string
+          target_value: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metric_key: string
+          period?: string | null
+          project_id: string
+          target_value: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metric_key?: string
+          period?: string | null
+          project_id?: string
+          target_value?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_goals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           color: string | null

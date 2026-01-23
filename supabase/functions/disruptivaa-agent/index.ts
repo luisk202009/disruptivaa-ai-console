@@ -350,7 +350,7 @@ serve(async (req) => {
     const userId = userData.user.id;
 
     // Parse request body - ignore any userId from body for security
-    const { message, agentId, agentName, systemInstruction, chatId, files } = await req.json();
+    const { message, agentId, agentName, systemInstruction, chatId, projectId, files } = await req.json();
     
     console.info("Request received for agent:", agentId);
 
@@ -363,6 +363,53 @@ serve(async (req) => {
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Fetch project goals if projectId is provided
+    let goalsContext = "";
+    if (projectId) {
+      const { data: projectGoals, error: goalsError } = await supabaseAdmin
+        .from("project_goals")
+        .select("*")
+        .eq("project_id", projectId);
+      
+      if (!goalsError && projectGoals && projectGoals.length > 0) {
+        const formatGoalValue = (goal: { metric_key: string; target_value: number; currency: string }): string => {
+          switch (goal.metric_key) {
+            case 'cpa':
+            case 'cpc':
+            case 'spend':
+              return `${goal.currency === 'USD' ? '$' : goal.currency}${goal.target_value}`;
+            case 'roas':
+              return `${goal.target_value}x`;
+            case 'ctr':
+              return `${goal.target_value}%`;
+            case 'conversions':
+              return goal.target_value.toString();
+            default:
+              return String(goal.target_value);
+          }
+        };
+
+        goalsContext = `
+🎯 METAS DEFINIDAS PARA ESTE PROYECTO:
+${projectGoals.map((g: { metric_key: string; target_value: number; currency: string; period: string }) => `- ${g.metric_key.toUpperCase()}: ${formatGoalValue(g)} (${g.period})`).join('\n')}
+
+📊 INSTRUCCIÓN OBLIGATORIA PARA ANÁLISIS CON METAS:
+Cuando analices métricas, COMPARA cada una contra su meta definida.
+Usa este formato para cada métrica con meta:
+
+| Métrica | Meta | Actual | Diferencia | Estado |
+|---------|------|--------|------------|--------|
+| CPA | $15.00 | $18.50 | +$3.50 | ⚠️ |
+
+Si la meta se cumple: ✅
+Si está cerca (<10% de diferencia): ⚠️
+Si no se cumple: ❌
+
+SIEMPRE incluye la sección "### 🎯 Meta vs Realidad" cuando hay metas definidas.
+`;
+      }
+    }
 
     // Process attached files - MAXIMUM PRIORITY
     let fileContext = "";
@@ -530,6 +577,11 @@ ENFÓCATE 100% en los archivos que el usuario suba.`;
     // Add API data context FIRST (highest priority for real-time data)
     if (contextMessage) {
       finalSystemInstruction += `\n\n${contextMessage}`;
+    }
+
+    // Add goals context if available
+    if (goalsContext) {
+      finalSystemInstruction += `\n\n${goalsContext}`;
     }
     
     // File context - can be cross-referenced with API data

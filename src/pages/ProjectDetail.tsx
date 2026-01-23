@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { MessageSquare, Calendar, Bot, Plus } from "lucide-react";
+import { MessageSquare, Calendar, Bot, Plus, Target } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Sidebar from "@/components/Sidebar";
 import { useProject } from "@/hooks/useProject";
 import { useConversations } from "@/hooks/useConversations";
 import { Button } from "@/components/ui/button";
+import { ProjectGoalsEditor } from "@/components/projects/ProjectGoalsEditor";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,10 +66,22 @@ const ProjectDetail = () => {
                   {project.name}
                 </h1>
               </div>
-              <Button onClick={handleNewConversation} className="gap-2">
-                <Plus size={16} strokeWidth={2} />
-                Nueva Conversación
-              </Button>
+              <div className="flex items-center gap-2">
+                <ProjectGoalsEditor 
+                  projectId={id!} 
+                  projectName={project.name}
+                  trigger={
+                    <Button variant="outline" className="gap-2">
+                      <Target size={16} strokeWidth={2} />
+                      Metas
+                    </Button>
+                  }
+                />
+                <Button onClick={handleNewConversation} className="gap-2">
+                  <Plus size={16} strokeWidth={2} />
+                  Nueva Conversación
+                </Button>
+              </div>
             </div>
             <p className="text-sm text-muted-foreground mt-2 ml-7">
               {conversations.length} {conversations.length === 1 ? "conversación" : "conversaciones"}
