@@ -298,16 +298,16 @@ const CommandConsole = ({
       {/* Agent Context Badge */}
       {selectedAgent && (
         <div className="mb-4 flex items-center justify-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-            <selectedAgent.icon size={16} className="text-primary" />
-            <span className="text-sm font-medium text-primary">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700">
+            <selectedAgent.icon size={16} className="text-zinc-300" />
+            <span className="text-sm font-medium text-zinc-300">
               Consultando a {selectedAgent.name}
             </span>
             <button 
               onClick={onClearAgent}
-              className="ml-1 p-1 rounded-full hover:bg-primary/20 transition-colors"
+              className="ml-1 p-1 rounded-full hover:bg-zinc-700 transition-colors"
             >
-              <X size={14} className="text-primary" />
+              <X size={14} className="text-zinc-400" />
             </button>
           </div>
         </div>
@@ -318,18 +318,18 @@ const CommandConsole = ({
         <div 
           ref={messagesContainerRef}
           className={cn(
-            "mb-4 overflow-y-auto space-y-3 p-4 glass rounded-2xl",
+            "mb-4 overflow-y-auto space-y-6 py-4",
             fullHeight ? "flex-1 min-h-0" : "max-h-80"
           )}
         >
           {/* Connect Ads Account button inside chat area */}
           {isAdsOptimizer && (
-            <div className="flex justify-center pb-2 border-b border-border/30 mb-3">
+            <div className="flex justify-center pb-2 border-b border-zinc-800/50 mb-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleConnectAccount}
-                className="text-xs border-primary/30 text-primary hover:bg-primary/10"
+                className="text-xs border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
               >
                 <Link2 size={14} className="mr-1.5" />
                 Conectar cuenta de Meta/Google
@@ -339,8 +339,8 @@ const CommandConsole = ({
 
           {messagesLoading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="ml-2 text-sm text-muted-foreground">Cargando mensajes...</span>
+              <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+              <span className="ml-2 text-sm text-zinc-500">Cargando mensajes...</span>
             </div>
           ) : (
             <>
@@ -355,17 +355,17 @@ const CommandConsole = ({
                   <div className={cn(
                     "flex items-center justify-center w-8 h-8 rounded-full shrink-0",
                     msg.role === "user" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-zinc-700 text-zinc-200" 
+                      : "bg-zinc-800 text-zinc-400"
                   )}>
                     {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
                   </div>
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-2xl text-sm",
+                      "rounded-xl text-base",
                       msg.role === "user"
-                        ? "bg-primary text-primary-foreground rounded-tr-sm px-4 py-2.5"
-                        : "bg-zinc-800 border-2 border-primary text-foreground rounded-tl-sm px-4 py-3"
+                        ? "bg-white/[0.06] text-white px-4 py-3 max-w-[80%]"
+                        : "text-zinc-400 max-w-4xl w-full"
                     )}
                   >
                     {msg.role === "assistant" ? (
@@ -380,13 +380,13 @@ const CommandConsole = ({
               {/* Loading indicator */}
               {isLoading && (
                 <div className="flex items-start gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground shrink-0">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 text-zinc-400 shrink-0">
                     <Bot size={16} />
                   </div>
-                  <div className="bg-zinc-800 border-2 border-[#EF7911] px-4 py-3 rounded-2xl rounded-tl-sm">
+                  <div className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <Loader2 size={16} className="animate-spin text-primary" />
-                      <span className="text-sm text-muted-foreground">
+                      <Loader2 size={16} className="animate-spin text-zinc-400" />
+                      <span className="text-sm text-zinc-500">
                         {selectedAgent ? `${selectedAgent.name} está consultando...` : "Procesando..."}
                       </span>
                     </div>
@@ -403,12 +403,12 @@ const CommandConsole = ({
       <form onSubmit={handleSubmit} className="relative">
         <div
           className={cn(
-            "relative rounded-2xl transition-all duration-300 bg-card border-2",
+            "relative rounded-xl transition-all duration-200 bg-zinc-900/50 border",
             !isAuthenticated 
-              ? "border-muted cursor-not-allowed opacity-75" 
+              ? "border-zinc-800 cursor-not-allowed opacity-75" 
               : isFocused 
-                ? "border-primary shadow-[0_0_20px_rgba(239,121,17,0.3)]" 
-                : "border-border"
+                ? "border-zinc-600 shadow-lg shadow-black/20" 
+                : "border-zinc-800"
           )}
         >
         {/* File previews above input */}
@@ -434,13 +434,13 @@ const CommandConsole = ({
               />
             )}
 
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-800">
               {isLoading ? (
-                <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" />
               ) : selectedAgent ? (
-                <selectedAgent.icon className="w-5 h-5 text-primary" />
+                <selectedAgent.icon className="w-5 h-5 text-zinc-400" />
               ) : (
-                <Sparkles className="w-5 h-5 text-primary" />
+                <Sparkles className="w-5 h-5 text-zinc-400" />
               )}
             </div>
             
@@ -509,7 +509,7 @@ const CommandConsole = ({
             key={suggestion}
             onClick={() => !isLoading && setCommand(suggestion)}
             disabled={isLoading}
-            className="px-4 py-2 text-sm rounded-full glass border border-border/30 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm rounded-full bg-zinc-900/30 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {suggestion}
           </button>
