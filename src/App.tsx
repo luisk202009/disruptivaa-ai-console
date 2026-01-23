@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
-import History from "./pages/History";
+import Conversations from "./pages/Conversations";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import Agents from "./pages/Agents";
@@ -13,6 +13,7 @@ import Connections from "./pages/Connections";
 import MetaCallback from "./pages/MetaCallback";
 import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
+import ProjectDetail from "./pages/ProjectDetail";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -30,10 +31,18 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/agents" element={<Agents />} />
             <Route
-              path="/history"
+              path="/conversations"
               element={
                 <ProtectedRoute>
-                  <History />
+                  <Conversations />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/project/:id"
+              element={
+                <ProtectedRoute>
+                  <ProjectDetail />
                 </ProtectedRoute>
               }
             />

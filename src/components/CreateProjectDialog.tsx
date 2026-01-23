@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FolderPlus } from "lucide-react";
+import { ColorPicker } from "./ColorPicker";
 
 interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProject: (name: string) => Promise<void>;
+  onCreateProject: (name: string, color: string) => Promise<void>;
 }
 
 export const CreateProjectDialog = ({
@@ -23,6 +24,7 @@ export const CreateProjectDialog = ({
   onCreateProject,
 }: CreateProjectDialogProps) => {
   const [name, setName] = useState("");
+  const [color, setColor] = useState("#FF7900");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,8 +33,9 @@ export const CreateProjectDialog = ({
 
     setLoading(true);
     try {
-      await onCreateProject(name.trim());
+      await onCreateProject(name.trim(), color);
       setName("");
+      setColor("#FF7900");
       onOpenChange(false);
     } finally {
       setLoading(false);
@@ -49,18 +52,26 @@ export const CreateProjectDialog = ({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="py-4">
-            <Label htmlFor="project-name" className="text-muted-foreground">
-              Nombre del proyecto
-            </Label>
-            <Input
-              id="project-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Marketing Q1"
-              className="mt-2 bg-zinc-800 border-zinc-700 text-foreground"
-              autoFocus
-            />
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="project-name" className="text-muted-foreground">
+                Nombre del proyecto
+              </Label>
+              <Input
+                id="project-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ej: Marketing Q1"
+                className="mt-2 bg-zinc-800 border-zinc-700 text-foreground"
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Color</Label>
+              <div className="mt-2">
+                <ColorPicker value={color} onChange={setColor} />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button

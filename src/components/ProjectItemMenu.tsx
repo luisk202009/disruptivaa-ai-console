@@ -14,7 +14,7 @@ import { Project } from "@/hooks/useProjects";
 
 interface ProjectItemMenuProps {
   project: Project;
-  onRename: (id: string, name: string) => Promise<void>;
+  onRename: (id: string, name: string, color: string) => Promise<void>;
   onDelete: (id: string, deleteConversations: boolean) => Promise<void>;
 }
 
@@ -26,8 +26,8 @@ export const ProjectItemMenu = ({
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const handleRename = async (name: string) => {
-    await onRename(project.id, name);
+  const handleRename = async (name: string, color: string) => {
+    await onRename(project.id, name, color);
   };
 
   const handleDelete = async (deleteConversations: boolean) => {
@@ -77,6 +77,7 @@ export const ProjectItemMenu = ({
         open={showRenameDialog}
         onOpenChange={setShowRenameDialog}
         projectName={project.name}
+        projectColor={project.color}
         onRenameProject={handleRename}
       />
 

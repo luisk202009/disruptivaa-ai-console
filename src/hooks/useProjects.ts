@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export interface Project {
   id: string;
   name: string;
+  color: string;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -38,13 +39,13 @@ export const useProjects = () => {
     }
   }, [user]);
 
-  const createProject = async (name: string): Promise<Project | null> => {
+  const createProject = async (name: string, color: string = '#FF7900'): Promise<Project | null> => {
     if (!user) return null;
 
     try {
       const { data, error } = await supabase
         .from("projects")
-        .insert({ name, user_id: user.id })
+        .insert({ name, color, user_id: user.id })
         .select()
         .single();
 
@@ -56,11 +57,11 @@ export const useProjects = () => {
     }
   };
 
-  const updateProject = async (id: string, name: string): Promise<boolean> => {
+  const updateProject = async (id: string, updates: { name?: string; color?: string }): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from("projects")
-        .update({ name })
+        .update(updates)
         .eq("id", id);
 
       if (error) throw error;

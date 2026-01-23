@@ -10,34 +10,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pencil } from "lucide-react";
+import { ColorPicker } from "./ColorPicker";
 
 interface RenameProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectName: string;
-  onRenameProject: (name: string) => Promise<void>;
+  projectColor: string;
+  onRenameProject: (name: string, color: string) => Promise<void>;
 }
 
 export const RenameProjectDialog = ({
   open,
   onOpenChange,
   projectName,
+  projectColor,
   onRenameProject,
 }: RenameProjectDialogProps) => {
   const [name, setName] = useState(projectName);
+  const [color, setColor] = useState(projectColor);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setName(projectName);
-  }, [projectName]);
+    setColor(projectColor);
+  }, [projectName, projectColor]);
+
+  const hasChanges = name.trim() !== projectName || color !== projectColor;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || name.trim() === projectName) return;
+    if (!name.trim() || !hasChanges) return;
 
     setLoading(true);
     try {
-      await onRenameProject(name.trim());
+      await onRenameProject(name.trim(), color);
       onOpenChange(false);
     } finally {
       setLoading(false);
@@ -50,22 +57,30 @@ export const RenameProjectDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <Pencil className="h-5 w-5 text-primary" />
-            Renombrar Proyecto
+            Editar Proyecto
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="py-4">
-            <Label htmlFor="project-name" className="text-muted-foreground">
-              Nuevo nombre
-            </Label>
-            <Input
-              id="project-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Marketing Q1"
-              className="mt-2 bg-zinc-800 border-zinc-700 text-foreground"
-              autoFocus
-            />
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="project-name" className="text-muted-foreground">
+                Nombre del proyecto
+              </Label>
+              <Input
+                id="project-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ej: Marketing Q1"
+                className="mt-2 bg-zinc-800 border-zinc-700 text-foreground"
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Color</Label>
+              <div className="mt-2">
+                <ColorPicker value={color} onChange={setColor} />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -78,7 +93,7 @@ export const RenameProjectDialog = ({
             </Button>
             <Button
               type="submit"
-              disabled={!name.trim() || name.trim() === projectName || loading}
+              disabled={!name.trim() || !hasChanges || loading}
             >
               {loading ? "Guardando..." : "Guardar"}
             </Button>
