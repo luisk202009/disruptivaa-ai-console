@@ -190,13 +190,26 @@ const Sidebar = () => {
 
       {/* New Conversation Button */}
       <div className="px-4 py-3">
-        <NavItem
-          icon={<Plus size={18} strokeWidth={2} />}
-          label="Nueva Conversación"
-          collapsed={collapsed}
+        <button
           onClick={handleNewConversation}
-          variant="primary"
-        />
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-3.5 rounded-lg transition-all duration-200",
+            "border border-primary/40 hover:border-primary hover:bg-primary/5",
+            "text-zinc-300 hover:text-white",
+            collapsed && "justify-center"
+          )}
+        >
+          <Plus 
+            size={20} 
+            strokeWidth={2} 
+            className="text-primary shrink-0" 
+          />
+          {!collapsed && (
+            <span className="text-sm font-medium tracking-wide">
+              Nueva Conversación
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Navigation - Main Group (4 items only) */}
