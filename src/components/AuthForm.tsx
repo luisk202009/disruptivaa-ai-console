@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Mail, Lock, User, Sparkles } from "lucide-react";
+import { Loader2, Mail, Lock, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -106,32 +106,41 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
     }
   };
 
+  const inputClassName = "pl-11 h-12 bg-zinc-900 border-zinc-800 focus:border-zinc-600 focus:ring-zinc-700/30 placeholder:text-zinc-600 text-white tracking-wide";
+  const iconClassName = "absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600";
+
   return (
     <Tabs defaultValue={defaultTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 bg-background/50 border border-[#EF7911]/20">
+      <TabsList className="grid w-full grid-cols-2 bg-transparent border-b border-zinc-800 rounded-none p-0 h-auto">
         <TabsTrigger 
           value="login" 
-          className="data-[state=active]:bg-[#EF7911] data-[state=active]:text-white"
+          className="rounded-none border-b-2 border-transparent py-3 text-zinc-500 
+                     data-[state=active]:border-white data-[state=active]:text-white 
+                     data-[state=active]:bg-transparent data-[state=active]:shadow-none
+                     hover:text-zinc-300 transition-colors tracking-wide"
         >
           Iniciar sesión
         </TabsTrigger>
         <TabsTrigger 
           value="register"
-          className="data-[state=active]:bg-[#EF7911] data-[state=active]:text-white"
+          className="rounded-none border-b-2 border-transparent py-3 text-zinc-500 
+                     data-[state=active]:border-white data-[state=active]:text-white 
+                     data-[state=active]:bg-transparent data-[state=active]:shadow-none
+                     hover:text-zinc-300 transition-colors tracking-wide"
         >
           Registrarse
         </TabsTrigger>
       </TabsList>
 
       {/* Login Tab */}
-      <TabsContent value="login" className="mt-6">
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="login-email" className="text-foreground">
+      <TabsContent value="login" className="mt-8">
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div className="space-y-3">
+            <Label htmlFor="login-email" className="text-zinc-400 text-sm tracking-wide">
               Email
             </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Mail className={iconClassName} strokeWidth={1.5} />
               <Input
                 id="login-email"
                 type="email"
@@ -139,17 +148,17 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
-                className="pl-10 bg-background/50 border-[#EF7911]/30 focus:border-[#EF7911] focus:ring-[#EF7911]/20"
+                className={inputClassName}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="login-password" className="text-foreground">
+          <div className="space-y-3">
+            <Label htmlFor="login-password" className="text-zinc-400 text-sm tracking-wide">
               Contraseña
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Lock className={iconClassName} strokeWidth={1.5} />
               <Input
                 id="login-password"
                 type="password"
@@ -158,7 +167,7 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
                 placeholder="••••••••"
                 required
                 minLength={6}
-                className="pl-10 bg-background/50 border-[#EF7911]/30 focus:border-[#EF7911] focus:ring-[#EF7911]/20"
+                className={inputClassName}
               />
             </div>
           </div>
@@ -166,7 +175,8 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#EF7911] hover:bg-[#EF7911]/90 text-white font-semibold py-6"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-semibold 
+                       rounded-lg tracking-wide transition-colors mt-2"
           >
             {loading ? (
               <>
@@ -181,31 +191,31 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
       </TabsContent>
 
       {/* Register Tab */}
-      <TabsContent value="register" className="mt-6">
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="register-name" className="text-foreground">
+      <TabsContent value="register" className="mt-8">
+        <form onSubmit={handleRegister} className="space-y-5">
+          <div className="space-y-3">
+            <Label htmlFor="register-name" className="text-zinc-400 text-sm tracking-wide">
               Nombre
             </Label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <User className={iconClassName} strokeWidth={1.5} />
               <Input
                 id="register-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Tu nombre"
-                className="pl-10 bg-background/50 border-[#EF7911]/30 focus:border-[#EF7911] focus:ring-[#EF7911]/20"
+                className={inputClassName}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="register-email" className="text-foreground">
+          <div className="space-y-3">
+            <Label htmlFor="register-email" className="text-zinc-400 text-sm tracking-wide">
               Email
             </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Mail className={iconClassName} strokeWidth={1.5} />
               <Input
                 id="register-email"
                 type="email"
@@ -213,17 +223,17 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
-                className="pl-10 bg-background/50 border-[#EF7911]/30 focus:border-[#EF7911] focus:ring-[#EF7911]/20"
+                className={inputClassName}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="register-password" className="text-foreground">
+          <div className="space-y-3">
+            <Label htmlFor="register-password" className="text-zinc-400 text-sm tracking-wide">
               Contraseña
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Lock className={iconClassName} strokeWidth={1.5} />
               <Input
                 id="register-password"
                 type="password"
@@ -232,7 +242,7 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
                 placeholder="••••••••"
                 required
                 minLength={6}
-                className="pl-10 bg-background/50 border-[#EF7911]/30 focus:border-[#EF7911] focus:ring-[#EF7911]/20"
+                className={inputClassName}
               />
             </div>
           </div>
@@ -240,7 +250,8 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#EF7911] hover:bg-[#EF7911]/90 text-white font-semibold py-6"
+            className="w-full h-12 bg-primary hover:bg-primary/90 text-black font-semibold 
+                       rounded-lg tracking-wide transition-colors mt-2"
           >
             {loading ? (
               <>
@@ -253,18 +264,18 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
           </Button>
 
           {/* Benefits */}
-          <div className="pt-4 border-t border-border/30 space-y-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles size={12} className="text-[#EF7911]" />
-              <span>Acceso a 5 agentes AI especializados</span>
+          <div className="pt-6 border-t border-zinc-800 space-y-3">
+            <div className="flex items-center gap-3 text-sm text-zinc-500">
+              <div className="w-1 h-1 rounded-full bg-zinc-600" />
+              <span className="tracking-wide">Acceso a 5 agentes AI especializados</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles size={12} className="text-[#EF7911]" />
-              <span>Historial de conversaciones guardado</span>
+            <div className="flex items-center gap-3 text-sm text-zinc-500">
+              <div className="w-1 h-1 rounded-full bg-zinc-600" />
+              <span className="tracking-wide">Historial de conversaciones guardado</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles size={12} className="text-[#EF7911]" />
-              <span>Conecta Meta y Google Ads</span>
+            <div className="flex items-center gap-3 text-sm text-zinc-500">
+              <div className="w-1 h-1 rounded-full bg-zinc-600" />
+              <span className="tracking-wide">Conecta Meta y Google Ads</span>
             </div>
           </div>
         </form>
