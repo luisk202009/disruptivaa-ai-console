@@ -63,27 +63,27 @@ const History = () => {
               <p>No hay conversaciones en el historial.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 p-4 rounded-lg border ${
+                  className={`flex gap-4 py-4 ${
                     msg.role === "user"
-                      ? "bg-card border-border"
-                      : "bg-zinc-800 border-2 border-[#EF7911]"
+                      ? "border-b border-zinc-800/50"
+                      : ""
                   }`}
                 >
                   <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    msg.role === "user" ? "bg-zinc-700 text-zinc-200" : "bg-zinc-800 text-zinc-400"
                   }`}>
                     {msg.role === "user" ? <User size={16} /> : <Bot size={16} />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-2">
                       <span className="font-medium text-sm text-foreground">
                         {msg.role === "user" ? "Tú" : "Disruptivaa"}
                       </span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="text-xs text-zinc-500 flex items-center gap-1">
                         <Calendar size={12} />
                         {format(new Date(msg.created_at), "d MMM yyyy, HH:mm", { locale: es })}
                       </span>
@@ -91,7 +91,7 @@ const History = () => {
                     {msg.role === "assistant" ? (
                       <MarkdownMessage content={msg.content} />
                     ) : (
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words">
+                      <p className="text-base text-white whitespace-pre-wrap break-words">
                         {msg.content}
                       </p>
                     )}
