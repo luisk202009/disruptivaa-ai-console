@@ -7,14 +7,20 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "2.5rem",
       screens: {
         "2xl": "1400px",
       },
     },
     extend: {
       fontFamily: {
-        sans: ["Fira Sans", "system-ui", "sans-serif"],
+        sans: ["Inter", "Fira Sans", "system-ui", "sans-serif"],
+      },
+      letterSpacing: {
+        tight: "-0.01em",
+        normal: "0",
+        wide: "0.01em",
+        wider: "0.02em",
       },
       colors: {
         border: "hsl(var(--border))",
@@ -25,7 +31,6 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -82,8 +87,8 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       boxShadow: {
-        'glow': '0 0 30px hsl(27 100% 50% / 0.4)',
-        'glow-intense': '0 0 50px hsl(27 100% 50% / 0.6)',
+        'subtle': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        'card': '0 2px 8px 0 rgb(0 0 0 / 0.12)',
       },
     },
   },

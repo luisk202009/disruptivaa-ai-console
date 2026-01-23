@@ -135,7 +135,7 @@ const DashboardView = () => {
       <Sidebar />
       <main className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="h-16 border-b border-border px-6 flex items-center justify-between bg-card/50 backdrop-blur-sm">
+        <header className="h-16 border-b border-border px-6 flex items-center justify-between bg-card/50">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate("/dashboards")}>
               <ArrowLeft size={20} />
@@ -153,7 +153,7 @@ const DashboardView = () => {
             {hasUnconfiguredWidgets && (
               <Button
                 variant="outline"
-                className="gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                className="gap-2 border-amber-500/50 text-amber-500 hover:bg-accent"
                 onClick={() => setShowBulkAccountModal(true)}
               >
                 <Wrench size={16} />

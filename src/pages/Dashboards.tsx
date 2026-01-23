@@ -76,9 +76,9 @@ const Dashboards = () => {
       <Sidebar />
       <main className="flex-1 p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-10">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Paneles</h1>
+            <h1 className="text-3xl font-semibold text-foreground tracking-tight">Paneles</h1>
             <p className="text-muted-foreground mt-1">
               Crea dashboards personalizados con métricas de tus campañas
             </p>
@@ -105,10 +105,10 @@ const Dashboards = () => {
             ))}
           </div>
         ) : dashboards.length === 0 ? (
-          <Card className="glass border-dashed">
+          <Card className="glass border-dashed border-white/[0.06]">
             <CardContent className="flex flex-col items-center justify-center py-16">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <LayoutGrid size={32} className="text-primary" />
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                <LayoutGrid size={32} className="text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
                 No tienes paneles aún
@@ -127,7 +127,7 @@ const Dashboards = () => {
             {dashboards.map((dashboard) => (
               <Card
                 key={dashboard.id}
-                className="glass cursor-pointer hover:border-primary/30 transition-all duration-200 group"
+                className="glass cursor-pointer hover:border-white/[0.12] transition-all duration-200 group"
                 onClick={() => navigate(`/dashboards/${dashboard.id}`)}
               >
                 <CardHeader className="flex flex-row items-start justify-between space-y-0">
