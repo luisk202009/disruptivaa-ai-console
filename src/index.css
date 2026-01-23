@@ -43,14 +43,14 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar */
-    --sidebar-background: 240 10% 3%;
-    --sidebar-foreground: 240 5% 65%;
+    /* Sidebar - Premium feel with subtle depth */
+    --sidebar-background: 240 6% 6%;
+    --sidebar-foreground: 240 5% 55%;
     --sidebar-primary: 27 89% 49%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 10%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 240 4% 12%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 4% 10%;
+    --sidebar-border: 240 4% 8%;
     --sidebar-ring: 27 89% 49%;
   }
 

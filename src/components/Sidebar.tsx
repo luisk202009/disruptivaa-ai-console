@@ -41,17 +41,30 @@ const NavItem = ({ icon, label, active, collapsed, onClick, variant = "default" 
   <button
     onClick={onClick}
     className={cn(
-      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+      "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 relative",
       variant === "primary" 
-        ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-        : "hover:bg-sidebar-accent",
-      active && variant === "default" && "bg-sidebar-accent text-foreground",
-      !active && variant === "default" && "text-sidebar-foreground"
+        ? "bg-primary text-black font-semibold hover:bg-primary/90" 
+        : "hover:bg-sidebar-accent/50",
+      !active && variant === "default" && "text-sidebar-foreground hover:text-foreground"
     )}
   >
-    <span className={cn(active && variant === "default" && "text-foreground")}>{icon}</span>
+    {/* Active indicator - thin orange line */}
+    {active && variant === "default" && (
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full" />
+    )}
+    <span className={cn(
+      "transition-colors",
+      active && variant === "default" ? "text-foreground" : ""
+    )}>
+      {icon}
+    </span>
     {!collapsed && (
-      <span className="font-medium text-sm">{label}</span>
+      <span className={cn(
+        "font-medium text-sm transition-colors",
+        active && variant === "default" && "text-foreground"
+      )}>
+        {label}
+      </span>
     )}
   </button>
 );
@@ -116,13 +129,13 @@ const Sidebar = () => {
   };
 
   const navItems = [
-    { id: "dashboard", icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/" },
-    { id: "panels", icon: <LayoutGrid size={20} />, label: "Paneles", path: "/dashboards" },
-    { id: "agents", icon: <Bot size={20} />, label: "Agentes AI", path: "/agents" },
-    { id: "history", icon: <History size={20} />, label: "Historial", path: "/history" },
-    { id: "connections", icon: <Link2 size={20} />, label: "Conexiones", path: "/connections" },
-    { id: "settings", icon: <Settings size={20} />, label: "Configuración", path: "/settings" },
-    { id: "help", icon: <HelpCircle size={20} />, label: "Ayuda", path: "/" },
+    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: "Dashboard", path: "/" },
+    { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: "Paneles", path: "/dashboards" },
+    { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: "Agentes AI", path: "/agents" },
+    { id: "history", icon: <History size={18} strokeWidth={1.5} />, label: "Historial", path: "/history" },
+    { id: "connections", icon: <Link2 size={18} strokeWidth={1.5} />, label: "Conexiones", path: "/connections" },
+    { id: "settings", icon: <Settings size={18} strokeWidth={1.5} />, label: "Configuración", path: "/settings" },
+    { id: "help", icon: <HelpCircle size={18} strokeWidth={1.5} />, label: "Ayuda", path: "/" },
   ];
 
   const getActiveItem = () => {
@@ -143,14 +156,14 @@ const Sidebar = () => {
   return (
     <aside 
       className={cn(
-        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
-        collapsed ? "w-16" : "w-56"
+        "h-screen bg-sidebar border-r border-white/[0.04] flex flex-col transition-all duration-300",
+        collapsed ? "w-16" : "w-60"
       )}
     >
       {/* Logo */}
       <div className={cn(
-        "h-16 flex items-center border-b border-sidebar-border transition-all duration-300",
-        collapsed ? "justify-center px-2" : "px-4"
+        "h-16 flex items-center transition-all duration-300",
+        collapsed ? "justify-center px-2" : "px-5"
       )}>
         {collapsed ? (
           <img 
@@ -168,9 +181,9 @@ const Sidebar = () => {
       </div>
 
       {/* New Conversation Button */}
-      <div className="p-3">
+      <div className="px-4 py-3">
         <NavItem
-          icon={<Plus size={20} />}
+          icon={<Plus size={18} strokeWidth={2} />}
           label="Nueva Conversación"
           collapsed={collapsed}
           onClick={handleNewConversation}
@@ -179,7 +192,7 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="p-3 space-y-1">
+      <nav className="px-4 py-4 space-y-1">
         {navItems.map((item) => (
           <NavItem
             key={item.id}
@@ -194,13 +207,13 @@ const Sidebar = () => {
 
       {/* Projects Section */}
       {user && !collapsed && (
-        <div className="px-3 mb-2">
+        <div className="px-4 mb-3">
           <div 
-            className="flex items-center justify-between py-2 cursor-pointer hover:bg-sidebar-accent/50 rounded-lg px-2 transition-colors"
+            className="flex items-center justify-between py-2.5 cursor-pointer hover:bg-sidebar-accent/40 rounded-lg px-2 transition-colors"
             onClick={() => setProjectsExpanded(!projectsExpanded)}
           >
             <div className="flex items-center gap-2">
-              <Folder size={14} className="text-muted-foreground" />
+              <Folder size={14} strokeWidth={1.5} className="text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Proyectos
               </span>
@@ -214,12 +227,12 @@ const Sidebar = () => {
                 className="p-1 rounded hover:bg-sidebar-accent transition-colors"
                 title="Crear proyecto"
               >
-                <Plus size={14} className="text-muted-foreground" />
+                <Plus size={14} strokeWidth={1.5} className="text-muted-foreground" />
               </button>
               {projectsExpanded ? (
-                <ChevronUp size={14} className="text-muted-foreground" />
+                <ChevronUp size={14} strokeWidth={1.5} className="text-muted-foreground" />
               ) : (
-                <ChevronDown size={14} className="text-muted-foreground" />
+                <ChevronDown size={14} strokeWidth={1.5} className="text-muted-foreground" />
               )}
             </div>
           </div>
@@ -230,37 +243,43 @@ const Sidebar = () => {
               <button
                 onClick={() => handleSelectProject(null)}
                 className={cn(
-                  "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group",
+                  "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors group",
                   selectedProjectId === null
-                    ? "bg-sidebar-accent text-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    ? "text-foreground"
+                    : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40"
                 )}
               >
                 <div className="flex items-center gap-2 truncate">
-                  <FolderOpen size={14} className={selectedProjectId === null ? "text-foreground" : "text-muted-foreground"} />
+                  <FolderOpen size={14} strokeWidth={1.5} className={selectedProjectId === null ? "text-foreground" : "text-muted-foreground"} />
                   <span className="truncate">General</span>
                 </div>
+                {selectedProjectId === null && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                )}
               </button>
 
               {/* Project list */}
               {projectsLoading ? (
-                <p className="text-xs text-muted-foreground px-3 py-2">Cargando...</p>
+                <p className="text-xs text-muted-foreground px-3 py-2.5">Cargando...</p>
               ) : (
                 projects.map((project) => (
                   <div
                     key={project.id}
                     onClick={() => handleSelectProject(project.id)}
                     className={cn(
-                      "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group cursor-pointer",
+                      "w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm transition-colors group cursor-pointer",
                       selectedProjectId === project.id
-                        ? "bg-sidebar-accent text-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent"
+                        ? "text-foreground"
+                        : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40"
                     )}
                   >
                     <div className="flex items-center gap-2 truncate flex-1">
-                      <Folder size={14} className={selectedProjectId === project.id ? "text-foreground" : "text-muted-foreground"} />
+                      <Folder size={14} strokeWidth={1.5} className={selectedProjectId === project.id ? "text-foreground" : "text-muted-foreground"} />
                       <span className="truncate">{project.name}</span>
                     </div>
+                    {selectedProjectId === project.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mr-1" />
+                    )}
                     <ProjectItemMenu
                       project={project}
                       onRename={handleRenameProject}
@@ -276,24 +295,24 @@ const Sidebar = () => {
 
       {/* Recent Conversations Section */}
       {user && !collapsed && (
-        <div className="flex-1 overflow-hidden flex flex-col px-3">
-          <div className="flex items-center gap-2 py-2 mb-1">
-            <MessageSquare size={14} className="text-muted-foreground" />
+        <div className="flex-1 overflow-hidden flex flex-col px-4">
+          <div className="flex items-center gap-2 py-2.5 mb-2">
+            <MessageSquare size={14} strokeWidth={1.5} className="text-muted-foreground" />
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {selectedProjectId === null ? "Sin proyecto" : "Conversaciones"}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-0.5">
             {conversationsLoading ? (
-              <p className="text-xs text-muted-foreground px-3 py-2">Cargando...</p>
+              <p className="text-xs text-muted-foreground px-3 py-2.5">Cargando...</p>
             ) : conversations.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-3 py-2">Sin conversaciones</p>
+              <p className="text-xs text-muted-foreground px-3 py-2.5">Sin conversaciones</p>
             ) : (
               conversations.map((convo) => (
                 <div
                   key={convo.chat_id}
                   onClick={() => handleLoadConversation(convo.chat_id)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors cursor-pointer group"
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40 transition-colors cursor-pointer group"
                 >
                   <span className="truncate flex-1">{convo.title || "Sin título"}</span>
                   <ConversationItemMenu
@@ -312,14 +331,14 @@ const Sidebar = () => {
       {/* User Section at Bottom */}
       {user && (
         <div className={cn(
-          "p-3 border-t border-sidebar-border",
+          "p-4 border-t border-white/[0.04]",
           collapsed ? "flex justify-center" : ""
         )}>
           <div className={cn(
-            "flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/50",
+            "flex items-center gap-3 px-3 py-2.5 rounded-lg bg-sidebar-accent/40",
             collapsed && "justify-center p-2"
           )}>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground shrink-0">
+            <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-semibold text-zinc-200 shrink-0">
               {getUserDisplayName()?.charAt(0).toUpperCase()}
             </div>
             {!collapsed && (
@@ -338,7 +357,7 @@ const Sidebar = () => {
                 className="p-1.5 rounded-lg hover:bg-sidebar-accent transition-colors"
                 title="Cerrar sesión"
               >
-                <LogOut size={16} className="text-muted-foreground" />
+                <LogOut size={16} strokeWidth={1.5} className="text-muted-foreground" />
               </button>
             )}
           </div>
@@ -346,12 +365,12 @@ const Sidebar = () => {
       )}
 
       {/* Collapse toggle */}
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="p-4 border-t border-white/[0.04]">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/40 transition-colors"
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {collapsed ? <ChevronRight size={18} strokeWidth={1.5} /> : <ChevronLeft size={18} strokeWidth={1.5} />}
           {!collapsed && <span className="text-sm">Colapsar</span>}
         </button>
       </div>
