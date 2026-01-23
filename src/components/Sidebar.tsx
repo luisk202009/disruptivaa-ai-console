@@ -229,7 +229,7 @@ const Sidebar = () => {
       </div>
 
       {/* ===== AREA SCROLLABLE ===== */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto scrollbar-minimal flex flex-col min-h-0">
         {/* Navigation - Main Group */}
         <nav className="shrink-0 px-4 py-4 space-y-1">
           {navItems.map((item) => (
@@ -353,64 +353,62 @@ const Sidebar = () => {
           </div>
         )}
 
-        {/* Recent Conversations - Scrollable */}
+        {/* Recent Conversations */}
         {user && !collapsed && (
-          <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-4">
+          <div className="px-4">
             <div className="flex items-center gap-2 py-2 shrink-0">
               <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-500" />
               <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
                 {t("navigation.recentConversations")}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto scrollbar-minimal">
-              {conversationsLoading ? (
-                <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
-              ) : filteredConversations.length === 0 ? (
-                <p className="text-xs text-zinc-600 px-3 py-4 text-center">
-                  {searchQuery 
-                    ? t("sidebar.noResults") 
-                    : t("sidebar.noConversations")
-                  }
-                </p>
-              ) : (
-                <div className="space-y-0.5 pb-4">
-                  {filteredConversations.map((convo, index) => (
-                    <div
-                      key={convo.chat_id}
-                      onClick={() => handleLoadConversation(convo.chat_id)}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group animate-fade-in"
-                      style={{ animationDelay: `${index * 20}ms` }}
-                    >
-                      {/* Project color badge */}
-                      {convo.project && (
-                        <span 
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: convo.project.color }}
-                        />
-                      )}
-                      <span className="truncate flex-1 tracking-wide">
-                        {convo.title || t("sidebar.untitled")}
-                      </span>
-                      <ConversationItemMenu
-                        conversation={convo}
-                        projects={projects}
-                        onDelete={handleDeleteConversation}
-                        onMove={handleMoveConversation}
+            {conversationsLoading ? (
+              <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
+            ) : filteredConversations.length === 0 ? (
+              <p className="text-xs text-zinc-600 px-3 py-4 text-center">
+                {searchQuery 
+                  ? t("sidebar.noResults") 
+                  : t("sidebar.noConversations")
+                }
+              </p>
+            ) : (
+              <div className="space-y-0.5 pb-4">
+                {filteredConversations.map((convo, index) => (
+                  <div
+                    key={convo.chat_id}
+                    onClick={() => handleLoadConversation(convo.chat_id)}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group animate-fade-in"
+                    style={{ animationDelay: `${index * 20}ms` }}
+                  >
+                    {/* Project color badge */}
+                    {convo.project && (
+                      <span 
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: convo.project.color }}
                       />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    )}
+                    <span className="truncate flex-1 tracking-wide">
+                      {convo.title || t("sidebar.untitled")}
+                    </span>
+                    <ConversationItemMenu
+                      conversation={convo}
+                      projects={projects}
+                      onDelete={handleDeleteConversation}
+                      onMove={handleMoveConversation}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      {/* ===== FOOTER FIJO ===== */}
-      <div className="shrink-0 mt-auto border-t border-white/[0.05]">
-        {/* Profile Dropdown */}
+        {/* ===== PROFILE AT END OF SCROLL ===== */}
         {user && (
-          <div className={cn("p-4", collapsed ? "flex justify-center" : "")}>
+          <div className={cn(
+            "mt-auto shrink-0 border-t border-white/[0.05] px-4 py-4",
+            collapsed && "flex justify-center"
+          )}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -484,9 +482,11 @@ const Sidebar = () => {
             </DropdownMenu>
           </div>
         )}
+      </div>
 
-        {/* Collapse toggle */}
-        <div className="p-4 pt-0">
+      {/* ===== FOOTER FIJO (minimal) ===== */}
+      <div className="shrink-0 border-t border-white/[0.05]">
+        <div className="p-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors"
