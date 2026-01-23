@@ -51,15 +51,15 @@ const AgentCard = ({
   return (
     <div
       className={cn(
-        "glass-strong rounded-2xl p-6 transition-all duration-300 hover:border-primary/30 group",
+        "glass-strong rounded-xl p-6 transition-all duration-200 hover:border-white/[0.12] group",
         className
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <Icon className="w-6 h-6 text-primary" />
+          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+            <Icon className="w-6 h-6 text-foreground" />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">{title}</h3>

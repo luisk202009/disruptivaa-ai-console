@@ -290,7 +290,7 @@ const Dashboard = () => {
     return (
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
           <p className="text-muted-foreground">Cargando agentes...</p>
         </div>
       </div>
@@ -340,7 +340,7 @@ const Dashboard = () => {
             <div className="animate-fade-in">
               {/* Title - No logo */}
               <div className="text-center pt-12 pb-6">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                <h2 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
                   ¿Qué quieres hacer hoy?
                 </h2>
               </div>
@@ -376,11 +376,11 @@ const Dashboard = () => {
                       key={agent.id}
                       onClick={() => handleSelectAgent(agent)}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-300",
-                        "hover:border-primary/50 hover:bg-primary/5",
+                        "flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200",
+                        "hover:border-white/[0.15] hover:bg-muted/50",
                         isSelected 
                           ? "border-primary bg-primary/10" 
-                          : "border-border bg-card"
+                          : "border-white/[0.06] bg-card"
                       )}
                     >
                       <div className={cn(

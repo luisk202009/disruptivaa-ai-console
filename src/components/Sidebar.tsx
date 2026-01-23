@@ -45,11 +45,11 @@ const NavItem = ({ icon, label, active, collapsed, onClick, variant = "default" 
       variant === "primary" 
         ? "bg-primary text-primary-foreground hover:bg-primary/90" 
         : "hover:bg-sidebar-accent",
-      active && variant === "default" && "bg-primary/10 text-primary border-l-2 border-primary",
+      active && variant === "default" && "bg-sidebar-accent text-foreground",
       !active && variant === "default" && "text-sidebar-foreground"
     )}
   >
-    <span className={cn(active && variant === "default" && "text-primary")}>{icon}</span>
+    <span className={cn(active && variant === "default" && "text-foreground")}>{icon}</span>
     {!collapsed && (
       <span className="font-medium text-sm">{label}</span>
     )}
@@ -232,12 +232,12 @@ const Sidebar = () => {
                 className={cn(
                   "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group",
                   selectedProjectId === null
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-sidebar-accent text-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent"
                 )}
               >
                 <div className="flex items-center gap-2 truncate">
-                  <FolderOpen size={14} className={selectedProjectId === null ? "text-primary" : "text-muted-foreground"} />
+                  <FolderOpen size={14} className={selectedProjectId === null ? "text-foreground" : "text-muted-foreground"} />
                   <span className="truncate">General</span>
                 </div>
               </button>
@@ -253,12 +253,12 @@ const Sidebar = () => {
                     className={cn(
                       "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group cursor-pointer",
                       selectedProjectId === project.id
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-sidebar-accent text-foreground"
                         : "text-sidebar-foreground hover:bg-sidebar-accent"
                     )}
                   >
                     <div className="flex items-center gap-2 truncate flex-1">
-                      <Folder size={14} className={selectedProjectId === project.id ? "text-primary" : "text-muted-foreground"} />
+                      <Folder size={14} className={selectedProjectId === project.id ? "text-foreground" : "text-muted-foreground"} />
                       <span className="truncate">{project.name}</span>
                     </div>
                     <ProjectItemMenu

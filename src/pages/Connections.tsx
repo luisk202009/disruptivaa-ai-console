@@ -97,8 +97,8 @@ const Connections = () => {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
-              <Link2 className="text-primary" size={28} />
-              <h1 className="text-3xl font-bold text-foreground">Conexiones</h1>
+              <Link2 className="text-foreground" size={28} />
+              <h1 className="text-3xl font-semibold text-foreground tracking-tight">Conexiones</h1>
             </div>
             <p className="text-muted-foreground">
               Conecta tus cuentas de publicidad para que nuestros agentes puedan analizar tus métricas y optimizar tus campañas.
@@ -113,8 +113,8 @@ const Connections = () => {
               </p>
             </div>
           ) : loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="animate-spin text-primary" size={32} />
+          <div className="flex items-center justify-center py-12">
+              <Loader2 className="animate-spin text-muted-foreground" size={32} />
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-3">
@@ -127,7 +127,7 @@ const Connections = () => {
                 return (
                   <div
                     key={platform.id}
-                    className="glass rounded-xl p-6 transition-all duration-300 hover:border-primary/30"
+                    className="glass rounded-xl p-6 transition-all duration-200 hover:border-white/[0.12]"
                   >
                     {/* Logo & Name */}
                     <div className="flex items-start gap-4 mb-4">

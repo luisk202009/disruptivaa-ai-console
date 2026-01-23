@@ -75,9 +75,9 @@ export const DashboardCanvas = ({
 
   if (widgets.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[500px] glass rounded-xl border-dashed">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-          <LayoutGrid size={32} className="text-primary" />
+      <div className="flex flex-col items-center justify-center h-[500px] glass rounded-xl border-dashed border-white/[0.06]">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+          <LayoutGrid size={32} className="text-muted-foreground" />
         </div>
         <h3 className="text-xl font-semibold text-foreground mb-2">
           Panel vacío
