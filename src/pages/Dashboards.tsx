@@ -28,14 +28,19 @@ import { es } from "date-fns/locale";
 
 const Dashboards = () => {
   const navigate = useNavigate();
-  const { dashboards, loading, createDashboard, updateDashboard, deleteDashboard } = useDashboards();
+  const { dashboards, loading, createDashboard, createDashboardFromTemplate, updateDashboard, deleteDashboard } = useDashboards();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedDashboard, setSelectedDashboard] = useState<Dashboard | null>(null);
 
-  const handleCreate = async (name: string, description?: string) => {
-    const dashboard = await createDashboard(name, description);
+  const handleCreate = async (name: string, description?: string, templateId?: string) => {
+    let dashboard;
+    if (templateId) {
+      dashboard = await createDashboardFromTemplate(name, description, templateId);
+    } else {
+      dashboard = await createDashboard(name, description);
+    }
     if (dashboard) {
       setShowCreateDialog(false);
       navigate(`/dashboards/${dashboard.id}`);
