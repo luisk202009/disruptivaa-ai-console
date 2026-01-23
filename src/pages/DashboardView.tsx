@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/Sidebar";
@@ -10,6 +10,7 @@ import { useIntegrations, MetaAccountDetail } from "@/hooks/useIntegrations";
 import { DashboardCanvas } from "@/components/dashboards/DashboardCanvas";
 import { WidgetSelector } from "@/components/dashboards/WidgetSelector";
 import { WidgetSettings } from "@/components/dashboards/WidgetSettings";
+import { BulkAccountAssignDialog } from "@/components/dashboards/BulkAccountAssignDialog";
 import { DATE_PRESET_LABELS } from "@/hooks/useMetaMetrics";
 import {
   Select,
@@ -31,11 +32,18 @@ const DashboardView = () => {
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
+  const [showBulkAccountModal, setShowBulkAccountModal] = useState(false);
   const [globalDatePreset, setGlobalDatePreset] = useState<DatePreset>("last_7d");
   
   // Meta accounts state
   const [accounts, setAccounts] = useState<MetaAccountDetail[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
+  
+  // Unconfigured widgets detection
+  const unconfiguredWidgets = widgets.filter(
+    (w) => !w.metric_config.account_id
+  );
+  const hasUnconfiguredWidgets = unconfiguredWidgets.length > 0;
 
   const dashboard = dashboards.find((d) => d.id === dashboardId);
 
@@ -53,10 +61,10 @@ const DashboardView = () => {
       }
     };
 
-    if (showWidgetSelector || showWidgetSettings) {
+    if (showWidgetSelector || showWidgetSettings || showBulkAccountModal) {
       loadAccounts();
     }
-  }, [showWidgetSelector, showWidgetSettings]);
+  }, [showWidgetSelector, showWidgetSettings, showBulkAccountModal]);
 
   useEffect(() => {
     if (!dashboardLoading && !dashboard) {
@@ -94,6 +102,20 @@ const DashboardView = () => {
     await removeWidget(widgetId);
   };
 
+  const handleBulkAssign = async (accountId: string, accountName: string) => {
+    const updates = unconfiguredWidgets.map((widget) =>
+      updateWidget(widget.id, {
+        metric_config: {
+          ...widget.metric_config,
+          account_id: accountId,
+          account_name: accountName,
+        },
+      })
+    );
+    await Promise.all(updates);
+    setShowBulkAccountModal(false);
+  };
+
   if (dashboardLoading || !dashboard) {
     return (
       <div className="flex min-h-screen bg-background">
@@ -127,6 +149,18 @@ const DashboardView = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Bulk Account Assignment Button */}
+            {hasUnconfiguredWidgets && (
+              <Button
+                variant="outline"
+                className="gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                onClick={() => setShowBulkAccountModal(true)}
+              >
+                <Wrench size={16} />
+                Vincular cuenta ({unconfiguredWidgets.length})
+              </Button>
+            )}
+
             {/* Global Date Selector */}
             <Select value={globalDatePreset} onValueChange={(v) => setGlobalDatePreset(v as DatePreset)}>
               <SelectTrigger className="w-[180px]">
@@ -190,6 +224,16 @@ const DashboardView = () => {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Bulk Account Assignment Dialog */}
+        <BulkAccountAssignDialog
+          open={showBulkAccountModal}
+          onOpenChange={setShowBulkAccountModal}
+          widgets={unconfiguredWidgets}
+          accounts={accounts}
+          accountsLoading={accountsLoading}
+          onAssign={handleBulkAssign}
+        />
       </main>
     </div>
   );

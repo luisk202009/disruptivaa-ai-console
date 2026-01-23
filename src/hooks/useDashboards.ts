@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Json } from "@/integrations/supabase/types";
+import { DASHBOARD_TEMPLATES } from "@/data/dashboardTemplates";
 
 export interface Dashboard {
   id: string;
@@ -60,6 +61,60 @@ export const useDashboards = () => {
       return data as Dashboard;
     } catch (error) {
       console.error("Error creating dashboard:", error);
+      return null;
+    }
+  };
+
+  const createDashboardFromTemplate = async (
+    name: string,
+    description: string | undefined,
+    templateId: string
+  ): Promise<Dashboard | null> => {
+    if (!user) return null;
+
+    const template = DASHBOARD_TEMPLATES.find((t) => t.id === templateId);
+    if (!template) return null;
+
+    try {
+      // 1. Create the dashboard
+      const { data: dashboard, error: dashboardError } = await supabase
+        .from("dashboards")
+        .insert({
+          user_id: user.id,
+          name,
+          description: description || null,
+          layout_config: { template_id: templateId },
+        })
+        .select()
+        .single();
+
+      if (dashboardError) throw dashboardError;
+
+      // 2. Create widgets from template
+      const widgetInserts = template.widgets.map((w) => ({
+        dashboard_id: dashboard.id,
+        type: w.type,
+        title: w.title,
+        data_source: w.data_source,
+        metric_config: {
+          metric: w.metric,
+          date_preset: "last_7d",
+          comparison: true,
+          account_id: null,
+          account_name: null,
+        } as unknown as Json,
+        grid_settings: w.grid_settings as unknown as Json,
+      }));
+
+      const { error: widgetsError } = await supabase
+        .from("widgets")
+        .insert(widgetInserts);
+
+      if (widgetsError) throw widgetsError;
+
+      return dashboard as Dashboard;
+    } catch (error) {
+      console.error("Error creating dashboard from template:", error);
       return null;
     }
   };
@@ -130,6 +185,7 @@ export const useDashboards = () => {
     dashboards,
     loading,
     createDashboard,
+    createDashboardFromTemplate,
     updateDashboard,
     deleteDashboard,
     refetch: fetchDashboards,
