@@ -80,6 +80,38 @@
     @apply bg-card border border-white/[0.08];
   }
 
+  /* Scrollbar Minimalista */
+  .scrollbar-minimal {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  .scrollbar-minimal:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  .scrollbar-minimal:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+
   /* Fade in animation */
   @keyframes fade-in {
     from {
