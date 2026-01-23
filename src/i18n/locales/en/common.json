@@ -12,6 +12,12 @@
     "projects": "Projects",
     "recentConversations": "Recent"
   },
+  "sidebar": {
+    "searchConversations": "Search conversations...",
+    "noResults": "No conversations found",
+    "noConversations": "No conversations yet",
+    "untitled": "Untitled"
+  },
   "settings": {
     "title": "Settings",
     "profile": "Profile",
