@@ -1,0 +1,70 @@
+{
+  "navigation": {
+    "newConversation": "Nova Conversa",
+    "dashboard": "Painel",
+    "agents": "Agentes IA",
+    "conversations": "Conversas",
+    "panels": "Painéis",
+    "settings": "Configurações",
+    "connections": "Conexões",
+    "help": "Ajuda",
+    "signOut": "Sair",
+    "projects": "Projetos",
+    "recentConversations": "Recentes"
+  },
+  "settings": {
+    "title": "Configurações",
+    "profile": "Perfil",
+    "yourInfo": "Suas informações e atividade",
+    "language": "Idioma",
+    "selectLanguage": "Selecione seu idioma",
+    "notifications": "Notificações",
+    "notificationsDesc": "Configure suas preferências de alertas",
+    "appearance": "Aparência",
+    "appearanceDesc": "Personalize o tema do aplicativo",
+    "security": "Segurança",
+    "securityDesc": "Senha e autenticação",
+    "changePassword": "Alterar senha",
+    "passwordResetEmail": "Ao clicar, você receberá um e-mail em",
+    "passwordResetLink": "com um link para redefinir sua senha.",
+    "sending": "Enviando...",
+    "email": "E-mail",
+    "memberSince": "Membro desde",
+    "activitySummary": "Resumo de atividade",
+    "totalMessages": "Total de mensagens",
+    "sentMessages": "Mensagens enviadas",
+    "lastActivity": "Última atividade",
+    "noActivity": "Sem atividade",
+    "loadingStats": "Carregando estatísticas...",
+    "loginToView": "Faça login para ver seu perfil",
+    "loginToChange": "Faça login para alterar sua senha"
+  },
+  "auth": {
+    "signIn": "Entrar",
+    "signUp": "Cadastrar",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome completo"
+  },
+  "agents": {
+    "title": "Agentes IA",
+    "subtitle": "Nossos Agentes Especializados",
+    "selectPrompt": "Selecione um agente para iniciar uma conversa"
+  },
+  "status": {
+    "idle": "Inativo",
+    "working": "Trabalhando",
+    "completed": "Concluído",
+    "error": "Erro"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Buscar"
+  }
+}

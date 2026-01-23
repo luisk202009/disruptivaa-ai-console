@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Settings as SettingsIcon, User, Bell, Palette, Shield, Mail, Calendar, MessageSquare, Activity, Key } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface UserStats {
   totalMessages: number;
@@ -13,7 +16,9 @@ interface UserStats {
 }
 
 const Settings = () => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [stats, setStats] = useState<UserStats>({
     totalMessages: 0,
     userMessages: 0,
@@ -83,9 +88,14 @@ const Settings = () => {
     fetchUserStats();
   }, [user]);
 
+  const getLocale = () => {
+    const localeMap: Record<string, string> = { es: "es-ES", en: "en-US", pt: "pt-BR" };
+    return localeMap[i18n.language] || "es-ES";
+  };
+
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Sin actividad";
-    return new Date(dateString).toLocaleDateString("es-ES", {
+    if (!dateString) return t("settings.noActivity");
+    return new Date(dateString).toLocaleDateString(getLocale(), {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -95,8 +105,8 @@ const Settings = () => {
   };
 
   const getAccountAge = () => {
-    if (!user?.created_at) return "Desconocido";
-    return new Date(user.created_at).toLocaleDateString("es-ES", {
+    if (!user?.created_at) return t("settings.noActivity");
+    return new Date(user.created_at).toLocaleDateString(getLocale(), {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -110,7 +120,7 @@ const Settings = () => {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <SettingsIcon className="text-primary" size={28} />
-            <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
+            <h1 className="text-2xl font-bold text-foreground">{t("settings.title")}</h1>
           </div>
 
           <div className="space-y-4">
@@ -121,8 +131,8 @@ const Settings = () => {
                   <User className="text-primary-foreground" size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground text-lg">Perfil</h3>
-                  <p className="text-sm text-muted-foreground">Tu información y actividad</p>
+                  <h3 className="font-semibold text-foreground text-lg">{t("settings.profile")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("settings.yourInfo")}</p>
                 </div>
               </div>
 
@@ -133,28 +143,30 @@ const Settings = () => {
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Mail className="text-muted-foreground" size={18} />
                       <div>
-                        <p className="text-xs text-muted-foreground">Email</p>
+                        <p className="text-xs text-muted-foreground">{t("settings.email")}</p>
                         <p className="text-sm font-medium text-foreground">{user.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Calendar className="text-muted-foreground" size={18} />
                       <div>
-                        <p className="text-xs text-muted-foreground">Miembro desde</p>
+                        <p className="text-xs text-muted-foreground">{t("settings.memberSince")}</p>
                         <p className="text-sm font-medium text-foreground">{getAccountAge()}</p>
                       </div>
                     </div>
+                    {/* Language Selector */}
+                    <LanguageSelector />
                   </div>
 
                   {/* Estadísticas de actividad */}
                   <div className="border-t border-border pt-4 mt-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Activity className="text-primary" size={18} />
-                      <h4 className="font-medium text-foreground">Resumen de actividad</h4>
+                      <h4 className="font-medium text-foreground">{t("settings.activitySummary")}</h4>
                     </div>
                     
                     {loadingStats ? (
-                      <div className="text-sm text-muted-foreground">Cargando estadísticas...</div>
+                      <div className="text-sm text-muted-foreground">{t("settings.loadingStats")}</div>
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
@@ -162,17 +174,17 @@ const Settings = () => {
                             <MessageSquare className="text-primary" size={16} />
                             <span className="text-2xl font-bold text-primary">{stats.totalMessages}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">Total mensajes</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("settings.totalMessages")}</p>
                         </div>
                         <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                           <div className="flex items-center gap-2">
                             <User className="text-primary" size={16} />
                             <span className="text-2xl font-bold text-primary">{stats.userMessages}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">Mensajes enviados</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("settings.sentMessages")}</p>
                         </div>
                         <div className="col-span-2 p-3 rounded-lg bg-muted/50">
-                          <p className="text-xs text-muted-foreground">Última actividad</p>
+                          <p className="text-xs text-muted-foreground">{t("settings.lastActivity")}</p>
                           <p className="text-sm font-medium text-foreground">{formatDate(stats.lastMessageDate)}</p>
                         </div>
                       </div>
@@ -180,7 +192,7 @@ const Settings = () => {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Inicia sesión para ver tu perfil</p>
+                <p className="text-sm text-muted-foreground">{t("settings.loginToView")}</p>
               )}
             </div>
 
@@ -188,8 +200,8 @@ const Settings = () => {
               <div className="flex items-center gap-3">
                 <Bell className="text-muted-foreground" size={20} />
                 <div>
-                  <h3 className="font-medium text-foreground">Notificaciones</h3>
-                  <p className="text-sm text-muted-foreground">Configura tus preferencias de alertas</p>
+                  <h3 className="font-medium text-foreground">{t("settings.notifications")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("settings.notificationsDesc")}</p>
                 </div>
               </div>
             </div>
@@ -198,8 +210,8 @@ const Settings = () => {
               <div className="flex items-center gap-3">
                 <Palette className="text-muted-foreground" size={20} />
                 <div>
-                  <h3 className="font-medium text-foreground">Apariencia</h3>
-                  <p className="text-sm text-muted-foreground">Personaliza el tema de la aplicación</p>
+                  <h3 className="font-medium text-foreground">{t("settings.appearance")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("settings.appearanceDesc")}</p>
                 </div>
               </div>
             </div>
@@ -208,15 +220,15 @@ const Settings = () => {
               <div className="flex items-center gap-3 mb-4">
                 <Shield className="text-muted-foreground" size={20} />
                 <div>
-                  <h3 className="font-medium text-foreground">Seguridad</h3>
-                  <p className="text-sm text-muted-foreground">Contraseña y autenticación</p>
+                  <h3 className="font-medium text-foreground">{t("settings.security")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("settings.securityDesc")}</p>
                 </div>
               </div>
               
               {user ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Al hacer clic, recibirás un correo en <span className="font-medium text-foreground">{user.email}</span> con un enlace para restablecer tu contraseña.
+                    {t("settings.passwordResetEmail")} <span className="font-medium text-foreground">{user.email}</span> {t("settings.passwordResetLink")}
                   </p>
                   <Button 
                     onClick={handlePasswordReset} 
@@ -225,11 +237,11 @@ const Settings = () => {
                     className="gap-2"
                   >
                     <Key size={16} />
-                    {sendingReset ? "Enviando..." : "Cambiar contraseña"}
+                    {sendingReset ? t("settings.sending") : t("settings.changePassword")}
                   </Button>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Inicia sesión para cambiar tu contraseña</p>
+                <p className="text-sm text-muted-foreground">{t("settings.loginToChange")}</p>
               )}
             </div>
           </div>
