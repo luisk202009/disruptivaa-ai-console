@@ -1,0 +1,70 @@
+{
+  "navigation": {
+    "newConversation": "Nueva Conversación",
+    "dashboard": "Dashboard",
+    "agents": "Agentes AI",
+    "conversations": "Conversaciones",
+    "panels": "Paneles",
+    "settings": "Configuración",
+    "connections": "Conexiones",
+    "help": "Ayuda",
+    "signOut": "Cerrar sesión",
+    "projects": "Proyectos",
+    "recentConversations": "Recientes"
+  },
+  "settings": {
+    "title": "Configuración",
+    "profile": "Perfil",
+    "yourInfo": "Tu información y actividad",
+    "language": "Idioma",
+    "selectLanguage": "Selecciona tu idioma",
+    "notifications": "Notificaciones",
+    "notificationsDesc": "Configura tus preferencias de alertas",
+    "appearance": "Apariencia",
+    "appearanceDesc": "Personaliza el tema de la aplicación",
+    "security": "Seguridad",
+    "securityDesc": "Contraseña y autenticación",
+    "changePassword": "Cambiar contraseña",
+    "passwordResetEmail": "Al hacer clic, recibirás un correo en",
+    "passwordResetLink": "con un enlace para restablecer tu contraseña.",
+    "sending": "Enviando...",
+    "email": "Email",
+    "memberSince": "Miembro desde",
+    "activitySummary": "Resumen de actividad",
+    "totalMessages": "Total mensajes",
+    "sentMessages": "Mensajes enviados",
+    "lastActivity": "Última actividad",
+    "noActivity": "Sin actividad",
+    "loadingStats": "Cargando estadísticas...",
+    "loginToView": "Inicia sesión para ver tu perfil",
+    "loginToChange": "Inicia sesión para cambiar tu contraseña"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "name": "Nombre completo"
+  },
+  "agents": {
+    "title": "Agentes AI",
+    "subtitle": "Nuestros Agentes Especializados",
+    "selectPrompt": "Selecciona un agente para comenzar una conversación"
+  },
+  "status": {
+    "idle": "Inactivo",
+    "working": "Trabajando",
+    "completed": "Completado",
+    "error": "Error"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar"
+  }
+}

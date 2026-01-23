@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Palette, PenTool, BarChart3, Users, ImageIcon, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AuthModal from "./AuthModal";
@@ -148,6 +149,7 @@ export type DisruptivaaAgent = typeof DISRUPTIVAA_AGENTS[number];
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation(["common", "agents"]);
   const { user, signOut } = useAuth();
   const { agents, loading, updateAgentStatus } = useAgents();
   const [selectedAgent, setSelectedAgent] = useState<DisruptivaaAgent | null>(null);
@@ -291,7 +293,7 @@ const Dashboard = () => {
       <div className="flex-1 flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          <p className="text-muted-foreground">Cargando agentes...</p>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -310,7 +312,7 @@ const Dashboard = () => {
               <button
                 onClick={signOut}
                 className="p-2 rounded-lg hover:bg-muted transition-colors"
-                title="Cerrar sesión"
+                title={t("navigation.signOut")}
               >
                 <LogOut size={18} className="text-muted-foreground" />
               </button>
@@ -320,7 +322,7 @@ const Dashboard = () => {
               onClick={() => navigate("/auth")}
               className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
             >
-              Iniciar sesión
+              {t("auth.signIn")}
             </button>
           )}
         </div>
@@ -363,7 +365,7 @@ const Dashboard = () => {
               {/* Agent Cards - Below input */}
               <div className="text-center mb-4">
                 <p className="text-sm text-muted-foreground">
-                  Selecciona un agente para comenzar
+                  {t("agents.selectPrompt")}
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-3">
@@ -392,15 +394,15 @@ const Dashboard = () => {
                           isSelected ? "text-primary" : "text-muted-foreground"
                         )} />
                       </div>
-                      <div className="text-left">
-                        <p className={cn(
-                          "font-medium text-sm",
-                          isSelected ? "text-primary" : "text-foreground"
-                        )}>
-                          {agent.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {agent.description}
+                        <div className="text-left">
+                          <p className={cn(
+                            "font-medium text-sm",
+                            isSelected ? "text-primary" : "text-foreground"
+                          )}>
+                            {t(`${agent.id}.name`, { ns: "agents" })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {t(`${agent.id}.description`, { ns: "agents" })}
                         </p>
                       </div>
                     </button>

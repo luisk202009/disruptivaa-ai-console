@@ -1,0 +1,70 @@
+{
+  "navigation": {
+    "newConversation": "New Conversation",
+    "dashboard": "Dashboard",
+    "agents": "AI Agents",
+    "conversations": "Conversations",
+    "panels": "Panels",
+    "settings": "Settings",
+    "connections": "Connections",
+    "help": "Help",
+    "signOut": "Sign out",
+    "projects": "Projects",
+    "recentConversations": "Recent"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "yourInfo": "Your information and activity",
+    "language": "Language",
+    "selectLanguage": "Select your language",
+    "notifications": "Notifications",
+    "notificationsDesc": "Configure your alert preferences",
+    "appearance": "Appearance",
+    "appearanceDesc": "Customize the application theme",
+    "security": "Security",
+    "securityDesc": "Password and authentication",
+    "changePassword": "Change password",
+    "passwordResetEmail": "When you click, you will receive an email at",
+    "passwordResetLink": "with a link to reset your password.",
+    "sending": "Sending...",
+    "email": "Email",
+    "memberSince": "Member since",
+    "activitySummary": "Activity summary",
+    "totalMessages": "Total messages",
+    "sentMessages": "Messages sent",
+    "lastActivity": "Last activity",
+    "noActivity": "No activity",
+    "loadingStats": "Loading statistics...",
+    "loginToView": "Sign in to view your profile",
+    "loginToChange": "Sign in to change your password"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full name"
+  },
+  "agents": {
+    "title": "AI Agents",
+    "subtitle": "Our Specialized Agents",
+    "selectPrompt": "Select an agent to start a conversation"
+  },
+  "status": {
+    "idle": "Idle",
+    "working": "Working",
+    "completed": "Completed",
+    "error": "Error"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search"
+  }
+}

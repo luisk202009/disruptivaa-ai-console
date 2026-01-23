@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjects } from "@/hooks/useProjects";
@@ -88,6 +89,7 @@ const Sidebar = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   
   const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects();
@@ -141,10 +143,10 @@ const Sidebar = () => {
 
   // Navigation items - Only main navigation (4 items)
   const navItems = [
-    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: "Dashboard", path: "/" },
-    { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: "Paneles", path: "/dashboards" },
-    { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: "Agentes AI", path: "/agents" },
-    { id: "conversations", icon: <MessageSquare size={18} strokeWidth={1.5} />, label: "Conversaciones", path: "/conversations" },
+    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
+    { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
+    { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: t("navigation.agents"), path: "/agents" },
+    { id: "conversations", icon: <MessageSquare size={18} strokeWidth={1.5} />, label: t("navigation.conversations"), path: "/conversations" },
   ];
 
   const getActiveItem = () => {
@@ -206,7 +208,7 @@ const Sidebar = () => {
           />
           {!collapsed && (
             <span className="text-sm font-medium tracking-wide">
-              Nueva Conversación
+              {t("navigation.newConversation")}
             </span>
           )}
         </button>
@@ -239,7 +241,7 @@ const Sidebar = () => {
               ) : (
                 <ChevronRight size={14} strokeWidth={1.5} />
               )}
-              Proyectos
+              {t("navigation.projects")}
             </button>
             <button
               onClick={() => setShowCreateProject(true)}
@@ -272,7 +274,7 @@ const Sidebar = () => {
 
               {/* Project list */}
               {projectsLoading ? (
-                <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">Cargando...</p>
+                <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">{t("common.loading")}</p>
               ) : (
                 projects.map((project) => (
                   <div
@@ -311,14 +313,14 @@ const Sidebar = () => {
           <div className="flex items-center gap-2 py-2.5 mb-2">
             <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-500" />
             <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
-              {selectedProjectId === null ? "Sin proyecto" : "Conversaciones"}
+              {t("navigation.recentConversations")}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto space-y-1">
             {conversationsLoading ? (
-              <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">Cargando...</p>
+              <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">{t("common.loading")}</p>
             ) : conversations.length === 0 ? (
-              <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">Sin conversaciones</p>
+              <p className="text-xs text-zinc-600 px-3 py-2.5 tracking-wide">—</p>
             ) : (
               conversations.map((convo) => (
                 <div
@@ -387,7 +389,7 @@ const Sidebar = () => {
                 className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-300 hover:text-white focus:text-white focus:bg-white/[0.04]"
               >
                 <Link2 size={16} strokeWidth={1.5} />
-                <span className="tracking-wide">Gestionar Conexiones</span>
+                <span className="tracking-wide">{t("navigation.connections")}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -395,7 +397,7 @@ const Sidebar = () => {
                 className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-300 hover:text-white focus:text-white focus:bg-white/[0.04]"
               >
                 <Settings size={16} strokeWidth={1.5} />
-                <span className="tracking-wide">Configuración de Cuenta</span>
+                <span className="tracking-wide">{t("navigation.settings")}</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem
@@ -403,7 +405,7 @@ const Sidebar = () => {
                 className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-300 hover:text-white focus:text-white focus:bg-white/[0.04]"
               >
                 <HelpCircle size={16} strokeWidth={1.5} />
-                <span className="tracking-wide">Centro de Ayuda</span>
+                <span className="tracking-wide">{t("navigation.help")}</span>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="bg-zinc-800" />
@@ -413,7 +415,7 @@ const Sidebar = () => {
                 className="flex items-center gap-2 py-2.5 cursor-pointer text-zinc-400 hover:text-red-400 focus:text-red-400 focus:bg-white/[0.04]"
               >
                 <LogOut size={16} strokeWidth={1.5} />
-                <span className="tracking-wide">Cerrar Sesión</span>
+                <span className="tracking-wide">{t("navigation.signOut")}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

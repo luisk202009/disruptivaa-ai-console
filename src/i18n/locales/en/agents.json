@@ -1,0 +1,22 @@
+{
+  "smart-brand-architect": {
+    "name": "Smart Brand Architect",
+    "description": "Brand identity analyst"
+  },
+  "ghostwriter-pro": {
+    "name": "GhostWriter Pro",
+    "description": "Content and copy analyst"
+  },
+  "ads-optimizer": {
+    "name": "Ads Optimizer Agent",
+    "description": "Advertising campaign analyst"
+  },
+  "ai-crm-sales": {
+    "name": "AI-CRM Sales Bot",
+    "description": "Leads and pipeline analyst"
+  },
+  "visual-content-bot": {
+    "name": "Visual Content Bot",
+    "description": "Visual content analyst"
+  }
+}

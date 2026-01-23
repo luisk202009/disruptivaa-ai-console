@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { DISRUPTIVAA_AGENTS, DisruptivaaAgent } from "@/components/Dashboard";
 import { cn } from "@/lib/utils";
 import Sidebar from "@/components/Sidebar";
@@ -8,6 +9,7 @@ import AuthModal from "@/components/AuthModal";
 
 const Agents = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation(["common", "agents"]);
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingAgent, setPendingAgent] = useState<DisruptivaaAgent | null>(null);
@@ -35,7 +37,7 @@ const Agents = () => {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="h-16 border-b border-border flex items-center px-6">
-          <h1 className="text-xl font-semibold text-foreground">Agentes AI</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t("agents.title")}</h1>
         </header>
 
         {/* Main content */}
@@ -43,10 +45,10 @@ const Agents = () => {
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                Nuestros Agentes Especializados
+                {t("agents.subtitle")}
               </h2>
               <p className="text-muted-foreground">
-                Selecciona un agente para comenzar una conversación
+                {t("agents.selectPrompt")}
               </p>
             </div>
 
@@ -75,10 +77,10 @@ const Agents = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
-                        {agent.name}
+                        {t(`${agent.id}.name`, { ns: "agents" })}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {agent.description}
+                        {t(`${agent.id}.description`, { ns: "agents" })}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mt-2">

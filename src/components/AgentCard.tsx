@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AgentCardProps {
   title: string;
@@ -14,27 +15,30 @@ interface AgentCardProps {
   className?: string;
 }
 
-const statusConfig = {
-  idle: {
-    label: "Inactivo",
-    color: "bg-muted-foreground",
-    pulse: false,
-  },
-  working: {
-    label: "Trabajando",
-    color: "bg-primary",
-    pulse: true,
-  },
-  completed: {
-    label: "Completado",
-    color: "bg-emerald-500",
-    pulse: false,
-  },
-  error: {
-    label: "Error",
-    color: "bg-destructive",
-    pulse: false,
-  },
+const useStatusConfig = () => {
+  const { t } = useTranslation();
+  return {
+    idle: {
+      label: t("status.idle"),
+      color: "bg-muted-foreground",
+      pulse: false,
+    },
+    working: {
+      label: t("status.working"),
+      color: "bg-primary",
+      pulse: true,
+    },
+    completed: {
+      label: t("status.completed"),
+      color: "bg-emerald-500",
+      pulse: false,
+    },
+    error: {
+      label: t("status.error"),
+      color: "bg-destructive",
+      pulse: false,
+    },
+  };
 };
 
 const AgentCard = ({
@@ -46,6 +50,7 @@ const AgentCard = ({
   stats,
   className,
 }: AgentCardProps) => {
+  const statusConfig = useStatusConfig();
   const statusInfo = statusConfig[status];
 
   return (
