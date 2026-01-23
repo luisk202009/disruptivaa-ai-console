@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Json } from "@/integrations/supabase/types";
 
-export type WidgetType = "kpi" | "line" | "bar" | "pie" | "table" | "area";
+export type WidgetType = "kpi" | "line" | "bar" | "pie" | "table" | "area" | "goal_tracker";
 export type DataSource = "meta_ads" | "google_ads" | "manual";
 export type MetricType = "impressions" | "clicks" | "spend" | "reach" | "ctr" | "cpc" | "cpm";
 export type DatePreset = "today" | "yesterday" | "last_7d" | "last_30d" | "this_month";
@@ -16,6 +16,7 @@ export interface MetricConfig {
   campaign_id?: string;
   comparison?: boolean;
   goal?: number;
+  goal_id?: string; // Reference to project_goals.id for GoalTracker widgets
 }
 
 export interface GridSettings {
