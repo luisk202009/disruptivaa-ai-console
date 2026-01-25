@@ -114,6 +114,29 @@ async function getMetaIntegration(supabaseAdmin: any, userId: string): Promise<{
   return data as { access_token: string; account_ids: string[] };
 }
 
+// Get all connected integrations for omnichannel analysis
+async function getAllIntegrations(supabaseAdmin: any, userId: string): Promise<{
+  meta: { access_token: string; account_ids: string[] } | null;
+  google: { access_token: string; account_ids: string[] } | null;
+  tiktok: { access_token: string; account_ids: string[] } | null;
+}> {
+  const { data, error } = await supabaseAdmin
+    .from("user_integrations")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "connected");
+
+  if (error || !data) {
+    return { meta: null, google: null, tiktok: null };
+  }
+
+  return {
+    meta: data.find((i: { platform: string }) => i.platform === 'meta_ads') || null,
+    google: data.find((i: { platform: string }) => i.platform === 'google_ads') || null,
+    tiktok: data.find((i: { platform: string }) => i.platform === 'tiktok_ads') || null,
+  };
+}
+
 // Fetch account names from Meta API for dynamic greeting
 async function fetchAccountNames(accessToken: string, accountIds: string[]): Promise<{id: string, name: string}[]> {
   const accounts: {id: string, name: string}[] = [];
@@ -297,7 +320,31 @@ const RESPONSE_FORMAT_RULES = `
 - CPC: <$1 es eficiente, $1-2 es aceptable, >$2 es alto
 - Frecuencia: 1.5-3 es óptimo, <1.5 bajo alcance, >5 fatiga
 `;
+// Omnichannel analysis instructions
+const OMNICHANNEL_INSTRUCTIONS = `
+📊 ANÁLISIS OMNICANAL (cuando hay múltiples plataformas conectadas):
 
+Si el usuario tiene más de una plataforma conectada (Meta, Google, TikTok):
+
+1. **Comparativa Cross-Platform** (tabla obligatoria):
+| Métrica | Meta Ads | Google Ads | TikTok Ads |
+|---------|----------|------------|------------|
+| Gasto Total | $X | $Y | $Z |
+| CPC | $A | $B | $C |
+| CTR | X% | Y% | Z% |
+| Conversiones | N | M | P |
+
+2. **Identificación de Mejor Rendimiento**:
+- Señala cuál plataforma tiene mejor CPC/CPA
+- Indica dónde está el mejor ROAS
+- Sugiere redistribución de presupuesto si hay diferencias >20%
+
+3. **Recomendaciones Omnicanal**:
+- "Tu CPC en TikTok ($0.45) es 40% menor que en Meta ($0.75). Considera aumentar presupuesto en TikTok."
+- "Google Ads tiene el mejor ROAS (3.2x) vs Meta (2.1x). Prioriza conversiones en Google."
+
+IMPORTANTE: Si solo hay UNA plataforma conectada, NO menciones las otras.
+`;
 
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
@@ -480,6 +527,15 @@ NUNCA omitas esta sección cuando hay metas definidas. Es información crítica 
     let tokenValid = true;
     let allAccountsData: { accountId: string; campaigns: MetaCampaign[]; insights: MetaInsights | null }[] = [];
 
+    // Check for all connected platforms (omnichannel)
+    const allIntegrations = await getAllIntegrations(supabaseAdmin, userId);
+    const connectedPlatforms: string[] = [];
+    if (allIntegrations.meta) connectedPlatforms.push('Meta Ads');
+    if (allIntegrations.google) connectedPlatforms.push('Google Ads');
+    if (allIntegrations.tiktok) connectedPlatforms.push('TikTok Ads');
+    
+    const isOmnichannel = connectedPlatforms.length > 1;
+
     // Check if ads-optimizer and Meta is connected - VALIDATE TOKEN FIRST
     if (agentId === "ads-optimizer" && userId) {
       const metaIntegration = await getMetaIntegration(supabaseAdmin, userId);
@@ -624,6 +680,12 @@ ENFÓCATE 100% en los archivos que el usuario suba.`;
 
     // Build the final system instruction
     let finalSystemInstruction = ANALYST_PERSONALITY + "\n\n" + RESPONSE_FORMAT_RULES;
+    
+    // Add omnichannel instructions if multiple platforms connected
+    if (isOmnichannel) {
+      finalSystemInstruction += `\n\n🌐 PLATAFORMAS CONECTADAS: ${connectedPlatforms.join(', ')}`;
+      finalSystemInstruction += OMNICHANNEL_INSTRUCTIONS;
+    }
     
     // Add API data context FIRST (highest priority for real-time data)
     if (contextMessage) {
