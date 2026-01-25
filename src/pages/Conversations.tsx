@@ -56,7 +56,7 @@ const Conversations = () => {
                         </span>
                         <span className="flex items-center gap-1">
                           <Bot size={12} strokeWidth={1.5} />
-                          Disruptivaa
+                          {convo.agent?.name || "Disruptivaa"}
                         </span>
                       </div>
                     </div>

@@ -226,20 +226,20 @@ const Sidebar = () => {
           )}
         </div>
 
-        {/* New Conversation Button - CTA destacado */}
+        {/* New Conversation CTA - Aligned with NavItems but with subtle brand accent */}
         <div className="px-4 py-3">
           <button
             onClick={handleNewConversation}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-3.5 rounded-lg transition-all duration-200",
-              "border border-primary/40 hover:border-primary hover:bg-primary/5",
-              "text-zinc-300 hover:text-foreground",
-              collapsed && "justify-center"
+              "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
+              "bg-primary/5 border border-primary/30 hover:border-primary/50 hover:bg-primary/10",
+              "text-foreground",
+              collapsed && "justify-center px-2"
             )}
           >
             <Plus 
-              size={20} 
-              strokeWidth={2} 
+              size={18} 
+              strokeWidth={1.5} 
               className="text-primary shrink-0" 
             />
             {!collapsed && (
