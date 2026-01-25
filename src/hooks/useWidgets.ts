@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Json } from "@/integrations/supabase/types";
+import { ProjectGoal } from "./useProjectGoals";
 
 export type WidgetType = "kpi" | "line" | "bar" | "pie" | "table" | "area" | "goal_tracker";
 export type DataSource = "meta_ads" | "google_ads" | "manual";
@@ -17,6 +18,7 @@ export interface MetricConfig {
   comparison?: boolean;
   goal?: number;
   goal_id?: string; // Reference to project_goals.id for GoalTracker widgets
+  goal_data?: ProjectGoal; // Full goal object for rendering
 }
 
 export interface GridSettings {

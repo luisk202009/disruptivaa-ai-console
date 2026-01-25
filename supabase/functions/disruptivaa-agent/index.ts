@@ -390,23 +390,59 @@ serve(async (req) => {
           }
         };
 
-        goalsContext = `
-🎯 METAS DEFINIDAS PARA ESTE PROYECTO:
-${projectGoals.map((g: { metric_key: string; target_value: number; currency: string; period: string }) => `- ${g.metric_key.toUpperCase()}: ${formatGoalValue(g)} (${g.period})`).join('\n')}
+        const metricLabels: Record<string, string> = {
+          cpa: 'CPA (Costo por Adquisición)',
+          roas: 'ROAS (Retorno de Inversión)',
+          ctr: 'CTR (Tasa de Clics)',
+          cpc: 'CPC (Costo por Clic)',
+          spend: 'Presupuesto Máximo',
+          conversions: 'Conversiones Objetivo',
+        };
 
-📊 INSTRUCCIÓN OBLIGATORIA PARA ANÁLISIS CON METAS:
-Cuando analices métricas, COMPARA cada una contra su meta definida.
-Usa este formato para cada métrica con meta:
+        const periodLabels: Record<string, string> = {
+          daily: 'Diario',
+          weekly: 'Semanal',
+          monthly: 'Mensual',
+        };
+
+        goalsContext = `
+🎯 OBJETIVOS ESTRATÉGICOS DEL PROYECTO:
+${projectGoals.map((g: { metric_key: string; target_value: number; currency: string; period: string }) => {
+  const label = metricLabels[g.metric_key] || g.metric_key.toUpperCase();
+  const period = periodLabels[g.period] || g.period;
+  return `- **${label}**: ${formatGoalValue(g)} (${period})`;
+}).join('\n')}
+
+📋 INSTRUCCIÓN DE ANÁLISIS COMPARATIVO OBLIGATORIA:
+Para CADA métrica que tenga una meta definida, DEBES:
+1. Obtener el valor actual de Meta Ads o archivos adjuntos
+2. Compararlo contra la meta definida
+3. Calcular la diferencia absoluta y porcentual
+4. Asignar estado visual basado en cumplimiento
+
+FORMATO OBLIGATORIO cuando hay metas definidas - SIEMPRE incluir esta sección:
+
+### 🎯 Meta vs Realidad
 
 | Métrica | Meta | Actual | Diferencia | Estado |
 |---------|------|--------|------------|--------|
-| CPA | $15.00 | $18.50 | +$3.50 | ⚠️ |
+| **CPA** | $15.00 | $12.30 | -$2.70 (-18%) | ✅ |
+| **ROAS** | 3.0x | 2.5x | -0.5x (-17%) | ⚠️ |
 
-Si la meta se cumple: ✅
-Si está cerca (<10% de diferencia): ⚠️
-Si no se cumple: ❌
+**Estados:**
+- ✅ **Cumplido**: La meta se alcanzó o superó
+- ⚠️ **Cerca** (≤10% de diferencia): Requiere atención pero no es crítico
+- ❌ **No cumplido** (>10% de diferencia): Requiere acción inmediata
 
-SIEMPRE incluye la sección "### 🎯 Meta vs Realidad" cuando hay metas definidas.
+**IMPORTANTE para métricas inversas (CPA, CPC):**
+- Un valor MENOR que la meta = ✅ Cumplido
+- Un valor MAYOR que la meta = ❌ No cumplido
+
+**IMPORTANTE para métricas directas (ROAS, CTR, Conversiones):**
+- Un valor MAYOR que la meta = ✅ Cumplido
+- Un valor MENOR que la meta = ❌ No cumplido
+
+NUNCA omitas esta sección cuando hay metas definidas. Es información crítica para el usuario.
 `;
       }
     }
