@@ -5,7 +5,7 @@ import { Json } from "@/integrations/supabase/types";
 import { ProjectGoal } from "./useProjectGoals";
 
 export type WidgetType = "kpi" | "line" | "bar" | "pie" | "table" | "area" | "goal_tracker";
-export type DataSource = "meta_ads" | "google_ads" | "manual";
+export type DataSource = "meta_ads" | "google_ads" | "tiktok_ads" | "manual";
 export type MetricType = "impressions" | "clicks" | "spend" | "reach" | "ctr" | "cpc" | "cpm";
 export type DatePreset = "today" | "yesterday" | "last_7d" | "last_30d" | "this_month";
 

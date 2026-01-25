@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,16 +11,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Widget, WidgetType, MetricType, DatePreset } from "@/hooks/useWidgets";
+import { Widget, WidgetType, MetricType, DatePreset, DataSource } from "@/hooks/useWidgets";
 import { METRIC_LABELS, DATE_PRESET_LABELS } from "@/hooks/useMetaMetrics";
-import { MetaAccountDetail } from "@/hooks/useIntegrations";
-import { AlertCircle, Building2 } from "lucide-react";
+import { MetaAccountDetail, useIntegrations } from "@/hooks/useIntegrations";
+import { AlertCircle, Building2, Globe } from "lucide-react";
 
 interface WidgetSettingsProps {
   widget: Widget;
   accounts: MetaAccountDetail[];
   accountsLoading?: boolean;
-  onUpdate: (updates: Partial<Pick<Widget, "title" | "type" | "metric_config">>) => void;
+  onUpdate: (updates: Partial<Pick<Widget, "title" | "type" | "data_source" | "metric_config">>) => void;
   onClose: () => void;
 }
 
@@ -34,15 +34,56 @@ const WIDGET_TYPE_LABELS: Record<WidgetType, string> = {
   goal_tracker: "Seguimiento de Meta",
 };
 
-export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, onClose }: WidgetSettingsProps) => {
+const PLATFORM_LABELS: Record<DataSource, string> = {
+  meta_ads: "Meta Ads",
+  google_ads: "Google Ads",
+  tiktok_ads: "TikTok Ads",
+  manual: "Manual",
+};
+
+export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoading: initialLoading, onUpdate, onClose }: WidgetSettingsProps) => {
+  const { getAccountDetailsByPlatform } = useIntegrations();
+  
   const [title, setTitle] = useState(widget.title);
   const [type, setType] = useState<WidgetType>(widget.type);
+  const [platform, setPlatform] = useState<DataSource>(widget.data_source);
   const [metric, setMetric] = useState<MetricType>(widget.metric_config.metric);
   const [datePreset, setDatePreset] = useState<DatePreset>(widget.metric_config.date_preset);
   const [comparison, setComparison] = useState(widget.metric_config.comparison ?? true);
   const [goal, setGoal] = useState<string>(widget.metric_config.goal?.toString() || "");
   const [accountId, setAccountId] = useState<string>(widget.metric_config.account_id || "");
   const [loading, setLoading] = useState(false);
+  
+  // Platform-specific accounts
+  const [accounts, setAccounts] = useState<MetaAccountDetail[]>(initialAccounts);
+  const [accountsLoading, setAccountsLoading] = useState(initialLoading || false);
+
+  // Load accounts when platform changes
+  useEffect(() => {
+    const loadAccountsForPlatform = async () => {
+      if (platform === 'manual') {
+        setAccounts([]);
+        return;
+      }
+      
+      setAccountsLoading(true);
+      try {
+        const platformAccounts = await getAccountDetailsByPlatform(platform as 'meta_ads' | 'google_ads' | 'tiktok_ads');
+        setAccounts(platformAccounts);
+        // Reset account selection if switching platforms
+        if (platform !== widget.data_source) {
+          setAccountId("");
+        }
+      } catch (error) {
+        console.error("Error loading accounts:", error);
+        setAccounts([]);
+      } finally {
+        setAccountsLoading(false);
+      }
+    };
+    
+    loadAccountsForPlatform();
+  }, [platform, getAccountDetailsByPlatform]);
 
   // Get account name for the selected account
   const getAccountName = (id: string): string => {
@@ -53,12 +94,12 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Save both account_id and account_name
       const selectedAccountName = accountId ? getAccountName(accountId) : undefined;
       
       await onUpdate({
         title,
         type,
+        data_source: platform,
         metric_config: {
           ...widget.metric_config,
           metric,
@@ -74,7 +115,7 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
     }
   };
 
-  const hasNoAccounts = !accountsLoading && accounts.length === 0;
+  const hasNoAccounts = !accountsLoading && accounts.length === 0 && platform !== 'manual';
 
   return (
     <div className="h-full max-h-[85vh] flex flex-col">
@@ -88,39 +129,61 @@ export const WidgetSettings = ({ widget, accounts, accountsLoading, onUpdate, on
 
       {/* Content - Scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto pb-6 space-y-6">
-        {/* Account Selector */}
+        {/* Platform Selector */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
-            <Building2 size={14} />
-            Cuenta de anuncios
+            <Globe size={14} />
+            Plataforma
           </Label>
-          {hasNoAccounts ? (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-              <AlertCircle size={16} />
-              <span>No hay cuentas conectadas. Conecta Meta Ads primero.</span>
-            </div>
-          ) : (
-            <Select 
-              value={accountId} 
-              onValueChange={setAccountId}
-              disabled={accountsLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={accountsLoading ? "Cargando cuentas..." : "Seleccionar cuenta"} />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Selecciona la cuenta de la que obtener los datos
-          </p>
+          <Select value={platform} onValueChange={(v) => setPlatform(v as DataSource)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Seleccionar plataforma" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Account Selector */}
+        {platform !== 'manual' && (
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Building2 size={14} />
+              Cuenta de anuncios
+            </Label>
+            {hasNoAccounts ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <AlertCircle size={16} />
+                <span>No hay cuentas conectadas. Conecta {PLATFORM_LABELS[platform]} primero.</span>
+              </div>
+            ) : (
+              <Select 
+                value={accountId} 
+                onValueChange={setAccountId}
+                disabled={accountsLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={accountsLoading ? "Cargando cuentas..." : "Seleccionar cuenta"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Selecciona la cuenta de la que obtener los datos
+            </p>
+          </div>
+        )}
 
         {/* Title */}
         <div className="space-y-2">

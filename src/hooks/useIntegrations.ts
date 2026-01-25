@@ -318,48 +318,74 @@ export const useIntegrations = () => {
 
   // Fetch Meta account details from the database
   const getMetaAccountDetails = async (): Promise<MetaAccountDetail[]> => {
+    return getAccountDetailsByPlatform('meta_ads');
+  };
+
+  // Generic function to fetch account details by platform
+  const getAccountDetailsByPlatform = async (platform: 'meta_ads' | 'google_ads' | 'tiktok_ads'): Promise<MetaAccountDetail[]> => {
     if (!user) return [];
 
     try {
       const { data, error } = await supabase
         .from('user_integrations')
-        .select('account_ids')
+        .select('account_ids, account_name')
         .eq('user_id', user.id)
-        .eq('platform', 'meta_ads')
+        .eq('platform', platform)
         .eq('status', 'connected')
         .maybeSingle();
 
-      if (error || !data?.account_ids?.length) return [];
-
-      // Fetch account names from Meta API via edge function
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return [];
-
-      const response = await fetch(
-        "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/fetch-meta-accounts",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ account_ids: data.account_ids }),
+      if (error || !data?.account_ids?.length) {
+        // Return demo accounts for Google and TikTok if not connected
+        if (platform === 'google_ads') {
+          return [
+            { id: 'demo-google-1', name: 'Google Ads Demo Account', status: 'demo' },
+          ];
         }
-      );
-
-      if (!response.ok) {
-        // Fallback: return accounts without names
-        return data.account_ids.map((id: string) => ({
-          id,
-          name: `Cuenta ${id}`,
-          status: "active",
-        }));
+        if (platform === 'tiktok_ads') {
+          return [
+            { id: 'demo-tiktok-1', name: 'TikTok Ads Demo Account', status: 'demo' },
+          ];
+        }
+        return [];
       }
 
-      const result = await response.json();
-      return result.accounts || [];
+      // For Meta, fetch from edge function
+      if (platform === 'meta_ads') {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return [];
+
+        const response = await fetch(
+          "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/fetch-meta-accounts",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ account_ids: data.account_ids }),
+          }
+        );
+
+        if (!response.ok) {
+          return data.account_ids.map((id: string) => ({
+            id,
+            name: `Cuenta ${id}`,
+            status: "active",
+          }));
+        }
+
+        const result = await response.json();
+        return result.accounts || [];
+      }
+
+      // For Google/TikTok, return stored IDs with generic names
+      return data.account_ids.map((id: string, index: number) => ({
+        id,
+        name: data.account_name || `${platform === 'google_ads' ? 'Google' : 'TikTok'} Account ${index + 1}`,
+        status: "active",
+      }));
     } catch (error) {
-      console.error('Error fetching Meta account details:', error);
+      console.error(`Error fetching ${platform} account details:`, error);
       return [];
     }
   };
@@ -376,5 +402,6 @@ export const useIntegrations = () => {
     getConnectedPlatforms,
     getUserMetaToken,
     getMetaAccountDetails,
+    getAccountDetailsByPlatform,
   };
 };

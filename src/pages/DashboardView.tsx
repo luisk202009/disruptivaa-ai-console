@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/Sidebar";
@@ -11,6 +11,7 @@ import { DashboardCanvas } from "@/components/dashboards/DashboardCanvas";
 import { WidgetSelector } from "@/components/dashboards/WidgetSelector";
 import { WidgetSettings } from "@/components/dashboards/WidgetSettings";
 import { BulkAccountAssignDialog } from "@/components/dashboards/BulkAccountAssignDialog";
+import { ExportReportDialog } from "@/components/dashboards/ExportReportDialog";
 import { DATE_PRESET_LABELS } from "@/hooks/useMetaMetrics";
 import {
   Select,
@@ -33,6 +34,7 @@ const DashboardView = () => {
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
   const [showWidgetSettings, setShowWidgetSettings] = useState(false);
   const [showBulkAccountModal, setShowBulkAccountModal] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [globalDatePreset, setGlobalDatePreset] = useState<DatePreset>("last_7d");
   
   // Meta accounts state
@@ -175,6 +177,17 @@ const DashboardView = () => {
               </SelectContent>
             </Select>
 
+            {/* Export Report Button */}
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setShowExportDialog(true)}
+              disabled={widgets.length === 0}
+            >
+              <FileDown size={18} />
+              Exportar
+            </Button>
+
             {/* Add Widget Button */}
             <Sheet open={showWidgetSelector} onOpenChange={setShowWidgetSelector}>
               <SheetTrigger asChild>
@@ -233,6 +246,14 @@ const DashboardView = () => {
           accounts={accounts}
           accountsLoading={accountsLoading}
           onAssign={handleBulkAssign}
+        />
+
+        {/* Export Report Dialog */}
+        <ExportReportDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+          widgets={widgets}
+          dashboardName={dashboard.name}
         />
       </main>
     </div>
