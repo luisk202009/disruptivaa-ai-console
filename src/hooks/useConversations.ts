@@ -8,6 +8,7 @@ export interface Conversation {
   title: string | null;
   user_id: string;
   project_id: string | null;
+  agent_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,11 @@ export interface ConversationWithProject extends Conversation {
     id: string;
     name: string;
     color: string;
+  } | null;
+  agent?: {
+    id: string;
+    name: string;
+    role: string;
   } | null;
 }
 
@@ -54,7 +60,8 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
         .from("conversations")
         .select(`
           *,
-          project:projects(id, name, color)
+          project:projects(id, name, color),
+          agent:ai_agents(id, name, role)
         `)
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
@@ -95,7 +102,8 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
         .from("conversations")
         .select(`
           *,
-          project:projects(id, name, color)
+          project:projects(id, name, color),
+          agent:ai_agents(id, name, role)
         `)
         .eq("user_id", user.id)
         .lt("updated_at", cursorRef.current)
@@ -130,7 +138,8 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
   const createConversation = async (
     chatId: string,
     title: string,
-    projectId?: string | null
+    projectId?: string | null,
+    agentId?: string | null
   ): Promise<Conversation | null> => {
     if (!user) return null;
 
@@ -142,6 +151,7 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
           title: title.length > 50 ? title.substring(0, 50) + "..." : title,
           user_id: user.id,
           project_id: projectId || null,
+          agent_id: agentId || null,
         })
         .select()
         .single();

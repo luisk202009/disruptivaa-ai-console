@@ -140,7 +140,7 @@ const CommandConsole = ({
         projectId: activeProjectId 
       });
       
-      // Create conversation record - Supabase returns { data, error }, not exceptions
+      // Create conversation record with agent_id - Supabase returns { data, error }, not exceptions
       const { data: conversationData, error: conversationError } = await supabase
         .from("conversations")
         .insert({
@@ -148,6 +148,7 @@ const CommandConsole = ({
           title,
           user_id: user.id,
           project_id: activeProjectId,
+          agent_id: selectedAgent?.id || null,
         })
         .select()
         .single();
@@ -155,7 +156,7 @@ const CommandConsole = ({
       if (conversationError) {
         console.error("❌ Error creating conversation:", conversationError);
       } else {
-        console.log("✅ Conversation created:", conversationData);
+        console.log("✅ Conversation created with agent:", conversationData);
         onConversationCreated?.(currentChatId, title, activeProjectId);
       }
     }
