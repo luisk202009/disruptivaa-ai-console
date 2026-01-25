@@ -16,7 +16,8 @@
     "searchConversations": "Buscar conversas...",
     "noResults": "Nenhuma conversa encontrada",
     "noConversations": "Sem conversas ainda",
-    "untitled": "Sem título"
+    "untitled": "Sem título",
+    "endOfList": "Não há mais conversas"
   },
   "settings": {
     "title": "Configurações",

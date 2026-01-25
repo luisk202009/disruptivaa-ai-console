@@ -15,9 +15,10 @@ import {
   ChevronUp,
   LayoutGrid,
   Search,
-  X
+  X,
+  Loader2
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -89,13 +90,22 @@ const Sidebar = () => {
   const [showCreateProject, setShowCreateProject] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
+  const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   
   const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects();
-  const { conversations, loading: conversationsLoading, deleteConversation, moveConversation } = useConversations(
+  const { 
+    conversations, 
+    loading: conversationsLoading, 
+    loadingMore,
+    hasMore,
+    loadMore,
+    deleteConversation, 
+    moveConversation 
+  } = useConversations(
     selectedProjectId !== undefined ? { projectId: selectedProjectId } : {}
   );
 
@@ -110,6 +120,19 @@ const Sidebar = () => {
       convo.title?.toLowerCase().includes(query)
     );
   }, [conversations, searchQuery]);
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    
+    const threshold = 100;
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    
+    if (isNearBottom && hasMore && !loadingMore && !searchQuery) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, loadMore, searchQuery]);
 
   const handleNewConversation = () => {
     navigate("/");
@@ -228,185 +251,215 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* ===== AREA SCROLLABLE ===== */}
-      <div className="flex-1 overflow-y-auto scrollbar-minimal flex flex-col min-h-0">
-        {/* Navigation - Main Group */}
-        <nav className="shrink-0 px-4 py-4 space-y-1">
-          {navItems.map((item) => (
-            <NavItem
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
-              active={getActiveItem() === item.id}
-              collapsed={collapsed}
-              onClick={() => navigate(item.path)}
-            />
-          ))}
-        </nav>
+      {/* ===== AREA SCROLLABLE CON GRADIENTES ===== */}
+      <div className="flex-1 overflow-hidden relative min-h-0">
+        {/* Gradient fade top */}
+        <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-sidebar-background to-transparent z-10 pointer-events-none" />
+        
+        {/* Contenido scrollable */}
+        <div 
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto scrollbar-minimal"
+        >
+          {/* Navigation - Main Group */}
+          <nav className="shrink-0 px-4 py-4 space-y-1">
+            {navItems.map((item) => (
+              <NavItem
+                key={item.id}
+                icon={item.icon}
+                label={item.label}
+                active={getActiveItem() === item.id}
+                collapsed={collapsed}
+                onClick={() => navigate(item.path)}
+              />
+            ))}
+          </nav>
 
-        {/* Projects Section */}
-        {user && !collapsed && (
-          <div className="shrink-0 px-4 mt-6 mb-4">
-            <div className="flex items-center justify-between py-2">
-              <button
-                onClick={() => setProjectsExpanded(!projectsExpanded)}
-                className="flex items-center gap-2 text-xs font-medium text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors"
-              >
-                {projectsExpanded ? (
-                  <ChevronDown size={14} strokeWidth={1.5} />
-                ) : (
-                  <ChevronRight size={14} strokeWidth={1.5} />
-                )}
-                {t("navigation.projects")}
-              </button>
-              <button
-                onClick={() => setShowCreateProject(true)}
-                className="p-1 rounded hover:bg-white/[0.04] text-zinc-500 hover:text-zinc-200 transition-colors"
-              >
-                <Plus size={14} strokeWidth={1.5} />
-              </button>
-            </div>
-
-            {projectsExpanded && (
-              <div className="space-y-0.5 mt-1">
-                {/* General / No Project option */}
+          {/* Projects Section */}
+          {user && !collapsed && (
+            <div className="shrink-0 px-4 mt-6 mb-4">
+              <div className="flex items-center justify-between py-2">
                 <button
-                  onClick={() => handleSelectProject(null)}
-                  className={cn(
-                    "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group",
-                    selectedProjectId === null
-                      ? "text-foreground bg-white/[0.05]"
-                      : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
-                  )}
+                  onClick={() => setProjectsExpanded(!projectsExpanded)}
+                  className="flex items-center gap-2 text-xs font-medium text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors"
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <FolderOpen size={14} strokeWidth={1.5} className="shrink-0" />
-                    <span className="truncate tracking-wide">General</span>
-                  </div>
-                  {selectedProjectId === null && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
+                  {projectsExpanded ? (
+                    <ChevronDown size={14} strokeWidth={1.5} />
+                  ) : (
+                    <ChevronRight size={14} strokeWidth={1.5} />
                   )}
+                  {t("navigation.projects")}
                 </button>
-
-                {/* Project list */}
-                {projectsLoading ? (
-                  <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
-                ) : (
-                  projects.map((project) => (
-                    <div
-                      key={project.id}
-                      onClick={() => handleSelectProject(project.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group cursor-pointer",
-                        selectedProjectId === project.id
-                          ? "text-foreground bg-white/[0.05]"
-                          : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 truncate flex-1">
-                        <Folder size={14} strokeWidth={1.5} className="shrink-0" style={{ color: project.color }} />
-                        <span className="truncate tracking-wide">{project.name}</span>
-                      </div>
-                      {selectedProjectId === project.id && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0 mr-1" />
-                      )}
-                      <ProjectItemMenu
-                        project={project}
-                        onRename={handleRenameProject}
-                        onDelete={handleDeleteProject}
-                      />
-                    </div>
-                  ))
-                )}
+                <button
+                  onClick={() => setShowCreateProject(true)}
+                  className="p-1 rounded hover:bg-white/[0.04] text-zinc-500 hover:text-zinc-200 transition-colors"
+                >
+                  <Plus size={14} strokeWidth={1.5} />
+                </button>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Search Input - Before conversations */}
-        {user && !collapsed && (
-          <div className="shrink-0 px-4 mb-3">
-            <div className="relative">
-              <Search 
-                size={14} 
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" 
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("sidebar.searchConversations")}
-                className="w-full pl-9 pr-8 py-2 bg-white/[0.03] border border-white/[0.06] 
-                  rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600
-                  focus:outline-none focus:border-white/[0.12] focus:bg-white/[0.04]
-                  transition-all duration-200"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                >
-                  <X size={12} />
-                </button>
+              {projectsExpanded && (
+                <div className="space-y-0.5 mt-1">
+                  {/* General / No Project option */}
+                  <button
+                    onClick={() => handleSelectProject(null)}
+                    className={cn(
+                      "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group",
+                      selectedProjectId === null
+                        ? "text-foreground bg-white/[0.05]"
+                        : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <FolderOpen size={14} strokeWidth={1.5} className="shrink-0" />
+                      <span className="truncate tracking-wide">General</span>
+                    </div>
+                    {selectedProjectId === null && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Project list */}
+                  {projectsLoading ? (
+                    <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
+                  ) : (
+                    projects.map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => handleSelectProject(project.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-colors group cursor-pointer",
+                          selectedProjectId === project.id
+                            ? "text-foreground bg-white/[0.05]"
+                            : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 truncate flex-1">
+                          <Folder size={14} strokeWidth={1.5} className="shrink-0" style={{ color: project.color }} />
+                          <span className="truncate tracking-wide">{project.name}</span>
+                        </div>
+                        {selectedProjectId === project.id && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0 mr-1" />
+                        )}
+                        <ProjectItemMenu
+                          project={project}
+                          onRename={handleRenameProject}
+                          onDelete={handleDeleteProject}
+                        />
+                      </div>
+                    ))
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Recent Conversations */}
-        {user && !collapsed && (
-          <div className="px-4">
-            <div className="flex items-center gap-2 py-2 shrink-0">
-              <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-500" />
-              <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
-                {t("navigation.recentConversations")}
-              </span>
-            </div>
-            {conversationsLoading ? (
-              <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
-            ) : filteredConversations.length === 0 ? (
-              <p className="text-xs text-zinc-600 px-3 py-4 text-center">
-                {searchQuery 
-                  ? t("sidebar.noResults") 
-                  : t("sidebar.noConversations")
-                }
-              </p>
-            ) : (
-              <div className="space-y-0.5 pb-4">
-                {filteredConversations.map((convo, index) => (
-                  <div
-                    key={convo.chat_id}
-                    onClick={() => handleLoadConversation(convo.chat_id)}
-                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group animate-fade-in"
-                    style={{ animationDelay: `${index * 20}ms` }}
+          {/* Search Input - Before conversations */}
+          {user && !collapsed && (
+            <div className="shrink-0 px-4 mb-3">
+              <div className="relative">
+                <Search 
+                  size={14} 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" 
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t("sidebar.searchConversations")}
+                  className="w-full pl-9 pr-8 py-2 bg-white/[0.03] border border-white/[0.06] 
+                    rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600
+                    focus:outline-none focus:border-white/[0.12] focus:bg-white/[0.04]
+                    transition-all duration-200"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                   >
-                    {/* Project color badge */}
-                    {convo.project && (
-                      <span 
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: convo.project.color }}
-                      />
-                    )}
-                    <span className="truncate flex-1 tracking-wide">
-                      {convo.title || t("sidebar.untitled")}
-                    </span>
-                    <ConversationItemMenu
-                      conversation={convo}
-                      projects={projects}
-                      onDelete={handleDeleteConversation}
-                      onMove={handleMoveConversation}
-                    />
-                  </div>
-                ))}
+                    <X size={12} />
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* ===== PROFILE AT END OF SCROLL ===== */}
+          {/* Recent Conversations */}
+          {user && !collapsed && (
+            <div className="px-4 pb-6">
+              <div className="flex items-center gap-2 py-2 shrink-0">
+                <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-500" />
+                <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
+                  {t("navigation.recentConversations")}
+                </span>
+              </div>
+              {conversationsLoading ? (
+                <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
+              ) : filteredConversations.length === 0 ? (
+                <p className="text-xs text-zinc-600 px-3 py-4 text-center">
+                  {searchQuery 
+                    ? t("sidebar.noResults") 
+                    : t("sidebar.noConversations")
+                  }
+                </p>
+              ) : (
+                <div className="space-y-0.5">
+                  {filteredConversations.map((convo, index) => (
+                    <div
+                      key={convo.chat_id}
+                      onClick={() => handleLoadConversation(convo.chat_id)}
+                      className="w-full flex items-center gap-2.5 px-3 py-3 rounded-lg text-sm leading-relaxed text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer group animate-fade-in"
+                      style={{ animationDelay: `${index * 20}ms` }}
+                    >
+                      {/* Project color badge - more subtle */}
+                      {convo.project && (
+                        <span 
+                          className="w-2 h-2 rounded-full shrink-0 opacity-70"
+                          style={{ backgroundColor: convo.project.color }}
+                        />
+                      )}
+                      <span className="truncate flex-1 tracking-wide">
+                        {convo.title || t("sidebar.untitled")}
+                      </span>
+                      <ConversationItemMenu
+                        conversation={convo}
+                        projects={projects}
+                        onDelete={handleDeleteConversation}
+                        onMove={handleMoveConversation}
+                      />
+                    </div>
+                  ))}
+                  
+                  {/* Loading more indicator */}
+                  {loadingMore && (
+                    <div className="flex justify-center py-4">
+                      <Loader2 size={16} className="animate-spin text-zinc-500" />
+                    </div>
+                  )}
+                  
+                  {/* End of list indicator */}
+                  {!hasMore && conversations.length > 0 && !searchQuery && (
+                    <p className="text-xs text-zinc-600 text-center py-3">
+                      {t("sidebar.endOfList")}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {/* Gradient fade bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-sidebar-background to-transparent z-10 pointer-events-none" />
+      </div>
+
+      {/* ===== FOOTER FIJO (Perfil + Toggle) ===== */}
+      <div className="shrink-0 border-t border-white/[0.05]">
+        {/* Profile Section */}
         {user && (
           <div className={cn(
-            "mt-auto shrink-0 border-t border-white/[0.05] px-4 py-4",
+            "px-4 py-3",
             collapsed && "flex justify-center"
           )}>
             <DropdownMenu>
@@ -482,11 +535,9 @@ const Sidebar = () => {
             </DropdownMenu>
           </div>
         )}
-      </div>
 
-      {/* ===== FOOTER FIJO (minimal) ===== */}
-      <div className="shrink-0 border-t border-white/[0.05]">
-        <div className="p-3">
+        {/* Collapse Toggle */}
+        <div className="px-3 pb-3">
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center justify-center p-2 rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04] transition-colors"
