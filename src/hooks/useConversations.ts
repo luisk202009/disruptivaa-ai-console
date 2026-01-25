@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -22,14 +22,22 @@ export interface ConversationWithProject extends Conversation {
 
 interface UseConversationsOptions {
   projectId?: string | null; // null = show only unassigned, undefined = show all
+  pageSize?: number;
 }
+
+const DEFAULT_PAGE_SIZE = 20;
 
 export const useConversations = (options: UseConversationsOptions = {}) => {
   const [conversations, setConversations] = useState<ConversationWithProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
+  
+  const pageSize = options.pageSize || DEFAULT_PAGE_SIZE;
+  const cursorRef = useRef<string | null>(null);
 
-  const fetchConversations = useCallback(async () => {
+  const fetchConversations = useCallback(async (reset = true) => {
     if (!user) {
       setConversations([]);
       setLoading(false);
@@ -37,6 +45,11 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
     }
 
     try {
+      if (reset) {
+        setLoading(true);
+        cursorRef.current = null;
+      }
+
       let query = supabase
         .from("conversations")
         .select(`
@@ -45,7 +58,7 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
         `)
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false })
-        .limit(50);
+        .limit(pageSize);
 
       // Filter by project
       if (options.projectId === null) {
@@ -57,13 +70,62 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
       const { data, error } = await query;
 
       if (error) throw error;
+      
       setConversations(data || []);
+      setHasMore((data?.length || 0) === pageSize);
+      
+      // Set cursor to last item's updated_at
+      if (data && data.length > 0) {
+        cursorRef.current = data[data.length - 1].updated_at;
+      }
     } catch (error) {
       console.error("Error fetching conversations:", error);
     } finally {
       setLoading(false);
     }
-  }, [user, options.projectId]);
+  }, [user, options.projectId, pageSize]);
+
+  const loadMore = useCallback(async () => {
+    if (!user || loadingMore || !hasMore || !cursorRef.current) return;
+
+    setLoadingMore(true);
+
+    try {
+      let query = supabase
+        .from("conversations")
+        .select(`
+          *,
+          project:projects(id, name, color)
+        `)
+        .eq("user_id", user.id)
+        .lt("updated_at", cursorRef.current)
+        .order("updated_at", { ascending: false })
+        .limit(pageSize);
+
+      // Filter by project
+      if (options.projectId === null) {
+        query = query.is("project_id", null);
+      } else if (options.projectId !== undefined) {
+        query = query.eq("project_id", options.projectId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setConversations(prev => [...prev, ...data]);
+        cursorRef.current = data[data.length - 1].updated_at;
+        setHasMore(data.length === pageSize);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error("Error loading more conversations:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [user, loadingMore, hasMore, options.projectId, pageSize]);
 
   const createConversation = async (
     chatId: string,
@@ -169,6 +231,9 @@ export const useConversations = (options: UseConversationsOptions = {}) => {
   return {
     conversations,
     loading,
+    loadingMore,
+    hasMore,
+    loadMore,
     createConversation,
     updateConversation,
     moveConversation,
