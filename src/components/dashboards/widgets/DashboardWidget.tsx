@@ -14,7 +14,9 @@ import { LineChartWidget } from "./LineChartWidget";
 import { BarChartWidget } from "./BarChartWidget";
 import { PieChartWidget } from "./PieChartWidget";
 import { AreaChartWidget } from "./AreaChartWidget";
+import { GoalTrackerWidget } from "./GoalTrackerWidget";
 import { cn } from "@/lib/utils";
+import { ProjectGoal } from "@/hooks/useProjectGoals";
 
 interface DashboardWidgetProps {
   widget: Widget;
@@ -165,6 +167,29 @@ export const DashboardWidget = ({
         return <PieChartWidget {...props} />;
       case "area":
         return <AreaChartWidget {...props} />;
+      case "goal_tracker":
+        // Goal tracker requires a goal from metric_config
+        const goal = widget.metric_config.goal_data as ProjectGoal | undefined;
+        if (!goal) {
+          return (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangle size={24} className="text-amber-500" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium">⚠️ Meta no configurada</p>
+                <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+                  Selecciona una meta del proyecto en la configuración
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
+                <Settings size={14} />
+                Configurar
+              </Button>
+            </div>
+          );
+        }
+        return <GoalTrackerWidget widget={widget} data={data} goal={goal} />;
       default:
         return <KPIWidget {...props} />;
     }

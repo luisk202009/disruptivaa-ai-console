@@ -17,7 +17,8 @@ import {
   Building2,
   CheckCircle2,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Target
 } from "lucide-react";
 import { Widget, WidgetType, MetricType, MetricConfig, GridSettings } from "@/hooks/useWidgets";
 import { METRIC_LABELS } from "@/hooks/useMetaMetrics";
@@ -114,6 +115,12 @@ const CHART_OPTIONS: ChartOption[] = [
     icon: <Activity size={20} />, 
     label: "Área",
     description: "Similar a línea con relleno"
+  },
+  { 
+    type: "goal_tracker", 
+    icon: <Target size={20} />, 
+    label: "Seguimiento de Meta",
+    description: "Progreso hacia objetivos del proyecto"
   },
 ];
 
