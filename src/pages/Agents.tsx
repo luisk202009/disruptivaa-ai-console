@@ -55,6 +55,13 @@ const Agents = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {DISRUPTIVAA_AGENTS.map((agent) => {
                 const Icon = agent.icon;
+                const translatedKeywords = t(`${agent.id}.keywords`, { 
+                  ns: "agents", 
+                  returnObjects: true 
+                }) as string[];
+                const keywords = Array.isArray(translatedKeywords) 
+                  ? translatedKeywords 
+                  : agent.keywords;
 
                 return (
                   <button
@@ -84,7 +91,7 @@ const Agents = () => {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {agent.keywords.slice(0, 3).map((keyword) => (
+                      {keywords.slice(0, 3).map((keyword) => (
                         <span
                           key={keyword}
                           className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground"

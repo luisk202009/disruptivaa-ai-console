@@ -354,6 +354,21 @@ serve(async (req) => {
     
     console.info("Request received for agent:", agentId);
 
+    // Fetch user's preferred language from profile
+    const { data: userProfile } = await supabaseUserClient
+      .from("profiles")
+      .select("language")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const userLanguage = userProfile?.language || 'es';
+    const languageInstructions: Record<string, string> = {
+      es: 'Responde siempre en español de manera profesional y concisa.',
+      en: 'Always respond in English in a professional and concise manner.',
+      pt: 'Responda sempre em português de forma profissional e concisa.'
+    };
+    const languageInstruction = languageInstructions[userLanguage] || languageInstructions.es;
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
@@ -643,7 +658,7 @@ Ejemplo: "Según tu archivo, el CPA objetivo es $X. Tus campañas actuales muest
       finalSystemInstruction += `\n\n${responsePrefix}`;
     }
 
-    finalSystemInstruction += `\n\nResponde siempre en español de manera profesional y concisa.`;
+    finalSystemInstruction += `\n\n${languageInstruction}`;
 
     console.info("Calling AI gateway");
 

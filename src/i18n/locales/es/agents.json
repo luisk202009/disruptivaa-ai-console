@@ -1,22 +1,27 @@
 {
   "smart-brand-architect": {
     "name": "Smart Brand Architect",
-    "description": "Analista de identidad de marca"
+    "description": "Analista de identidad de marca",
+    "keywords": ["Branding", "Identidad Visual", "Estrategia"]
   },
   "ghostwriter-pro": {
     "name": "GhostWriter Pro",
-    "description": "Analista de contenido y copy"
+    "description": "Analista de contenido y copy",
+    "keywords": ["Copywriting", "Contenido", "Storytelling"]
   },
   "ads-optimizer": {
     "name": "Ads Optimizer Agent",
-    "description": "Analista de campañas publicitarias"
+    "description": "Analista de campañas publicitarias",
+    "keywords": ["Meta Ads", "Google Ads", "Optimización"]
   },
   "ai-crm-sales": {
     "name": "AI-CRM Sales Bot",
-    "description": "Analista de leads y pipeline"
+    "description": "Analista de leads y pipeline",
+    "keywords": ["CRM", "Ventas", "Pipeline"]
   },
   "visual-content-bot": {
     "name": "Visual Content Bot",
-    "description": "Analista de contenido visual"
+    "description": "Analista de contenido visual",
+    "keywords": ["Diseño", "Imágenes", "Visual"]
   }
 }

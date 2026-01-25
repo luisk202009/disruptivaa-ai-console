@@ -5,6 +5,7 @@ import { es } from "date-fns/locale";
 import Sidebar from "@/components/Sidebar";
 import { useProject } from "@/hooks/useProject";
 import { useConversations } from "@/hooks/useConversations";
+import { useProjectGoals, GOAL_METRIC_LABELS, formatGoalValue, GOAL_PERIOD_LABELS } from "@/hooks/useProjectGoals";
 import { Button } from "@/components/ui/button";
 import { ProjectGoalsEditor } from "@/components/projects/ProjectGoalsEditor";
 
@@ -14,6 +15,7 @@ const ProjectDetail = () => {
   
   const { project, loading: projectLoading } = useProject(id);
   const { conversations, loading: conversationsLoading } = useConversations({ projectId: id });
+  const { goals, loading: goalsLoading } = useProjectGoals({ projectId: id });
 
   const handleOpenConversation = (chatId: string) => {
     navigate("/");
@@ -88,14 +90,43 @@ const ProjectDetail = () => {
             </p>
           </div>
 
+          {/* Active Goals Summary */}
+          {!goalsLoading && goals.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+                <Target size={18} className="text-primary" />
+                Objetivos Activos
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {goals.map((goal) => (
+                  <div
+                    key={goal.id}
+                    className="p-4 rounded-xl border border-border bg-card/50"
+                    style={{ borderLeftColor: project.color, borderLeftWidth: 3 }}
+                  >
+                    <p className="text-xs text-muted-foreground">
+                      {GOAL_METRIC_LABELS[goal.metric_key]}
+                    </p>
+                    <p className="text-xl font-bold text-foreground mt-1">
+                      {formatGoalValue(goal)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {GOAL_PERIOD_LABELS[goal.period]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Conversations Grid */}
           {conversationsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : conversations.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-zinc-800 rounded-xl">
-              <MessageSquare size={48} className="mx-auto mb-4 text-zinc-600" />
+            <div className="text-center py-16 border border-dashed border-border rounded-xl">
+              <MessageSquare size={48} className="mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground mb-4">
                 Aún no hay conversaciones en este proyecto.
               </p>
@@ -110,20 +141,20 @@ const ProjectDetail = () => {
                 <button
                   key={convo.chat_id}
                   onClick={() => handleOpenConversation(convo.chat_id)}
-                  className="text-left p-5 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800/50 hover:border-zinc-700 transition-all group"
+                  className="text-left p-5 rounded-xl border border-border bg-card/50 hover:bg-accent/50 hover:border-accent transition-all group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-zinc-700 transition-colors">
-                      <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-400" />
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
+                      <MessageSquare size={14} strokeWidth={1.5} className="text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-foreground truncate group-hover:text-white transition-colors">
+                      <h3 className="font-medium text-foreground truncate group-hover:text-accent-foreground transition-colors">
                         {convo.title || "Sin título"}
                       </h3>
                       <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Bot size={12} strokeWidth={1.5} />
-                          Disruptivaa
+                          {convo.agent?.name || "Disruptivaa"}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar size={12} strokeWidth={1.5} />
