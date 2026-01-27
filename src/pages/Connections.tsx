@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState } from "react";
 import MetaOAuthButton from "@/components/MetaOAuthButton";
+import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 
 interface PlatformConfig {
   id: string;
@@ -217,6 +218,8 @@ const Connections = () => {
                       </Button>
                     ) : platform.id === 'meta_ads' ? (
                       <MetaOAuthButton isConnecting={isConnecting} />
+                    ) : platform.id === 'google_ads' ? (
+                      <GoogleOAuthButton isConnecting={isConnecting} />
                     ) : (
                       <Button
                         className="w-full gap-2"
