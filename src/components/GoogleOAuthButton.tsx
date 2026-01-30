@@ -2,7 +2,7 @@ import { ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // This is a public client ID - safe to expose in frontend code
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID"; // Replace with actual client ID from Google Cloud Console
+const GOOGLE_CLIENT_ID = "710576011694-r18pnfn2n71lqj5u0k3sk295jojp95at.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/adwords";
 
 interface GoogleOAuthButtonProps {
