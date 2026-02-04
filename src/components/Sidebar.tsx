@@ -175,12 +175,11 @@ const Sidebar = () => {
     }
   };
 
-  // Navigation items - Only main navigation (4 items)
+  // Navigation items - Only main navigation (3 items)
   const navItems = [
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
     { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: t("navigation.agents"), path: "/agents" },
-    { id: "conversations", icon: <MessageSquare size={18} strokeWidth={1.5} />, label: t("navigation.conversations"), path: "/conversations" },
   ];
 
   const getActiveItem = () => {
@@ -224,30 +223,6 @@ const Sidebar = () => {
               className="h-8 transition-all duration-300"
             />
           )}
-        </div>
-
-        {/* New Conversation CTA - Aligned with NavItems but with subtle brand accent */}
-        <div className="px-4 py-3">
-          <button
-            onClick={handleNewConversation}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200",
-              "bg-primary/5 border border-primary/30 hover:border-primary/50 hover:bg-primary/10",
-              "text-foreground",
-              collapsed && "justify-center px-2"
-            )}
-          >
-            <Plus 
-              size={18} 
-              strokeWidth={1.5} 
-              className="text-primary shrink-0" 
-            />
-            {!collapsed && (
-              <span className="text-sm font-medium tracking-wide">
-                {t("navigation.newConversation")}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Search Input - Fixed in header */}
@@ -308,7 +283,7 @@ const Sidebar = () => {
 
           {/* Projects Section */}
           {user && !collapsed && (
-            <div className="shrink-0 px-4 mt-6 mb-4">
+            <div className="shrink-0 px-4 mt-3 mb-3">
               <div className="flex items-center justify-between py-2">
                 <button
                   onClick={() => setProjectsExpanded(!projectsExpanded)}
