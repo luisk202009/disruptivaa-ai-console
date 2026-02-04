@@ -1,235 +1,129 @@
 
+# Plan: Reorganización Estructural del Sidebar (Estilo ChatGPT/Midday)
 
-## Plan: Implementacion Real de Google Ads OAuth 2.0
-
-### Resumen
-
-Implementar el flujo completo de OAuth 2.0 para Google Ads siguiendo el patron existente de Meta Ads, incluyendo:
-- Edge Function para intercambio de tokens
-- Pagina de callback para manejar la respuesta de Google
-- Boton de conexion OAuth en la pagina de Conexiones
-- Soporte para refresh tokens (requerido por Google)
+## Objetivo
+Reorganizar el Sidebar para que el buscador de chats sea siempre visible y el perfil de usuario permanezca anclado en la parte inferior, siguiendo el patrón de diseño de ChatGPT.
 
 ---
 
-### Fase 1: Secrets Necesarios
+## Análisis del Estado Actual
 
-Antes de implementar, se necesitan configurar estos secrets en Supabase:
-
-| Secret | Descripcion | Obligatorio |
-|--------|-------------|-------------|
-| `GOOGLE_CLIENT_ID` | Client ID de Google Cloud Console | Si |
-| `GOOGLE_CLIENT_SECRET` | Client Secret de Google Cloud Console | Si |
-| `GOOGLE_ADS_DEVELOPER_TOKEN` | Developer Token de Google Ads API | Si (para llamadas a la API) |
-
-El usuario debera obtener estas credenciales desde:
-1. [Google Cloud Console](https://console.cloud.google.com/) - Crear proyecto OAuth
-2. [Google Ads API Center](https://developers.google.com/google-ads/api/docs/first-call/dev-token) - Obtener Developer Token
-
----
-
-### Fase 2: Edge Function `google-oauth-exchange`
-
-**Archivo:** `supabase/functions/google-oauth-exchange/index.ts`
-
-Estructura basada en `meta-oauth-exchange`:
+### Estructura Actual del Sidebar (Líneas 200-556)
 
 ```text
-Flujo de la funcion:
-1. Validar JWT del usuario (Authorization header)
-2. Recibir `code` y `redirect_uri` del body
-3. Intercambiar code por tokens via https://oauth2.googleapis.com/token
-4. Guardar access_token, refresh_token y expires_at en user_integrations
-5. Retornar resultado al cliente
+┌─────────────────────────────────────────┐
+│ HEADER FIJO (shrink-0)                  │
+│   • Logo                                │
+│   • Buscador de Chats  ← AQUÍ           │
+├─────────────────────────────────────────┤
+│ AREA SCROLLABLE (flex-1)                │
+│   • Navegación                          │
+│   • Proyectos                           │
+│   • Conversaciones                      │
+├─────────────────────────────────────────┤
+│ FOOTER FIJO (shrink-0)                  │
+│   • Perfil de usuario                   │
+│   • Toggle de colapso                   │
+└─────────────────────────────────────────┘
 ```
 
-Diferencias clave con Meta:
-- Google retorna `refresh_token` solo en la primera autorizacion (con `prompt=consent`)
-- El `access_token` expira en ~1 hora (vs 60 dias de Meta)
-- Se guarda `refresh_token` para renovar el acceso automaticamente
-
-**Configuracion en `supabase/config.toml`:**
-```toml
-[functions.google-oauth-exchange]
-verify_jwt = false
-```
+### Problema Detectado
+El buscador (líneas 358-386) está dentro del área scrollable, por lo que desaparece cuando el usuario hace scroll en la lista de conversaciones.
 
 ---
 
-### Fase 3: Pagina de Callback
-
-**Archivo:** `src/pages/GoogleCallback.tsx`
-
-Estructura identica a `MetaCallback.tsx`:
+## Estructura Objetivo
 
 ```text
-1. Extraer parametros de URL: code, state, error
-2. Validar state (CSRF protection) contra sessionStorage
-3. Verificar sesion del usuario con supabase.auth.getSession()
-4. Llamar a google-oauth-exchange con el code
-5. Mostrar estado: processing | success | error
-6. Redirigir a /connections tras 2-3 segundos
+┌─────────────────────────────────────────┐
+│ HEADER FIJO (shrink-0)                  │
+│   • Logo                                │
+│   • Nuevo Chat (CTA)                    │
+│   • Buscador de Chats  ← MOVER AQUÍ    │
+├─────────────────────────────────────────┤
+│ AREA SCROLLABLE (flex-1)                │
+│   • Navegación                          │
+│   • Proyectos                           │
+│   • Conversaciones (scroll infinito)    │
+├─────────────────────────────────────────┤
+│ FOOTER FIJO (shrink-0)                  │
+│   • Perfil de usuario                   │
+│   • Toggle de colapso                   │
+└─────────────────────────────────────────┘
 ```
-
-**Actualizar `src/App.tsx`:**
-- Agregar ruta `/auth/google/callback` apuntando a `GoogleCallback`
 
 ---
 
-### Fase 4: Boton OAuth para Google Ads
+## Cambios a Implementar
 
-**Archivo:** `src/components/GoogleOAuthButton.tsx`
+### Archivo: `src/components/Sidebar.tsx`
 
-Similar a `MetaOAuthButton.tsx`:
+#### Cambio 1: Mover el Buscador al Header Fijo
 
-```text
-URL de autorizacion:
-https://accounts.google.com/o/oauth2/v2/auth
-  ?client_id=[GOOGLE_CLIENT_ID]
-  &redirect_uri=[origin]/auth/google/callback
-  &response_type=code
-  &scope=https://www.googleapis.com/auth/adwords
-  &access_type=offline
-  &prompt=consent
-  &state=[UUID para CSRF]
-```
+**Ubicación actual:** Líneas 358-386 (dentro del área scrollable)
 
-Parametros importantes:
-- `access_type=offline`: Solicita refresh_token
-- `prompt=consent`: Fuerza pantalla de consentimiento (necesario para refresh_token)
-- `scope=adwords`: Acceso a Google Ads API
+**Nueva ubicación:** Después del CTA "Nuevo Chat" (línea 251), dentro del bloque `<div className="shrink-0">`
 
-**Nota:** El `GOOGLE_CLIENT_ID` debe estar hardcodeado en el componente (es publico, similar a `META_APP_ID`)
-
----
-
-### Fase 5: Actualizar Connections.tsx
-
-**Archivo:** `src/pages/Connections.tsx`
-
-Cambios:
-1. Importar `GoogleOAuthButton`
-2. Modificar el renderizado del boton de Google Ads para usar OAuth real:
-
+**Código a mover:**
 ```tsx
-// Antes: boton naranja generico
-// Despues: 
-{platform.id === 'google_ads' ? (
-  <GoogleOAuthButton isConnecting={isConnecting} />
-) : ...}
+{/* Search Input - Ahora en header fijo */}
+{user && !collapsed && (
+  <div className="px-4 pb-3">
+    <div className="relative">
+      <Search 
+        size={14} 
+        className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" 
+      />
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={t("sidebar.searchConversations")}
+        className="w-full pl-9 pr-8 py-2 bg-white/[0.03] border border-white/[0.06] 
+          rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600
+          focus:outline-none focus:border-white/[0.12] focus:bg-white/[0.04]
+          transition-all duration-200"
+      />
+      {searchQuery && (
+        <button 
+          onClick={() => setSearchQuery("")}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          <X size={12} />
+        </button>
+      )}
+    </div>
+  </div>
+)}
 ```
 
----
+#### Cambio 2: Eliminar el Buscador del Área Scrollable
 
-### Fase 6: Actualizar useIntegrations
-
-**Archivo:** `src/hooks/useIntegrations.ts`
-
-Agregar funcion para obtener detalles de cuentas de Google Ads:
-
-```text
-El metodo getAccountDetailsByPlatform ya soporta 'google_ads'
-y retorna demo accounts si no hay conexion real.
-
-Despues de la integracion OAuth, retornara las cuentas reales
-almacenadas en account_ids.
-```
-
-No se requieren cambios significativos - la estructura existente ya soporta multiples plataformas.
+Eliminar las líneas 358-386 de su ubicación actual dentro del área scrollable.
 
 ---
 
-### Diagrama de Flujo
+## Resumen de Modificaciones
 
-```text
-Usuario click "Conectar con Google"
-        |
-        v
-GoogleOAuthButton genera state UUID
-Guarda en sessionStorage: "google_oauth_state"
-        |
-        v
-Redirect a Google OAuth:
-accounts.google.com/o/oauth2/v2/auth
-  ?client_id=...
-  &scope=adwords
-  &access_type=offline
-  &prompt=consent
-        |
-        v
-Usuario autoriza en Google
-        |
-        v
-Google redirige a:
-/auth/google/callback?code=XXX&state=YYY
-        |
-        v
-GoogleCallback.tsx:
-  1. Valida state vs sessionStorage
-  2. Obtiene sesion de Supabase
-  3. POST a google-oauth-exchange
-        |
-        v
-Edge Function:
-  POST https://oauth2.googleapis.com/token
-  {
-    code, client_id, client_secret,
-    redirect_uri, grant_type: authorization_code
-  }
-        |
-        v
-Google retorna:
-  access_token, refresh_token, expires_in
-        |
-        v
-Edge Function guarda en user_integrations:
-  platform: 'google_ads'
-  access_token, refresh_token
-  token_expires_at
-  status: 'connected'
-        |
-        v
-Retorna success al cliente
-        |
-        v
-GoogleCallback muestra "Conexion exitosa"
-Redirige a /connections
-```
+| Sección | Acción | Líneas Afectadas |
+|---------|--------|------------------|
+| Header Fijo | Añadir bloque de búsqueda | Después de línea 251 |
+| Área Scrollable | Eliminar bloque de búsqueda | Líneas 358-386 |
 
 ---
 
-### Archivos a Crear/Modificar
+## Resultado Esperado
 
-| Archivo | Accion | Descripcion |
-|---------|--------|-------------|
-| `supabase/functions/google-oauth-exchange/index.ts` | Crear | Edge function para intercambio de tokens |
-| `supabase/config.toml` | Modificar | Agregar config para nueva funcion |
-| `src/pages/GoogleCallback.tsx` | Crear | Pagina de callback OAuth |
-| `src/components/GoogleOAuthButton.tsx` | Crear | Boton de conexion OAuth |
-| `src/pages/Connections.tsx` | Modificar | Usar GoogleOAuthButton |
-| `src/App.tsx` | Modificar | Agregar ruta /auth/google/callback |
+1. **Buscador siempre visible**: El input de búsqueda permanecerá fijo debajo del botón "Nuevo Chat"
+2. **Scroll limpio**: Solo la navegación, proyectos y conversaciones tendrán scroll
+3. **Perfil anclado**: El bloque del usuario seguirá fijo en la parte inferior (ya está implementado correctamente)
+4. **Scroll minimalista**: Ya existe la clase `scrollbar-minimal` aplicada al área scrollable
 
 ---
 
-### Consideraciones de Seguridad
+## Verificación Post-Implementación
 
-1. **CSRF Protection**: El parametro `state` con UUID validado en sessionStorage
-2. **JWT Validation**: Edge function valida token de usuario antes de procesar
-3. **Service Role Key**: Se usa solo en la edge function para bypass de RLS
-4. **Secrets**: `GOOGLE_CLIENT_SECRET` nunca se expone al cliente
-
----
-
-### Prerequisitos del Usuario
-
-Para que la integracion funcione, el usuario debe:
-
-1. Crear proyecto en Google Cloud Console
-2. Habilitar Google Ads API
-3. Configurar OAuth consent screen (puede ser "Testing" o "Published")
-4. Crear credenciales OAuth 2.0 (Web application)
-5. Agregar Authorized redirect URIs:
-   - `https://disruptivaa.lovable.app/auth/google/callback`
-   - `https://[preview-url].lovable.app/auth/google/callback`
-6. Proporcionar Client ID y Client Secret para configurar como secrets en Supabase
-
+- [ ] El buscador es visible al hacer scroll en las conversaciones
+- [ ] El scroll infinito sigue funcionando para las conversaciones
+- [ ] El perfil permanece anclado en la parte inferior
+- [ ] La barra de scroll es minimalista y consistente con el tema oscuro
