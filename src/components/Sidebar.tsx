@@ -249,6 +249,36 @@ const Sidebar = () => {
             )}
           </button>
         </div>
+
+        {/* Search Input - Fixed in header */}
+        {user && !collapsed && (
+          <div className="px-4 pb-3">
+            <div className="relative">
+              <Search 
+                size={14} 
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" 
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t("sidebar.searchConversations")}
+                className="w-full pl-9 pr-8 py-2 bg-white/[0.03] border border-white/[0.06] 
+                  rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600
+                  focus:outline-none focus:border-white/[0.12] focus:bg-white/[0.04]
+                  transition-all duration-200"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ===== AREA SCROLLABLE CON GRADIENTES ===== */}
@@ -352,36 +382,6 @@ const Sidebar = () => {
                   )}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Search Input - Before conversations */}
-          {user && !collapsed && (
-            <div className="shrink-0 px-4 mb-3">
-              <div className="relative">
-                <Search 
-                  size={14} 
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" 
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t("sidebar.searchConversations")}
-                  className="w-full pl-9 pr-8 py-2 bg-white/[0.03] border border-white/[0.06] 
-                    rounded-lg text-sm text-zinc-300 placeholder:text-zinc-600
-                    focus:outline-none focus:border-white/[0.12] focus:bg-white/[0.04]
-                    transition-all duration-200"
-                />
-                {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
             </div>
           )}
 
