@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +16,66 @@ interface MetricRequest {
 interface DateRange {
   since: string;
   until: string;
+}
+
+// Refresh Google OAuth token using refresh_token
+async function refreshGoogleToken(
+  supabaseAdmin: SupabaseClient,
+  userId: string,
+  refreshToken: string
+): Promise<{ access_token: string; expires_at: Date } | null> {
+  const clientId = Deno.env.get("GOOGLE_CLIENT_ID");
+  const clientSecret = Deno.env.get("GOOGLE_CLIENT_SECRET");
+
+  if (!clientId || !clientSecret) {
+    console.error("❌ Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
+    return null;
+  }
+
+  try {
+    console.log("🔄 Refreshing Google token...");
+    const response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Token refresh failed:", errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const expiresAt = new Date(Date.now() + data.expires_in * 1000);
+
+    // Update database with new token
+    const { error: updateError } = await supabaseAdmin
+      .from("user_integrations")
+      .update({
+        access_token: data.access_token,
+        token_expires_at: expiresAt.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId)
+      .eq("platform", "google_ads");
+
+    if (updateError) {
+      console.error("❌ Failed to update token in DB:", updateError.message);
+    } else {
+      console.log("✅ Token refreshed and saved successfully");
+    }
+
+    return { access_token: data.access_token, expires_at: expiresAt };
+  } catch (error) {
+    console.error("❌ Error refreshing token:", error);
+    return null;
+  }
 }
 
 // Calculate date ranges based on preset
@@ -76,21 +136,17 @@ function calculateDateRanges(datePreset: string): { current: DateRange; previous
   };
 }
 
-function formatDateLabel(dateStr: string): string {
-  const date = new Date(dateStr + "T12:00:00");
-  return date.toLocaleDateString("es-MX", { weekday: "short", day: "numeric" });
-}
-
 // Map our metrics to Google Ads API fields
 const metricFieldMap: Record<string, string> = {
   impressions: "metrics.impressions",
   clicks: "metrics.clicks",
   spend: "metrics.cost_micros",
-  reach: "metrics.impressions", // Google doesn't have reach, use impressions
+  reach: "metrics.impressions",
   ctr: "metrics.ctr",
   cpc: "metrics.average_cpc",
   cpm: "metrics.average_cpm",
   conversions: "metrics.conversions",
+  roas: "metrics.conversions_value",
 };
 
 serve(async (req) => {
@@ -132,10 +188,10 @@ serve(async (req) => {
 
     console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
 
-    // Get user's Google Ads integration
+    // Get user's Google Ads integration with token_expires_at
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from("user_integrations")
-      .select("access_token, account_ids, refresh_token")
+      .select("access_token, account_ids, refresh_token, token_expires_at")
       .eq("user_id", user.id)
       .eq("platform", "google_ads")
       .eq("status", "connected")
@@ -161,6 +217,42 @@ serve(async (req) => {
       );
     }
 
+    // Check if token is expired (with 5 min buffer)
+    let accessToken = integration.access_token;
+    
+    if (integration.token_expires_at && integration.refresh_token) {
+      const expiresAt = new Date(integration.token_expires_at);
+      const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
+      
+      if (Date.now() >= expiresAt.getTime() - bufferMs) {
+        console.log("🔄 Token expired or expiring soon, refreshing...");
+        const refreshed = await refreshGoogleToken(
+          supabaseAdmin,
+          user.id,
+          integration.refresh_token
+        );
+        
+        if (refreshed) {
+          accessToken = refreshed.access_token;
+          console.log("✅ Using refreshed token");
+        } else {
+          console.error("❌ Token refresh failed, returning demo data");
+          return new Response(
+            JSON.stringify({ 
+              error: "Token refresh failed",
+              is_demo: true,
+              value: generateDemoValue(metric),
+              previous_value: generateDemoValue(metric) * 0.9,
+              change_percent: 10,
+              trend: "up",
+              data_points: generateDemoDataPoints(date_preset, metric),
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     if (!integration.account_ids?.length) {
       console.log("ℹ️ No account IDs found, returning demo data");
       return new Response(
@@ -181,6 +273,7 @@ serve(async (req) => {
     const dateRanges = calculateDateRanges(date_preset);
 
     console.log(`📊 Fetching ${metric} for Google Ads account ${targetAccountId}`);
+    console.log(`📆 Date range: ${dateRanges.current.since} to ${dateRanges.current.until}`);
 
     // Note: In production, you would call the Google Ads API here
     // For now, return demo data with proper structure
@@ -228,6 +321,10 @@ function generateDemoValue(metric: string): number {
       return Math.round((5 + Math.random() * 15) * 100) / 100;
     case "conversions":
       return Math.floor(10 + Math.random() * 100);
+    case "cpa":
+      return Math.round((5 + Math.random() * 15) * 100) / 100;
+    case "roas":
+      return Math.round((1.5 + Math.random() * 4) * 100) / 100;
     default:
       return Math.floor(1000 + Math.random() * 5000);
   }

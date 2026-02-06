@@ -73,5 +73,31 @@
     "edit": "Editar",
     "create": "Criar",
     "search": "Buscar"
+  },
+  "projectDetail": {
+    "title": "Detalhe do Projeto",
+    "conversations": "Conversas do Projeto",
+    "noConversations": "Ainda não há conversas neste projeto.",
+    "startFirst": "Iniciar primeira conversa",
+    "goals": "Metas",
+    "newConversation": "Nova Conversa",
+    "refreshData": "Atualizar Dados",
+    "refreshing": "Atualizando...",
+    "notFound": "Projeto não encontrado."
+  },
+  "projectHealth": {
+    "title": "Estado do Projeto",
+    "overallStatus": "Estado Geral",
+    "healthy": "Saudável",
+    "warning": "Atenção",
+    "critical": "Crítico",
+    "neutral": "Sem metas",
+    "goal": "Meta",
+    "goalsAchieved": "{{count}} de {{total}} metas cumpridas",
+    "defineGoals": "Defina metas para ver o estado de saúde do projeto.",
+    "activeGoals": "Objetivos Ativos",
+    "noGoals": "Sem objetivos definidos",
+    "defineGoal": "Definir Meta",
+    "demoData": "Demo"
   }
 }

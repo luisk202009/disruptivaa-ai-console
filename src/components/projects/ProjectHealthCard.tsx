@@ -1,31 +1,24 @@
-import { useProjectGoals, GOAL_METRIC_LABELS, formatGoalValue } from "@/hooks/useProjectGoals";
+import { useProjectGoals, GOAL_METRIC_LABELS, formatGoalValue, type ProjectGoal } from "@/hooks/useProjectGoals";
+import { useGoalMetrics } from "@/hooks/useGoalMetrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Activity, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Activity, TrendingUp, TrendingDown, RefreshCw, FlaskConical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ProjectHealthCardProps {
   projectId: string;
   projectColor: string;
+  accountId?: string;
+  platform?: "meta_ads" | "google_ads";
+  onRefresh?: () => void;
 }
 
 type HealthStatus = {
   status: "healthy" | "warning" | "critical" | "neutral";
   label: string;
   emoji: string;
-};
-
-// Simulated current values - will be replaced with real data from Meta/Google
-const getSimulatedCurrentValue = (metricKey: string): number => {
-  const simulatedValues: Record<string, number> = {
-    cpa: 8.5,      // Lower is better
-    roas: 3.2,     // Higher is better
-    ctr: 2.1,      // Higher is better
-    cpc: 0.45,     // Lower is better
-    spend: 4500,   // Actual spend
-    conversions: 520, // Higher is better
-  };
-  return simulatedValues[metricKey] || 0;
 };
 
 // Determine if a metric is "lower is better" type
@@ -50,27 +43,6 @@ const calculateProgress = (
   }
 };
 
-const calculateOverallHealth = (
-  goals: Array<{ metric_key: string; target_value: number }>
-): HealthStatus => {
-  if (goals.length === 0) {
-    return { status: "neutral", label: "Sin metas", emoji: "📊" };
-  }
-
-  const results = goals.map((goal) => {
-    const current = getSimulatedCurrentValue(goal.metric_key);
-    const { isOnTrack } = calculateProgress(goal.metric_key, goal.target_value, current);
-    return isOnTrack;
-  });
-
-  const successCount = results.filter(Boolean).length;
-  const ratio = successCount / goals.length;
-
-  if (ratio >= 0.7) return { status: "healthy", label: "Saludable", emoji: "✅" };
-  if (ratio >= 0.4) return { status: "warning", label: "Atención", emoji: "⚠️" };
-  return { status: "critical", label: "Crítico", emoji: "❌" };
-};
-
 const getStatusColor = (status: HealthStatus["status"]): string => {
   switch (status) {
     case "healthy":
@@ -88,8 +60,50 @@ const getProgressColor = (isOnTrack: boolean): string => {
   return isOnTrack ? "bg-green-500" : "bg-yellow-500";
 };
 
-export const ProjectHealthCard = ({ projectId, projectColor }: ProjectHealthCardProps) => {
-  const { goals, loading } = useProjectGoals({ projectId });
+export const ProjectHealthCard = ({ 
+  projectId, 
+  projectColor,
+  accountId,
+  platform = "meta_ads",
+  onRefresh 
+}: ProjectHealthCardProps) => {
+  const { t } = useTranslation();
+  const { goals, loading: goalsLoading } = useProjectGoals({ projectId });
+  const { metricsData, loading: metricsLoading, refreshing, refresh, isDemo } = useGoalMetrics(
+    goals,
+    accountId,
+    platform
+  );
+
+  const loading = goalsLoading || metricsLoading;
+
+  // Calculate overall health from real metrics data
+  const calculateOverallHealth = (): HealthStatus => {
+    if (goals.length === 0) {
+      return { status: "neutral", label: t("projectHealth.neutral"), emoji: "📊" };
+    }
+
+    const results = metricsData.map((metricData) => {
+      const { isOnTrack } = calculateProgress(
+        metricData.goal.metric_key,
+        metricData.goal.target_value,
+        metricData.currentValue
+      );
+      return isOnTrack;
+    });
+
+    const successCount = results.filter(Boolean).length;
+    const ratio = successCount / goals.length;
+
+    if (ratio >= 0.7) return { status: "healthy", label: t("projectHealth.healthy"), emoji: "✅" };
+    if (ratio >= 0.4) return { status: "warning", label: t("projectHealth.warning"), emoji: "⚠️" };
+    return { status: "critical", label: t("projectHealth.critical"), emoji: "❌" };
+  };
+
+  const handleRefresh = async () => {
+    await refresh();
+    onRefresh?.();
+  };
 
   if (loading) {
     return (
@@ -104,20 +118,39 @@ export const ProjectHealthCard = ({ projectId, projectColor }: ProjectHealthCard
     );
   }
 
-  const healthStatus = calculateOverallHealth(goals);
+  const healthStatus = calculateOverallHealth();
 
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-medium flex items-center gap-2">
-          <Activity size={16} strokeWidth={1.5} className="text-muted-foreground" />
-          Estado del Proyecto
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <Activity size={16} strokeWidth={1.5} className="text-muted-foreground" />
+            {t("projectHealth.title")}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {isDemo && (
+              <Badge variant="outline" className="text-xs gap-1 bg-amber-500/10 text-amber-500 border-amber-500/20">
+                <FlaskConical size={10} />
+                {t("projectHealth.demoData")}
+              </Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Overall Health Badge */}
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Estado General</span>
+          <span className="text-sm text-muted-foreground">{t("projectHealth.overallStatus")}</span>
           <Badge className={`${getStatusColor(healthStatus.status)} border`}>
             {healthStatus.emoji} {healthStatus.label}
           </Badge>
@@ -125,30 +158,29 @@ export const ProjectHealthCard = ({ projectId, projectColor }: ProjectHealthCard
 
         {goals.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Define metas para ver el estado de salud del proyecto.
+            {t("projectHealth.defineGoals")}
           </p>
         ) : (
           <>
             {/* Individual Goal Progress */}
             <div className="space-y-3 pt-2">
-              {goals.map((goal) => {
-                const currentValue = getSimulatedCurrentValue(goal.metric_key);
+              {metricsData.map((metricData) => {
                 const { progress, isOnTrack } = calculateProgress(
-                  goal.metric_key,
-                  goal.target_value,
-                  currentValue
+                  metricData.goal.metric_key,
+                  metricData.goal.target_value,
+                  metricData.currentValue
                 );
-                const lowerIsBetter = isLowerBetter(goal.metric_key);
+                const lowerIsBetter = isLowerBetter(metricData.goal.metric_key);
 
                 return (
-                  <div key={goal.id} className="space-y-1.5">
+                  <div key={metricData.goal.id} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">
-                        {GOAL_METRIC_LABELS[goal.metric_key]}
+                        {GOAL_METRIC_LABELS[metricData.goal.metric_key]}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-foreground">
-                          {formatGoalValue({ ...goal, target_value: currentValue })}
+                          {formatGoalValue({ ...metricData.goal, target_value: metricData.currentValue } as ProjectGoal)}
                         </span>
                         {isOnTrack ? (
                           <TrendingUp size={14} className="text-green-500" />
@@ -167,7 +199,7 @@ export const ProjectHealthCard = ({ projectId, projectColor }: ProjectHealthCard
                       />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Meta: {formatGoalValue(goal)}</span>
+                      <span>{t("projectHealth.goal")}: {formatGoalValue(metricData.goal as ProjectGoal)}</span>
                       <span>{Math.round(progress)}%</span>
                     </div>
                   </div>
@@ -181,10 +213,17 @@ export const ProjectHealthCard = ({ projectId, projectColor }: ProjectHealthCard
               style={{ borderTopColor: projectColor }}
             >
               <p className="text-xs text-muted-foreground">
-                {goals.filter((goal) => {
-                  const current = getSimulatedCurrentValue(goal.metric_key);
-                  return calculateProgress(goal.metric_key, goal.target_value, current).isOnTrack;
-                }).length} de {goals.length} metas cumplidas
+                {t("projectHealth.goalsAchieved", {
+                  count: metricsData.filter((m) => {
+                    const { isOnTrack } = calculateProgress(
+                      m.goal.metric_key,
+                      m.goal.target_value,
+                      m.currentValue
+                    );
+                    return isOnTrack;
+                  }).length,
+                  total: goals.length
+                })}
               </p>
             </div>
           </>
