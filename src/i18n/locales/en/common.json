@@ -73,5 +73,31 @@
     "edit": "Edit",
     "create": "Create",
     "search": "Search"
+  },
+  "projectDetail": {
+    "title": "Project Detail",
+    "conversations": "Project Conversations",
+    "noConversations": "No conversations in this project yet.",
+    "startFirst": "Start first conversation",
+    "goals": "Goals",
+    "newConversation": "New Conversation",
+    "refreshData": "Refresh Data",
+    "refreshing": "Refreshing...",
+    "notFound": "Project not found."
+  },
+  "projectHealth": {
+    "title": "Project Status",
+    "overallStatus": "Overall Status",
+    "healthy": "Healthy",
+    "warning": "Warning",
+    "critical": "Critical",
+    "neutral": "No goals",
+    "goal": "Goal",
+    "goalsAchieved": "{{count}} of {{total}} goals achieved",
+    "defineGoals": "Define goals to see project health status.",
+    "activeGoals": "Active Goals",
+    "noGoals": "No goals defined",
+    "defineGoal": "Define Goal",
+    "demoData": "Demo"
   }
 }

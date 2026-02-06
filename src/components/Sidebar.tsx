@@ -121,6 +121,15 @@ const Sidebar = () => {
     );
   }, [conversations, searchQuery]);
 
+  // Filter projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!searchQuery.trim()) return projects;
+    const query = searchQuery.toLowerCase();
+    return projects.filter(project => 
+      project.name.toLowerCase().includes(query)
+    );
+  }, [projects, searchQuery]);
+
   // Infinite scroll handler
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -329,7 +338,7 @@ const Sidebar = () => {
                   {projectsLoading ? (
                     <p className="text-xs text-muted-foreground px-3 py-2 tracking-wide">{t("common.loading")}</p>
                   ) : (
-                    projects.map((project) => (
+                    filteredProjects.map((project) => (
                       <div
                         key={project.id}
                         onClick={() => handleSelectProject(project.id)}

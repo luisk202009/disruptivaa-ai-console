@@ -1,7 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { MessageSquare, Calendar, Bot, Plus, Target } from "lucide-react";
+import { MessageSquare, Calendar, Bot, Plus, Target, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/Sidebar";
 import { useProject } from "@/hooks/useProject";
 import { useConversations } from "@/hooks/useConversations";
@@ -14,6 +16,8 @@ import { Card, CardContent } from "@/components/ui/card";
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const [refreshing, setRefreshing] = useState(false);
   
   const { project, loading: projectLoading } = useProject(id);
   const { conversations, loading: conversationsLoading } = useConversations({ projectId: id });
@@ -28,6 +32,12 @@ const ProjectDetail = () => {
     navigate("/");
     window.dispatchEvent(new CustomEvent("newConversation", { detail: { projectId: id } }));
   };
+
+  const handleRefreshMetrics = useCallback(async () => {
+    setRefreshing(true);
+    // The ProjectHealthCard handles its own refresh via callback
+    setTimeout(() => setRefreshing(false), 1500);
+  }, []);
 
   if (projectLoading) {
     return (
@@ -46,7 +56,7 @@ const ProjectDetail = () => {
         <Sidebar />
         <main className="flex-1 p-8 bg-background">
           <div className="text-center py-12 text-muted-foreground">
-            <p>Proyecto no encontrado.</p>
+            <p>{t("projectDetail.notFound", "Proyecto no encontrado.")}</p>
           </div>
         </main>
       </div>
@@ -71,19 +81,28 @@ const ProjectDetail = () => {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleRefreshMetrics}
+                  disabled={refreshing}
+                  className="gap-2"
+                >
+                  <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+                  {refreshing ? t("projectDetail.refreshing") : t("projectDetail.refreshData")}
+                </Button>
                 <ProjectGoalsEditor 
                   projectId={id!} 
                   projectName={project.name}
                   trigger={
                     <Button variant="outline" className="gap-2">
                       <Target size={16} strokeWidth={2} />
-                      Metas
+                      {t("projectDetail.goals")}
                     </Button>
                   }
                 />
                 <Button onClick={handleNewConversation} className="gap-2">
                   <Plus size={16} strokeWidth={2} />
-                  Nueva Conversación
+                  {t("projectDetail.newConversation")}
                 </Button>
               </div>
             </div>
@@ -98,7 +117,7 @@ const ProjectDetail = () => {
             <section className="lg:col-span-2">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
                 <MessageSquare size={18} className="text-muted-foreground" />
-                Conversaciones del Proyecto
+                {t("projectDetail.conversations")}
               </h2>
               
               {conversationsLoading ? (
@@ -109,11 +128,11 @@ const ProjectDetail = () => {
                 <div className="text-center py-16 border border-dashed border-border rounded-xl">
                   <MessageSquare size={48} className="mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground mb-4">
-                    Aún no hay conversaciones en este proyecto.
+                    {t("projectDetail.noConversations")}
                   </p>
                   <Button onClick={handleNewConversation} variant="outline" className="gap-2">
                     <Plus size={16} strokeWidth={2} />
-                    Iniciar primera conversación
+                    {t("projectDetail.startFirst")}
                   </Button>
                 </div>
               ) : (
@@ -130,7 +149,7 @@ const ProjectDetail = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium text-foreground truncate group-hover:text-accent-foreground transition-colors">
-                            {convo.title || "Sin título"}
+                            {convo.title || t("sidebar.untitled")}
                           </h3>
                           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
@@ -156,6 +175,7 @@ const ProjectDetail = () => {
               <ProjectHealthCard 
                 projectId={id!}
                 projectColor={project.color || "#FF7900"}
+                onRefresh={handleRefreshMetrics}
               />
 
               {/* Active Goals Summary */}
@@ -164,7 +184,7 @@ const ProjectDetail = () => {
                   <CardContent className="p-4 space-y-3">
                     <h3 className="text-sm font-medium flex items-center gap-2 text-foreground">
                       <Target size={14} className="text-primary" />
-                      Objetivos Activos
+                      {t("projectHealth.activeGoals")}
                     </h3>
                     <div className="space-y-2">
                       {goals.map((goal) => (
@@ -197,7 +217,7 @@ const ProjectDetail = () => {
                   <CardContent className="p-6 text-center">
                     <Target size={32} className="mx-auto mb-3 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground mb-3">
-                      Sin objetivos definidos
+                      {t("projectHealth.noGoals")}
                     </p>
                     <ProjectGoalsEditor 
                       projectId={id!} 
@@ -205,7 +225,7 @@ const ProjectDetail = () => {
                       trigger={
                         <Button variant="outline" size="sm" className="gap-2">
                           <Plus size={14} strokeWidth={2} />
-                          Definir Meta
+                          {t("projectHealth.defineGoal")}
                         </Button>
                       }
                     />
