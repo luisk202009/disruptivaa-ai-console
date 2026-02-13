@@ -594,7 +594,7 @@ serve(async (req) => {
 
     // Parse request body - ignore any userId from body for security
     const body = await req.json();
-    const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData, omnichannelMetrics } = body;
+    const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData, omnichannelMetrics, activeAlerts } = body;
     
     console.info("Request received for agent:", agentId, "action:", action);
 
@@ -947,6 +947,29 @@ ENFÓCATE 100% en los archivos que el usuario suba.`;
     // Add goals context if available
     if (goalsContext) {
       finalSystemInstruction += `\n\n${goalsContext}`;
+    }
+
+    // Add active alerts context if provided
+    if (activeAlerts && Array.isArray(activeAlerts) && activeAlerts.length > 0) {
+      const alertLabels: Record<string, Record<string, string>> = {
+        es: { critical: "CRÍTICA", warning: "ADVERTENCIA" },
+        en: { critical: "CRITICAL", warning: "WARNING" },
+        pt: { critical: "CRÍTICA", warning: "AVISO" },
+      };
+      const labels = alertLabels[lang] || alertLabels.es;
+      
+      const headerMap: Record<string, string> = {
+        es: "🚨 ALERTAS ACTIVAS DEL DASHBOARD (menciona estas alertas al usuario cuando pregunte por el rendimiento):",
+        en: "🚨 ACTIVE DASHBOARD ALERTS (mention these alerts when the user asks about performance):",
+        pt: "🚨 ALERTAS ATIVAS DO DASHBOARD (mencione estes alertas quando o usuário perguntar sobre desempenho):",
+      };
+      
+      let alertsContext = `\n\n${headerMap[lang] || headerMap.es}\n`;
+      for (const alert of activeAlerts) {
+        const metricName = alert.metricKey?.toUpperCase() || "UNKNOWN";
+        alertsContext += `- ${labels[alert.level] || alert.level}: ${metricName} actual=${alert.currentValue}, meta=${alert.targetValue} (desvío ${alert.deviationPercent}%)\n`;
+      }
+      finalSystemInstruction += alertsContext;
     }
     
     // File context - can be cross-referenced with API data

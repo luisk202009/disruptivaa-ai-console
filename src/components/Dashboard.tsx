@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import GoalsSummaryWidget from "./dashboard/GoalsSummaryWidget";
 import RecentActivityWidget from "./dashboard/RecentActivityWidget";
 import ConnectivityWidget from "./dashboard/ConnectivityWidget";
+import SmartAlerts from "./dashboard/SmartAlerts";
 
 // Keep DISRUPTIVAA_AGENTS export for Agents page and other consumers
 export { DISRUPTIVAA_AGENTS } from "./agentDefinitions";
@@ -53,6 +54,9 @@ const Dashboard = () => {
 
           {/* Omnichannel Performance */}
           {user && <OmnichannelPerformance />}
+
+          {/* Smart Alerts */}
+          {user && <SmartAlerts />}
 
           {/* Widget Grid */}
           {user && (

@@ -321,5 +321,13 @@
     "panelNamePlaceholder": "Mi panel de métricas",
     "panelDescLabel": "Descripción (opcional)",
     "panelDescPlaceholder": "Panel para monitorear el rendimiento de campañas..."
+  },
+  "smartAlerts": {
+    "title": "Centro de Alertas",
+    "allClear": "✅ Todos los KPIs están dentro del rango objetivo.",
+    "above": "{{metric}} en {{platform}}: El valor actual ({{current}}) supera en {{percent}}% la meta ({{target}}).",
+    "below": "{{metric}} en {{platform}}: El valor actual ({{current}}) está {{percent}}% por debajo de la meta ({{target}}).",
+    "demoNote": "Demo",
+    "noGoals": "Define metas en un proyecto para activar alertas inteligentes."
   }
 }
