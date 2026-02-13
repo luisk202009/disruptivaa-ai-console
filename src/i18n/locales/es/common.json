@@ -99,5 +99,51 @@
     "noGoals": "Sin objetivos definidos",
     "defineGoal": "Definir Meta",
     "demoData": "Demo"
+  },
+  "connections": {
+    "title": "Conexiones",
+    "subtitle": "Conecta tus cuentas de publicidad para que nuestros agentes puedan analizar tus métricas y optimizar tus campañas.",
+    "metaDescription": "Conecta tu cuenta de Facebook e Instagram Ads",
+    "googleDescription": "Conecta tu cuenta de Google Ads",
+    "tiktokDescription": "Conecta tu cuenta de TikTok Business",
+    "connected": "Conectado",
+    "disconnected": "No conectado",
+    "disconnect": "Desconectar",
+    "connectAccount": "Conectar Cuenta",
+    "validating": "Validando...",
+    "connectSuccess": "Cuenta conectada exitosamente",
+    "connectError": "Error al conectar la cuenta",
+    "disconnectSuccess": "Cuenta desconectada",
+    "disconnectError": "Error al desconectar la cuenta",
+    "googleSuccess": "Cuenta de Google Ads vinculada correctamente.",
+    "metaSuccess": "Cuenta vinculada correctamente. {{count}} cuenta(s) detectadas.",
+    "loginRequired": "Inicia sesión para conectar tus cuentas de publicidad.",
+    "oauthNote": "La conexión con Meta Ads usa el flujo seguro de Facebook Login. El token de acceso tiene una duración de 60 días.",
+    "oauthLabel": "OAuth 2.0",
+    "accountsDetected": "Cuentas detectadas:",
+    "andMore": "... y {{count}} más",
+    "redirecting": "Redirigiendo a Conexiones...",
+    "processingGoogle": "Conectando con Google Ads...",
+    "processingGoogleDesc": "Estamos validando tu autorización y obteniendo acceso a tu cuenta.",
+    "processingMeta": "Conectando con Meta Ads...",
+    "processingMetaDesc": "Estamos validando tu autorización y obteniendo acceso a tus cuentas.",
+    "successTitle": "¡Conexión exitosa!",
+    "successGoogle": "Tu cuenta de Google Ads ha sido vinculada correctamente. Redirigiendo...",
+    "successMeta": "Tu cuenta de Meta Ads ha sido vinculada correctamente. Redirigiendo...",
+    "errorTitle": "Error de conexión",
+    "errorNoCode": "No se recibió código de autorización",
+    "errorSecurity": "Error de seguridad: Estado no válido. Intenta conectar nuevamente.",
+    "errorAuth": "No estás autenticado. Inicia sesión e intenta nuevamente.",
+    "errorCancelled": "El usuario canceló la autorización",
+    "errorExchange": "Error al procesar la autorización"
+  },
+  "settings": {
+    "resetSuccess": "Te hemos enviado un correo para cambiar tu contraseña",
+    "resetError": "Error al enviar el correo de restablecimiento"
+  },
+  "exportReport": {
+    "copied": "Informe copiado al portapapeles",
+    "copyError": "Error al copiar el informe",
+    "downloaded": "Informe descargado"
   }
 }

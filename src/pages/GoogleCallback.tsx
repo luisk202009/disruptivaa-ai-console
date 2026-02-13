@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { toast } from "sonner";
 const GOOGLE_OAUTH_EXCHANGE_URL = "https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/google-oauth-exchange";
 
 const GoogleCallback = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
@@ -17,84 +19,67 @@ const GoogleCallback = () => {
       const code = searchParams.get("code");
       const state = searchParams.get("state");
       const error = searchParams.get("error");
-      const errorDescription = searchParams.get("error_description");
 
-      // Handle Google error response
       if (error) {
-        console.error("Google OAuth error:", error, errorDescription);
         setStatus("error");
-        setErrorMessage(errorDescription || "El usuario canceló la autorización");
+        setErrorMessage(t("connections.errorCancelled"));
         setTimeout(() => navigate("/connections"), 3000);
         return;
       }
 
-      // Validate state (CSRF protection)
       const savedState = sessionStorage.getItem("google_oauth_state");
       if (!state || state !== savedState) {
-        console.error("State mismatch - potential CSRF attack");
         setStatus("error");
-        setErrorMessage("Error de seguridad: Estado no válido. Intenta conectar nuevamente.");
+        setErrorMessage(t("connections.errorSecurity"));
         setTimeout(() => navigate("/connections"), 3000);
         return;
       }
-
-      // Clear stored state
       sessionStorage.removeItem("google_oauth_state");
 
       if (!code) {
         setStatus("error");
-        setErrorMessage("No se recibió código de autorización de Google");
+        setErrorMessage(t("connections.errorNoCode"));
         setTimeout(() => navigate("/connections"), 3000);
         return;
       }
 
       try {
-        // Get user session
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           setStatus("error");
-          setErrorMessage("No estás autenticado. Inicia sesión e intenta nuevamente.");
+          setErrorMessage(t("connections.errorAuth"));
           setTimeout(() => navigate("/auth"), 3000);
           return;
         }
 
-        // Get redirect URI (must match the one used in authorization)
         const redirectUri = `${window.location.origin}/auth/google/callback`;
-
-        // Exchange code for token via Edge Function
         const response = await fetch(GOOGLE_OAUTH_EXCHANGE_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({
-            code,
-            redirect_uri: redirectUri,
-          }),
+          body: JSON.stringify({ code, redirect_uri: redirectUri }),
         });
 
         const result = await response.json();
-
         if (!response.ok || !result.success) {
-          throw new Error(result.error || "Error al intercambiar el código");
+          throw new Error(result.error || t("connections.errorExchange"));
         }
 
-        // Success!
         setStatus("success");
-        toast.success("✅ Cuenta de Google Ads vinculada correctamente.");
-        
+        toast.success(`✅ ${t("connections.googleSuccess")}`);
         setTimeout(() => navigate("/connections"), 2000);
       } catch (err) {
         console.error("Google OAuth exchange error:", err);
         setStatus("error");
-        setErrorMessage(err instanceof Error ? err.message : "Error al procesar la autorización");
+        setErrorMessage(err instanceof Error ? err.message : t("connections.errorExchange"));
         setTimeout(() => navigate("/connections"), 3000);
       }
     };
 
     handleCallback();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, t]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -102,39 +87,23 @@ const GoogleCallback = () => {
         {status === "processing" && (
           <>
             <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              Conectando con Google Ads...
-            </h2>
-            <p className="text-muted-foreground">
-              Estamos validando tu autorización y obteniendo acceso a tu cuenta.
-            </p>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{t("connections.processingGoogle")}</h2>
+            <p className="text-muted-foreground">{t("connections.processingGoogleDesc")}</p>
           </>
         )}
-
         {status === "success" && (
           <>
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              ¡Conexión exitosa!
-            </h2>
-            <p className="text-muted-foreground">
-              Tu cuenta de Google Ads ha sido vinculada correctamente. Redirigiendo...
-            </p>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{t("connections.successTitle")}</h2>
+            <p className="text-muted-foreground">{t("connections.successGoogle")}</p>
           </>
         )}
-
         {status === "error" && (
           <>
             <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              Error de conexión
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              {errorMessage}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Redirigiendo a Conexiones...
-            </p>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{t("connections.errorTitle")}</h2>
+            <p className="text-muted-foreground mb-4">{errorMessage}</p>
+            <p className="text-sm text-muted-foreground">{t("connections.redirecting")}</p>
           </>
         )}
       </div>

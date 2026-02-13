@@ -99,5 +99,51 @@
     "noGoals": "No goals defined",
     "defineGoal": "Define Goal",
     "demoData": "Demo"
+  },
+  "connections": {
+    "title": "Connections",
+    "subtitle": "Connect your ad accounts so our agents can analyze your metrics and optimize your campaigns.",
+    "metaDescription": "Connect your Facebook and Instagram Ads account",
+    "googleDescription": "Connect your Google Ads account",
+    "tiktokDescription": "Connect your TikTok Business account",
+    "connected": "Connected",
+    "disconnected": "Not connected",
+    "disconnect": "Disconnect",
+    "connectAccount": "Connect Account",
+    "validating": "Validating...",
+    "connectSuccess": "Account connected successfully",
+    "connectError": "Error connecting the account",
+    "disconnectSuccess": "Account disconnected",
+    "disconnectError": "Error disconnecting the account",
+    "googleSuccess": "Google Ads account linked successfully.",
+    "metaSuccess": "Account linked successfully. {{count}} account(s) detected.",
+    "loginRequired": "Sign in to connect your ad accounts.",
+    "oauthNote": "The Meta Ads connection uses the secure Facebook Login flow. The access token lasts 60 days.",
+    "oauthLabel": "OAuth 2.0",
+    "accountsDetected": "Accounts detected:",
+    "andMore": "... and {{count}} more",
+    "redirecting": "Redirecting to Connections...",
+    "processingGoogle": "Connecting with Google Ads...",
+    "processingGoogleDesc": "We're validating your authorization and getting access to your account.",
+    "processingMeta": "Connecting with Meta Ads...",
+    "processingMetaDesc": "We're validating your authorization and getting access to your accounts.",
+    "successTitle": "Connection successful!",
+    "successGoogle": "Your Google Ads account has been linked successfully. Redirecting...",
+    "successMeta": "Your Meta Ads account has been linked successfully. Redirecting...",
+    "errorTitle": "Connection error",
+    "errorNoCode": "No authorization code received",
+    "errorSecurity": "Security error: Invalid state. Try connecting again.",
+    "errorAuth": "You are not authenticated. Sign in and try again.",
+    "errorCancelled": "The user cancelled the authorization",
+    "errorExchange": "Error processing the authorization"
+  },
+  "settings": {
+    "resetSuccess": "We've sent you an email to change your password",
+    "resetError": "Error sending the password reset email"
+  },
+  "exportReport": {
+    "copied": "Report copied to clipboard",
+    "copyError": "Error copying report",
+    "downloaded": "Report downloaded"
   }
 }

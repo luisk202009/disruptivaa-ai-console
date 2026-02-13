@@ -37,9 +37,9 @@ const Settings = () => {
     setSendingReset(false);
     
     if (error) {
-      toast.error("Error al enviar el correo de restablecimiento");
+      toast.error(t("settings.resetError"));
     } else {
-      toast.success("Te hemos enviado un correo para cambiar tu contraseña");
+      toast.success(t("settings.resetSuccess"));
     }
   };
 
