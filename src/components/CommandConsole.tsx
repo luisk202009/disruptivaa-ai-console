@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Send, Sparkles, Loader2, User, Bot, X, Link2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useMessages } from "@/hooks/useMessages";
 import { useIntegrations } from "@/hooks/useIntegrations";
@@ -65,6 +66,7 @@ const CommandConsole = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation(["common", "agents"]);
   const { user } = useAuth();
   
   const { messages, loading: messagesLoading, saveMessage, addOptimisticMessage, addErrorMessage } = useMessages(chatId);
@@ -277,21 +279,15 @@ const CommandConsole = ({
   const getSuggestions = () => {
     if (selectedAgent) {
       switch (selectedAgent.id) {
-        case "smart-brand-architect":
-          return ["Crear identidad visual", "Generar paleta de colores", "Diseñar logo"];
-        case "ghostwriter-pro":
-          return ["Escribir artículo de blog", "Crear copy para redes", "Generar newsletter"];
         case "ads-optimizer":
           return ["Optimizar campaña Meta", "Analizar rendimiento Ads", "Sugerir presupuesto"];
         case "ai-crm-sales":
           return ["Calificar nuevos leads", "Crear secuencia de emails", "Analizar pipeline"];
-        case "visual-content-bot":
-          return ["Crear banner para Instagram", "Diseñar post para LinkedIn", "Generar carrusel"];
         default:
           return ["¿Cómo puedes ayudarme?"];
       }
     }
-    return DISRUPTIVAA_AGENTS.map(a => a.name);
+    return DISRUPTIVAA_AGENTS.map(a => t(`${a.id}.name`, { ns: "agents" }));
   };
 
   const suggestions = getSuggestions();
@@ -306,7 +302,7 @@ const CommandConsole = ({
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700">
             <selectedAgent.icon size={16} className="text-zinc-300" />
             <span className="text-sm font-medium text-zinc-300">
-              Consultando a {selectedAgent.name}
+              {t("dashboard.consulting", { name: t(`${selectedAgent.id}.name`, { ns: "agents" }) })}
             </span>
             <button 
               onClick={onClearAgent}
@@ -392,7 +388,7 @@ const CommandConsole = ({
                     <div className="flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin text-zinc-400" />
                       <span className="text-sm text-zinc-500">
-                        {selectedAgent ? `${selectedAgent.name} está consultando...` : "Procesando..."}
+                        {selectedAgent ? t("dashboard.isConsulting", { name: t(`${selectedAgent.id}.name`, { ns: "agents" }) }) : t("common.loading")}
                       </span>
                     </div>
                   </div>

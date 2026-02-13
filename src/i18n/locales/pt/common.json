@@ -145,5 +145,12 @@
     "copied": "Relatório copiado para a área de transferência",
     "copyError": "Erro ao copiar o relatório",
     "downloaded": "Relatório baixado"
+  },
+  "dashboard": {
+    "agentSelectedTitle": "{{name}} selecionado",
+    "agentSelectedDesc": "Agora falando com {{name}}",
+    "agentDetected": "{{name}} detectado",
+    "consulting": "Consultando {{name}}",
+    "isConsulting": "{{name}} está consultando..."
   }
 }

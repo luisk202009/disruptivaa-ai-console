@@ -558,6 +558,15 @@ serve(async (req) => {
     
     console.info("Request received for agent:", agentId);
 
+    // Validate allowed agent IDs
+    const ALLOWED_AGENT_IDS = ["ads-optimizer", "ai-crm-sales"];
+    if (agentId && !ALLOWED_AGENT_IDS.includes(agentId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid agent ID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Fetch user's preferred language from profile
     const { data: userProfile } = await supabaseUserClient
       .from("profiles")

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Palette, PenTool, BarChart3, Users, ImageIcon, Loader2, LogOut } from "lucide-react";
+import { BarChart3, Users, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AuthModal from "./AuthModal";
 import { toast } from "@/hooks/use-toast";
@@ -10,58 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/hooks/useMessages";
 import { cn } from "@/lib/utils";
 
-// Definición de los 5 agentes AI Marketing Data Analysts
+// Definición de los 2 agentes AI Marketing Data Analysts
 export const DISRUPTIVAA_AGENTS = [
-  {
-    id: "smart-brand-architect",
-    dbName: "Smart Brand Architect",
-    name: "Smart Brand Architect",
-    description: "Analista de identidad de marca",
-    icon: Palette,
-    keywords: ["marca", "brand", "identidad", "logo", "visual", "branding", "colores", "tipografía"],
-    systemInstruction: `Eres Smart Brand Architect, un Analista Senior de identidad visual y branding.
-
-🚫 PROHIBICIONES ABSOLUTAS:
-- NUNCA menciones "Portafolio Disruptivaa 2026" ni documentos de agencia
-- NUNCA ofrezcas servicios, paquetes, precios ni configuraciones
-- NUNCA digas "no tengo acceso" si tienes archivos disponibles
-
-📊 FUENTES DE DATOS:
-1. Archivos del usuario (PDF, Excel, CSV) - ANALÍZALOS EN DETALLE
-2. APIs conectadas si disponibles
-
-💡 COMPORTAMIENTO PROACTIVO:
-- Detecta problemas de consistencia visual
-- Señala métricas débiles con números específicos
-- Proporciona recomendaciones accionables con impacto estimado
-
-TONO: Técnico, directo, orientado a resultados medibles.`,
-  },
-  {
-    id: "ghostwriter-pro",
-    dbName: "GhostWriter Pro",
-    name: "GhostWriter Pro",
-    description: "Analista de contenido y copy",
-    icon: PenTool,
-    keywords: ["contenido", "blog", "artículo", "escribir", "copy", "texto", "redacción", "post"],
-    systemInstruction: `Eres GhostWriter Pro, un Analista Senior de contenido y copywriting.
-
-🚫 PROHIBICIONES ABSOLUTAS:
-- NUNCA menciones "Portafolio Disruptivaa 2026" ni documentos de agencia
-- NUNCA ofrezcas servicios, paquetes, precios ni configuraciones
-- NUNCA digas "no tengo acceso" si tienes archivos disponibles
-
-📊 FUENTES DE DATOS:
-1. Archivos del usuario (PDF, Excel, CSV) - ANALÍZALOS EN DETALLE
-2. Métricas de contenido si disponibles
-
-💡 COMPORTAMIENTO PROACTIVO:
-- Detecta problemas de engagement con números específicos
-- Señala copy débil y sugiere mejoras concretas
-- Proporciona recomendaciones con impacto estimado en CTR/conversión
-
-TONO: Técnico, directo, orientado a métricas de engagement.`,
-  },
   {
     id: "ads-optimizer",
     dbName: "Ads Optimizer Agent",
@@ -117,31 +67,6 @@ TONO: Técnico, directo, proactivo. Detectas problemas ANTES de que pregunten.`,
 
 TONO: Analítico, directo, orientado a conversión y cierre de ventas.`,
   },
-  {
-    id: "visual-content-bot",
-    dbName: "Visual Content Bot",
-    name: "Visual Content Bot",
-    description: "Analista de contenido visual",
-    icon: ImageIcon,
-    keywords: ["diseño", "imagen", "gráfico", "pieza", "visual", "banner", "post", "creative", "arte"],
-    systemInstruction: `Eres Visual Content Bot, un Analista Senior de contenido visual y creativos.
-
-🚫 PROHIBICIONES ABSOLUTAS:
-- NUNCA menciones "Portafolio Disruptivaa 2026" ni documentos de agencia
-- NUNCA ofrezcas servicios, paquetes, precios ni configuraciones
-- NUNCA digas "no tengo acceso" si tienes archivos disponibles
-
-📊 FUENTES DE DATOS:
-1. Archivos del usuario (PDF, Excel con métricas) - ANALÍZALOS
-2. Métricas de engagement visual si disponibles
-
-💡 COMPORTAMIENTO PROACTIVO:
-- Detecta creativos de bajo rendimiento con números
-- Señala problemas de formato/dimensiones
-- Sugiere A/B tests específicos con impacto estimado
-
-TONO: Técnico, creativo pero basado 100% en datos y métricas.`,
-  },
 ];
 
 export type DisruptivaaAgent = typeof DISRUPTIVAA_AGENTS[number];
@@ -175,8 +100,8 @@ const Dashboard = () => {
       if (agent) {
         setSelectedAgent(agent);
         toast({
-          title: `${agent.name} seleccionado`,
-          description: `Ahora estás hablando con ${agent.name}`,
+          title: t("dashboard.agentSelectedTitle", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
+          description: t("dashboard.agentSelectedDesc", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
         });
       }
       window.history.replaceState({}, document.title);
@@ -230,8 +155,8 @@ const Dashboard = () => {
     const newChatId = generateChatId();
     setActiveChatId(newChatId);
     toast({
-      title: `${agent.name} seleccionado`,
-      description: `Ahora estás hablando con ${agent.name}`,
+      title: t("dashboard.agentSelectedTitle", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
+      description: t("dashboard.agentSelectedDesc", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
     });
   };
 
@@ -266,8 +191,8 @@ const Dashboard = () => {
         if (matches) {
           setSelectedAgent(agent);
           toast({
-            title: `${agent.name} detectado`,
-            description: "Procesando tu solicitud...",
+            title: t("dashboard.agentDetected", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
+            description: t("common.loading"),
           });
           break;
         }
