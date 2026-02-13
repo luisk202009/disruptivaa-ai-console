@@ -176,6 +176,14 @@ const OmnichannelPerformance = () => {
               />
             </div>
 
+            {/* TikTok Demo Note */}
+            {data.tiktok?.isDemo && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                <AlertTriangle className="w-3 h-3" />
+                <span>{t("omnichannel.tiktokDemoNote")}</span>
+              </div>
+            )}
+
             {/* Bar Chart */}
             {chartData.length > 1 && (
               <div>

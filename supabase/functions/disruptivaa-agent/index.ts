@@ -594,7 +594,7 @@ serve(async (req) => {
 
     // Parse request body - ignore any userId from body for security
     const body = await req.json();
-    const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData } = body;
+    const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData, omnichannelMetrics } = body;
     
     console.info("Request received for agent:", agentId, "action:", action);
 
@@ -925,6 +925,18 @@ ENFÓCATE 100% en los archivos que el usuario suba.`;
     if (isOmnichannel) {
       finalSystemInstruction += `\n\n🌐 PLATAFORMAS CONECTADAS: ${connectedPlatforms.join(', ')}`;
       finalSystemInstruction += (OMNICHANNEL_INSTRUCTIONS[lang] || OMNICHANNEL_INSTRUCTIONS.es);
+    }
+
+    // Add omnichannel metrics from frontend if available
+    if (omnichannelMetrics) {
+      const om = omnichannelMetrics;
+      const platformLines = [
+        om.platforms?.meta ? `Meta Ads: Spend=$${om.platforms.meta.spend?.toFixed?.(2) ?? om.platforms.meta.spend}, CPC=$${om.platforms.meta.cpc?.toFixed?.(2) ?? om.platforms.meta.cpc}, Conversions=${om.platforms.meta.conversions}` : null,
+        om.platforms?.google ? `Google Ads: Spend=$${om.platforms.google.spend?.toFixed?.(2) ?? om.platforms.google.spend}, CPC=$${om.platforms.google.cpc?.toFixed?.(2) ?? om.platforms.google.cpc}, Conversions=${om.platforms.google.conversions}` : null,
+        om.platforms?.tiktok ? `TikTok Ads: Spend=$${om.platforms.tiktok.spend?.toFixed?.(2) ?? om.platforms.tiktok.spend}, CPC=$${om.platforms.tiktok.cpc?.toFixed?.(2) ?? om.platforms.tiktok.cpc}, Conversions=${om.platforms.tiktok.conversions} [DEMO DATA]` : null,
+      ].filter(Boolean).join("\n");
+
+      finalSystemInstruction += `\n\n📊 OMNICHANNEL METRICS (Last 30 days):\n${platformLines}\nTotal Spend: $${om.totalSpend}\nCombined CPA: $${om.combinedCPA?.toFixed?.(2) ?? om.combinedCPA}\nAvg ROAS: ${om.avgROAS?.toFixed?.(2) ?? om.avgROAS}x\nDemo Data: ${om.isDemo}`;
     }
     
     // Add API data context FIRST (highest priority for real-time data)
