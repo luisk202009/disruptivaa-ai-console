@@ -188,5 +188,19 @@
     "tiktokAds": "TikTok Ads",
     "loading": "Carregando métricas...",
     "period": "Período"
+  },
+  "dashboardWidgets": {
+    "goalsTitle": "Status das Metas",
+    "goalsEmpty": "Crie um projeto para definir metas",
+    "goalsProgress": "{{achieved}} de {{total}} metas cumpridas",
+    "viewDetails": "Ver detalhes",
+    "activityTitle": "Atividade Recente",
+    "activityEmpty": "Ainda não há recomendações dos agentes",
+    "connectivityTitle": "Conectividade",
+    "connected": "Conectado",
+    "disconnected": "Não conectado",
+    "manageConnections": "Gerenciar conexões",
+    "welcomeTitle": "Painel de Controle",
+    "welcomeSubtitle": "Resumo do seu desempenho de marketing"
   }
 }

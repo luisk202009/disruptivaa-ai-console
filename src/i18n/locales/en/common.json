@@ -188,5 +188,19 @@
     "tiktokAds": "TikTok Ads",
     "loading": "Loading metrics...",
     "period": "Period"
+  },
+  "dashboardWidgets": {
+    "goalsTitle": "Goals Status",
+    "goalsEmpty": "Create a project to set goals",
+    "goalsProgress": "{{achieved}} of {{total}} goals achieved",
+    "viewDetails": "View details",
+    "activityTitle": "Recent Activity",
+    "activityEmpty": "No agent recommendations yet",
+    "connectivityTitle": "Connectivity",
+    "connected": "Connected",
+    "disconnected": "Not connected",
+    "manageConnections": "Manage connections",
+    "welcomeTitle": "Dashboard",
+    "welcomeSubtitle": "Your marketing performance summary"
   }
 }

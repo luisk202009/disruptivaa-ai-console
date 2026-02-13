@@ -144,13 +144,15 @@ const Sidebar = () => {
   }, [hasMore, loadingMore, loadMore, searchQuery]);
 
   const handleNewConversation = () => {
-    navigate("/");
+    navigate("/agents");
     window.dispatchEvent(new CustomEvent("newConversation"));
   };
 
   const handleLoadConversation = (chatId: string) => {
-    navigate("/");
-    window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
+    navigate("/agents");
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
+    }, 100);
   };
 
   const handleCreateProject = async (name: string, color: string) => {
