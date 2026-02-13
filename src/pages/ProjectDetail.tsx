@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { MessageSquare, Calendar, Bot, Plus, Target, RefreshCw } from "lucide-react";
+import { MessageSquare, Calendar, Bot, Plus, Target, RefreshCw, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useState, useCallback } from "react";
@@ -8,9 +8,11 @@ import Sidebar from "@/components/Sidebar";
 import { useProject } from "@/hooks/useProject";
 import { useConversations } from "@/hooks/useConversations";
 import { useProjectGoals, GOAL_METRIC_LABELS, formatGoalValue, GOAL_PERIOD_LABELS } from "@/hooks/useProjectGoals";
+import { useGoalMetrics } from "@/hooks/useGoalMetrics";
 import { Button } from "@/components/ui/button";
 import { ProjectGoalsEditor } from "@/components/projects/ProjectGoalsEditor";
 import { ProjectHealthCard } from "@/components/projects/ProjectHealthCard";
+import { ProjectExportDialog } from "@/components/projects/ProjectExportDialog";
 import { Card, CardContent } from "@/components/ui/card";
 
 const ProjectDetail = () => {
@@ -18,10 +20,12 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   
   const { project, loading: projectLoading } = useProject(id);
   const { conversations, loading: conversationsLoading } = useConversations({ projectId: id });
   const { goals, loading: goalsLoading } = useProjectGoals({ projectId: id });
+  const { metricsData, loading: metricsLoading, refreshing: metricsRefreshing, refresh, isDemo } = useGoalMetrics(goals);
 
   const handleOpenConversation = (chatId: string) => {
     navigate("/");
@@ -35,9 +39,9 @@ const ProjectDetail = () => {
 
   const handleRefreshMetrics = useCallback(async () => {
     setRefreshing(true);
-    // The ProjectHealthCard handles its own refresh via callback
-    setTimeout(() => setRefreshing(false), 1500);
-  }, []);
+    await refresh();
+    setRefreshing(false);
+  }, [refresh]);
 
   if (projectLoading) {
     return (
@@ -81,6 +85,15 @@ const ProjectDetail = () => {
                 </h1>
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setExportOpen(true)}
+                  className="gap-2"
+                  disabled={goalsLoading}
+                >
+                  <FileText size={16} />
+                  {t("projectExport.title")}
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleRefreshMetrics}
@@ -175,6 +188,11 @@ const ProjectDetail = () => {
               <ProjectHealthCard 
                 projectId={id!}
                 projectColor={project.color || "#FF7900"}
+                goals={goals}
+                metricsData={metricsData}
+                metricsLoading={metricsLoading}
+                refreshing={metricsRefreshing}
+                isDemo={isDemo}
                 onRefresh={handleRefreshMetrics}
               />
 
@@ -235,6 +253,15 @@ const ProjectDetail = () => {
             </aside>
           </div>
         </div>
+
+        <ProjectExportDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          projectName={project.name}
+          goals={goals}
+          metricsData={metricsData}
+          isDemo={isDemo}
+        />
       </main>
     </div>
   );
