@@ -1,266 +1,199 @@
 
-# Plan: Consolidación de Métricas Omnicanal y Enriquecimiento de Inteligencia del Agente
+# Plan: Pulido de Produccion y Verificacion de Consistencia UI/UX - V1.0
 
-## Resumen Ejecutivo
+## Resumen
 
-El componente `OmnichannelPerformance.tsx` ya está implementado correctamente, pero necesitamos:
-1. **Garantizar que TikTok usa datos mock consistentes** (no reales, ya que skipped OAuth)
-2. **Enriquecer el edge function `disruptivaa-agent`** para recibir y procesar contexto omnicanal
-3. **Modificar `CommandConsole.tsx`** para enviar métricas consolidadas al agente
-4. **Validar traducciones** en los 3 idiomas
+Auditoria integral para eliminar textos hardcoded en espanol, mejorar empty states, garantizar responsividad y consistencia de navegacion.
 
 ---
 
-## Análisis del Estado Actual
+## 1. Internacionalizacion: Textos Hardcoded a Eliminar
 
-### ✅ Lo que ya funciona bien:
+Se encontraron **~40+ textos en espanol** fijos en el codigo. Se moveran a los archivos de traduccion (`es.json`, `en.json`, `pt.json`).
 
-1. **`OmnichannelPerformance.tsx` (líneas 1-236)**:
-   - Fetch paralelo de 3 plataformas ✅
-   - Cálculo de KPIs consolidados (totalSpend, combinedCPA, avgROAS) ✅
-   - Gráfico de barras con colores correctos (Meta #1877F2, Google #4285F4, TikTok #EF7911) ✅
-   - Soporte para demo data ✅
-   - Traducciones en lugar ✅
+### Archivos afectados y textos a mover:
 
-2. **Traducciones de `omnichannel`** (en `common.json`):
-   - Claves presentes en ES, EN y PT ✅
-   - Labels para Gasto Total, CPA Combinado, ROAS Promedio ✅
+**`src/pages/Agents.tsx` (linea 206)**
+- `"¿Que quieres hacer hoy?"` -> nueva clave `agents.welcomePrompt`
 
-3. **Edge function `disruptivaa-agent`**:
-   - Soporta `action: "executive-summary"` ✅
-   - Soporta contexto multilingüe ✅
-   - Soporta contexto de `projectId` y goals ✅
-   - Tiene instrucciones omnicanal (líneas 461-542) ✅
+**`src/components/CommandConsole.tsx` (lineas 287-311, 485-492)**
+- `"Hubo un error al procesar tu solicitud..."` -> `common.requestError`
+- `"Optimizar campana Meta"`, `"Analizar rendimiento Ads"`, `"Sugerir presupuesto"` -> `agents.suggestions.adsOptimizer` (array)
+- `"Calificar nuevos leads"`, `"Crear secuencia de emails"`, `"Analizar pipeline"` -> `agents.suggestions.aiCrmSales` (array)
+- `"¿Como puedes ayudarme?"` -> `agents.suggestions.default`
+- `"Inicia sesion para chatear"` -> `agents.loginToChat`
+- `"Analizando..."` -> `agents.analyzing`
+- `"Escribe o adjunta archivos para analisis..."` -> `agents.writeOrAttach`
+- `"Selecciona un agente para comenzar..."` -> `agents.selectToStart`
 
-### ⚠️ Lo que necesita mejora:
+**`src/components/dashboards/DashboardWidget.tsx` (lineas 94-101, 115-118, 136, 139, 149-151, 180-182, 200, 234, 238, 241)**
+- `"Configuracion requerida"` -> `widget.configRequired`
+- `"Selecciona una cuenta de anuncios..."` -> `widget.selectAccount`
+- `"Configurar"` -> `common.configure`
+- `"Conexion requerida"` -> `widget.connectionRequired`
+- `"Conecta tu cuenta de Meta Ads..."` -> `widget.connectMeta`
+- `"Error al cargar datos"` -> `widget.loadError`
+- `"Reintentar"` -> `common.retry`
+- `"Sin datos disponibles"` -> `widget.noData`
+- `"No hay datos de metricas..."` -> `widget.noMetricsData`
+- `"Meta no configurada"` -> `widget.goalNotConfigured`
+- `"Selecciona una meta del proyecto..."` -> `widget.selectGoal`
+- `"Cuenta X"` -> `widget.accountLabel`
+- `"Actualizar"` -> `common.refresh`
+- `"Editar"` -> `common.edit`
+- `"Eliminar"` -> `common.delete`
 
-1. **TikTok Mock Data**: 
-   - `fetch-tiktok-ads-metrics` devuelve datos demo correctamente
-   - Pero no hay garantía de que sea distinguible en el dashboard
+**`src/components/dashboards/WidgetSelector.tsx` (lineas 251-256, 440)**
+- `"Anadir Widget"` -> `widget.addWidget`
+- `"Selecciona una metrica o tipo de grafico."` -> `widget.selectMetric`
+- `"Selecciona como visualizar la metrica."` -> `widget.selectType`
+- `"Selecciona la cuenta de anuncios (opcional)."` -> `widget.selectAccountOptional`
+- `"Siguiente"` -> `common.next`
 
-2. **Enriquecimiento del agente**:
-   - `CommandConsole.tsx` NO envía datos omnicanal consolidados al agente
-   - El agente recibe solo `connectedPlatforms` (array de strings) en línea 211
-   - NO envía los valores reales de CPA, ROAS, spend por plataforma para comparación
+**`src/components/dashboards/WidgetSettings.tsx` (lineas 140, 171, 204, 221, 238, 286)**
+- Placeholders de selects: `"Seleccionar plataforma"`, `"Seleccionar cuenta"`, `"Seleccionar tipo"`, `"Seleccionar metrica"`, `"Seleccionar periodo"` -> claves bajo `widget.select.*`
+- `"Cargando cuentas..."` -> `widget.loadingAccounts`
+- `"Guardando..."` / `"Guardar cambios"` -> `common.saving` / `common.saveChanges`
 
-3. **Falta de contexto para análisis comparativo**:
-   - El agente no puede hacer análisis omnicanal sin datos agregados
-   - Las instrucciones OMNICHANNEL_INSTRUCTIONS están en el prompt del agente, pero sin datos concretos es difícil que sugiera redistribuciones
+**`src/components/dashboards/RenameDashboardDialog.tsx` (linea 96)**
+- `"Guardando..."` / `"Guardar cambios"` -> reutilizar `common.saving` / `common.saveChanges`
+
+**`src/components/dashboards/DashboardCanvas.tsx` (linea 86)**
+- `"Anade widgets para comenzar..."` -> `widget.emptyCanvas`
+
+**`src/components/projects/ProjectGoalsEditor.tsx` (linea 222, 303)**
+- `"Selecciona una metrica"` -> `projectGoals.selectMetric`
+- `"Guardar"` -> `common.save`
+
+**`src/components/DeleteProjectDialog.tsx` (lineas 68, 96)**
+- `"Mover a General"` -> `projects.moveToGeneral`
+- `"Las conversaciones se mantendran..."` -> `projects.moveDescription`
+- `"Eliminando..."` / `"Eliminar Proyecto"` -> `common.deleting` / `projects.deleteProject`
+
+**`src/components/ConversationItemMenu.tsx` (linea 115)**
+- `"Eliminando..."` / `"Eliminar"` -> `common.deleting` / `common.delete`
+
+**`src/components/RenameProjectDialog.tsx` (linea 98)**
+- `"Guardando..."` / `"Guardar"` -> `common.saving` / `common.save`
+
+**`src/components/dashboard/GoalsSummaryWidget.tsx` (linea 68)**
+- `"+X mas"` -> `common.andMore`
+
+**`src/components/OmnichannelPerformance.tsx` (linea 213)**
+- Tooltip `"Spend"` label -> `omnichannel.totalSpend`
 
 ---
 
-## Cambios Requeridos
+## 2. Nuevas Claves de Traduccion
 
-### 1. Crear Hook `useOmnichannelMetrics` en `src/hooks/useOmnichannelMetrics.ts`
+Se agregaran las siguientes claves nuevas a los 3 archivos de idioma:
 
-Este hook encapsula la lógica de fetch de datos omnicanal para reutilizarla en múltiples componentes.
-
-**Responsabilidades:**
-- Llamar `OmnichannelPerformance.tsx` internamente
-- Extraer y retornar datos agregados: `{ meta, google, tiktok, totalSpend, combinedCPA, avgROAS, isDemo }`
-- Manejo de carga y errores
-
-**Tipo de retorno:**
-```typescript
-interface OmnichannelData {
-  platforms: {
-    meta: PlatformMetrics | null;
-    google: PlatformMetrics | null;
-    tiktok: PlatformMetrics | null;
-  };
-  consolidated: {
-    totalSpend: number;
-    combinedCPA: number;
-    avgROAS: number;
-    allDemo: boolean;
-  };
-  loading: boolean;
-}
+### Namespace `agents` (en `common.json`):
+```
+agents.welcomePrompt: "¿Que quieres hacer hoy?" / "What do you want to do today?" / "O que voce quer fazer hoje?"
+agents.loginToChat: "Inicia sesion para chatear" / "Sign in to chat" / "Faca login para conversar"
+agents.analyzing: "Analizando..." / "Analyzing..." / "Analisando..."
+agents.writeOrAttach: "Escribe o adjunta archivos..." / "Type or attach files..." / "Escreva ou anexe arquivos..."
+agents.selectToStart: "Selecciona un agente..." / "Select an agent..." / "Selecione um agente..."
+agents.suggestions.adsOptimizer (array)
+agents.suggestions.aiCrmSales (array)
+agents.suggestions.default
 ```
 
-### 2. Modificar `src/components/CommandConsole.tsx` (línea ~211)
-
-Actualizar el `requestBody` para incluir métricas omnicanal:
-
-**Antes:**
-```typescript
-const requestBody = {
-  message: userMessage,
-  agentId: selectedAgent?.id || null,
-  connectedPlatforms: connectedPlatforms.map(p => p.platform),
-  chatId: currentChatId || null,
-  // ... más campos
-};
+### Namespace `widget`:
+```
+widget.configRequired, widget.selectAccount, widget.connectionRequired, widget.connectMeta
+widget.loadError, widget.noData, widget.noMetricsData, widget.goalNotConfigured, widget.selectGoal
+widget.accountLabel, widget.addWidget, widget.selectMetric, widget.selectType
+widget.selectAccountOptional, widget.emptyCanvas, widget.loadingAccounts
+widget.select.platform, widget.select.account, widget.select.type, widget.select.metric, widget.select.period
 ```
 
-**Después:**
-```typescript
-// Obtener datos omnicanal si hay plataformas conectadas
-let omnichannelContext = null;
-if (connectedPlatforms.length > 1 || (isAdsOptimizer && connectedPlatforms.length > 0)) {
-  // Fetch omnichannel data in background
-  const omnichannelData = await fetchOmnichannelMetrics();
-  omnichannelContext = {
-    platforms: omnichannelData.platforms,
-    totalSpend: omnichannelData.consolidated.totalSpend,
-    combinedCPA: omnichannelData.consolidated.combinedCPA,
-    avgROAS: omnichannelData.consolidated.avgROAS,
-    isDemo: omnichannelData.consolidated.allDemo,
-  };
-}
-
-const requestBody = {
-  message: userMessage,
-  agentId: selectedAgent?.id || null,
-  connectedPlatforms: connectedPlatforms.map(p => p.platform),
-  omnichannelMetrics: omnichannelContext, // 👈 NUEVO
-  chatId: currentChatId || null,
-  // ... más campos
-};
+### Namespace `common` (nuevas):
+```
+common.configure, common.retry, common.refresh, common.next, common.saving, common.saveChanges
+common.deleting, common.andMore
 ```
 
-### 3. Modificar `supabase/functions/disruptivaa-agent/index.ts` (línea ~596)
-
-Actualizar el parsing del body para recibir datos omnicanal:
-
-**Línea 597 - Cambiar:**
-```typescript
-const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData } = body;
+### Namespace `projects` (nuevas):
 ```
-
-**A:**
-```typescript
-const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData, omnichannelMetrics } = body;
-```
-
-**Agregar después de la verificación de usuario (línea ~675):**
-```typescript
-// Build omnichannel context for agent
-let omnichannelContext = "";
-if (omnichannelMetrics && (omnichannelMetrics.platforms.meta || omnichannelMetrics.platforms.google || omnichannelMetrics.platforms.tiktok)) {
-  const activeMetrics = [
-    omnichannelMetrics.platforms.meta ? `Meta Ads: Spend=$${omnichannelMetrics.platforms.meta.spend}, CPA=$${omnichannelMetrics.platforms.meta.cpa || 'N/A'}, ROAS=${omnichannelMetrics.platforms.meta.roas || 'N/A'}` : null,
-    omnichannelMetrics.platforms.google ? `Google Ads: Spend=$${omnichannelMetrics.platforms.google.spend}, CPA=$${omnichannelMetrics.platforms.google.cpa || 'N/A'}, ROAS=${omnichannelMetrics.platforms.google.roas || 'N/A'}` : null,
-    omnichannelMetrics.platforms.tiktok ? `TikTok Ads: Spend=$${omnichannelMetrics.platforms.tiktok.spend}, CPA=$${omnichannelMetrics.platforms.tiktok.cpa || 'N/A'}, ROAS=${omnichannelMetrics.platforms.tiktok.roas || 'N/A'} [DEMO DATA]` : null,
-  ].filter(Boolean).join("\n");
-  
-  omnichannelContext = `
-📊 OMNICHANNEL METRICS (Last 30 days):
-${activeMetrics}
-Total Spend: $${omnichannelMetrics.totalSpend}
-Combined CPA: $${omnichannelMetrics.combinedCPA}
-Avg ROAS: ${omnichannelMetrics.avgROAS}x
-Demo Data: ${omnichannelMetrics.isDemo}
-`;
-}
-```
-
-**Luego, incluir este contexto en el prompt del sistema:**
-```typescript
-// Actualizar la construcción del systemPrompt alrededor de la línea 750-780
-const systemPrompt = `${SYSTEM_INSTRUCTIONS[userLanguage]}
-
-${omnichannelContext}
-
-${goalsContext}
-
-${languageInstruction}`;
-```
-
-### 4. Garantizar que TikTok siempre usa Demo Data
-
-En `src/components/OmnichannelPerformance.tsx`, agregar un indicador explícito:
-
-**En la función `fetchAllMetrics` (línea ~64):**
-- Para TikTok, marcar siempre como `isDemo: true` (ya lo hace)
-- En el tooltip o hover del widget de TikTok, mostrar "📊 Demo Data - OAuth Pending"
-
-**En el KPI Card para TikTok** (agregar al lado del gráfico una nota pequeña):
-```typescript
-{data.tiktok && (
-  <div className="text-xs text-muted-foreground italic">
-    {t("omnichannel.tiktokDemoNote")}
-  </div>
-)}
-```
-
-### 5. Agregar traducciones faltantes (SI LAS HAY)
-
-Revisar y completar en `src/i18n/locales/[es,en,pt]/common.json`:
-
-```json
-"omnichannel": {
-  // ... existentes ...
-  "tiktokDemoNote": "Datos de demostración - OAuth pendiente",
-  "platformComparison": "Comparación de Plataformas",
-  "demoDataWarning": "Algunos datos son de demostración. Conecta tus cuentas para análisis reales."
-}
+projects.moveToGeneral, projects.moveDescription, projects.deleteProject
 ```
 
 ---
 
-## Flujo de Datos Mejorado
+## 3. Empty States Mejorados
 
-```
-┌─────────────────────────────────────────────┐
-│   CommandConsole (Usuario escribe mensaje)  │
-└────────────────────┬────────────────────────┘
-                     │
-                     ├─ Fetch OmnichannelMetrics
-                     │  (Meta + Google + TikTok)
-                     │
-                     ▼
-        ┌─────────────────────────────┐
-        │  omnichannelMetrics object  │
-        │ (platforms + consolidated)  │
-        └────────────────┬────────────┘
-                         │
-                         ▼
-        ┌─────────────────────────────┐
-        │  disruptivaa-agent function │
-        │  (recibe omnichannelMetrics)│
-        └────────────────┬────────────┘
-                         │
-        ┌────────────────┴──────────────┐
-        │ Construir contexto omnicanal  │
-        │ (tabla + métricas reales)     │
-        │                               │
-        │ "Meta: CPA=$45 vs Google:$52" │
-        │ "Sugiero mover 15% presupuesto"
-        └────────────────┬──────────────┘
-                         │
-                         ▼
-        ┌─────────────────────────────┐
-        │   Llamar LLM con contexto    │
-        │  + OMNICHANNEL_INSTRUCTIONS  │
-        └────────────────┬────────────┘
-                         │
-                         ▼
-        Respuesta con análisis omnicanal
-        + Sugerencias de redistribución
-```
+### Dashboard (ya implementado, pero refinar):
+- `GoalsSummaryWidget`: Ya muestra `goalsEmpty`. Agregar un boton "Ir a Proyectos" que navegue a crear un proyecto.
+- `RecentActivityWidget`: Ya muestra `activityEmpty`. Agregar sugerencia: "Ve a Agentes AI para iniciar tu primera auditoria."
+- `ConnectivityWidget`: Agregar CTA "Conectar" para cada plataforma desconectada.
+
+### Agents page:
+- Ya muestra `selectPrompt`. Sin cambios necesarios.
+
+### OmnichannelPerformance:
+- Ya retorna `null` si no hay plataformas activas. Agregar un estado vacio amigable con icono y texto traducido en lugar de desaparecer.
 
 ---
 
-## Resumen de Cambios
+## 4. Responsividad del Widget de Rendimiento Omnicanal
 
-| Archivo | Acción | Descripción |
-|---------|--------|-------------|
-| `src/hooks/useOmnichannelMetrics.ts` | **Crear** | Hook para reutilizar lógica de fetch omnicanal |
-| `src/components/CommandConsole.tsx` | **Modificar** (línea ~175-215) | Agregar fetch de datos omnicanal y pasar al requestBody |
-| `supabase/functions/disruptivaa-agent/index.ts` | **Modificar** (línea ~597, 675-750) | Recibir omnichannelMetrics, construir contexto, incluir en prompt |
-| `src/i18n/locales/es/common.json` | **Modificar** | Agregar claves faltantes si existen |
-| `src/i18n/locales/en/common.json` | **Modificar** | Agregar claves faltantes si existen |
-| `src/i18n/locales/pt/common.json` | **Modificar** | Agregar claves faltantes si existen |
+- El grid de KPIs (`grid-cols-3`) necesita `grid-cols-1 sm:grid-cols-3` para pantallas pequenas.
+- El grafico de barras ya usa `ResponsiveContainer` (correcto).
+- El widget grid del Dashboard (`grid-cols-1 md:grid-cols-3`) ya es responsivo (correcto).
 
 ---
 
-## Verificación Post-Implementación
+## 5. Navegacion y Rutas
 
-- [ ] El Dashboard muestra OmnichannelPerformance con los 3 KPIs correctos
-- [ ] TikTok siempre muestra "Demo Data" en el badge
-- [ ] Al hacer una pregunta al agente, incluye análisis omnicanal (tabla Meta vs Google vs TikTok)
-- [ ] El agente sugiere redistribuciones de presupuesto con números concretos
-- [ ] Los labels cambian correctamente al cambiar idioma (EN/PT)
-- [ ] No hay errores de red al hacer fetch de las 3 plataformas en paralelo
+**Estado actual (correcto):**
+- Dashboard -> `/` (widgets analiticos) ✓
+- Agentes AI -> `/agents` (consola de chat) ✓
+- Proyectos -> `/project/:id` (detalle) ✓
+- Sidebar redirige conversaciones a `/agents` ✓
 
+**Sin cambios necesarios en rutas.**
+
+---
+
+## 6. Perfil en Sidebar
+
+El bloque de perfil ya esta anclado al fondo con `shrink-0` y el selector de idioma esta accesible en Settings. Sin cambios estructurales necesarios.
+
+---
+
+## Resumen de Archivos a Modificar
+
+| Archivo | Cambios |
+|---------|---------|
+| `src/i18n/locales/es/common.json` | Agregar ~30 nuevas claves |
+| `src/i18n/locales/en/common.json` | Agregar ~30 nuevas claves |
+| `src/i18n/locales/pt/common.json` | Agregar ~30 nuevas claves |
+| `src/pages/Agents.tsx` | Reemplazar titulo hardcoded con t() |
+| `src/components/CommandConsole.tsx` | Reemplazar ~10 textos con t() |
+| `src/components/dashboards/DashboardWidget.tsx` | Reemplazar ~12 textos con t(), agregar useTranslation |
+| `src/components/dashboards/WidgetSelector.tsx` | Reemplazar ~5 textos con t() |
+| `src/components/dashboards/WidgetSettings.tsx` | Reemplazar ~6 placeholders con t() |
+| `src/components/dashboards/RenameDashboardDialog.tsx` | Reemplazar 2 textos |
+| `src/components/dashboards/DashboardCanvas.tsx` | Reemplazar 1 texto |
+| `src/components/projects/ProjectGoalsEditor.tsx` | Reemplazar 2 textos |
+| `src/components/DeleteProjectDialog.tsx` | Reemplazar 3 textos |
+| `src/components/ConversationItemMenu.tsx` | Reemplazar 2 textos |
+| `src/components/RenameProjectDialog.tsx` | Reemplazar 2 textos |
+| `src/components/dashboard/GoalsSummaryWidget.tsx` | Reemplazar 1 texto, agregar CTA |
+| `src/components/dashboard/RecentActivityWidget.tsx` | Mejorar empty state |
+| `src/components/OmnichannelPerformance.tsx` | KPI grid responsivo, tooltip i18n, empty state |
+
+---
+
+## Verificacion Post-Implementacion
+
+- [ ] Cambiar idioma a EN: todos los textos se traducen (0 textos en espanol visible)
+- [ ] Cambiar idioma a PT: todos los textos se traducen
+- [ ] Empty states muestran mensajes amigables con CTAs
+- [ ] No hay valores NaN o null visibles en graficos o KPIs
+- [ ] OmnichannelPerformance se redimensiona correctamente al colapsar/expandir sidebar
+- [ ] Widgets del Dashboard no se solapan en resolucion tablet (1024px)
+- [ ] Navegacion: Dashboard (/) = analitico, Agentes (/agents) = chat
+- [ ] Boton de retroceso del navegador funciona entre vistas
