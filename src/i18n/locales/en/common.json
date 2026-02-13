@@ -145,5 +145,12 @@
     "copied": "Report copied to clipboard",
     "copyError": "Error copying report",
     "downloaded": "Report downloaded"
+  },
+  "dashboard": {
+    "agentSelectedTitle": "{{name}} selected",
+    "agentSelectedDesc": "Now talking to {{name}}",
+    "agentDetected": "{{name}} detected",
+    "consulting": "Consulting {{name}}",
+    "isConsulting": "{{name}} is consulting..."
   }
 }

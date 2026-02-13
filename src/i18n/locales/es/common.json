@@ -145,5 +145,12 @@
     "copied": "Informe copiado al portapapeles",
     "copyError": "Error al copiar el informe",
     "downloaded": "Informe descargado"
+  },
+  "dashboard": {
+    "agentSelectedTitle": "{{name}} seleccionado",
+    "agentSelectedDesc": "Ahora estás hablando con {{name}}",
+    "agentDetected": "{{name}} detectado",
+    "consulting": "Consultando a {{name}}",
+    "isConsulting": "{{name}} está consultando..."
   }
 }
