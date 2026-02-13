@@ -187,7 +187,10 @@
     "googleAds": "Google Ads",
     "tiktokAds": "TikTok Ads",
     "loading": "Carregando métricas...",
-    "period": "Período"
+    "period": "Período",
+    "tiktokDemoNote": "TikTok: Dados de demonstração — OAuth pendente",
+    "platformComparison": "Comparação de Plataformas",
+    "demoDataWarning": "Alguns dados são de demonstração. Conecte suas contas para análises reais."
   },
   "dashboardWidgets": {
     "goalsTitle": "Status das Metas",

@@ -6,6 +6,7 @@ import { useMessages } from "@/hooks/useMessages";
 import { useIntegrations } from "@/hooks/useIntegrations";
 import { useAuth } from "@/contexts/AuthContext";
 import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
+import { useOmnichannelMetrics } from "@/hooks/useOmnichannelMetrics";
 import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -71,6 +72,7 @@ const CommandConsole = ({
   
   const { messages, loading: messagesLoading, saveMessage, addOptimisticMessage, addErrorMessage } = useMessages(chatId);
   const { getConnectedPlatforms } = useIntegrations();
+  const { fetchAllMetrics: fetchOmnichannelMetrics } = useOmnichannelMetrics();
 
   const handleFilesSelected = (files: File[]) => {
     setAttachedFiles(prev => [...prev, ...files]);
@@ -203,12 +205,34 @@ const CommandConsole = ({
     // Get project ID for goals context
     const activeProjectId = getActiveProjectId();
 
+    // Fetch omnichannel metrics for agent context
+    let omnichannelMetrics = null;
+    const isAdsOptimizerAgent = selectedAgent?.id === "ads-optimizer";
+    if (connectedPlatforms.length > 0 && isAdsOptimizerAgent) {
+      try {
+        const omniData = await fetchOmnichannelMetrics();
+        const hasAnyPlatform = omniData.platforms.meta || omniData.platforms.google || omniData.platforms.tiktok;
+        if (hasAnyPlatform) {
+          omnichannelMetrics = {
+            platforms: omniData.platforms,
+            totalSpend: omniData.consolidated.totalSpend,
+            combinedCPA: omniData.consolidated.combinedCPA,
+            avgROAS: omniData.consolidated.avgROAS,
+            isDemo: omniData.consolidated.allDemo,
+          };
+        }
+      } catch (err) {
+        console.warn("Failed to fetch omnichannel metrics:", err);
+      }
+    }
+
     const requestBody = {
       message: userMessage,
       agentId: selectedAgent?.id || null,
       agentName: selectedAgent?.name || null,
       systemInstruction: selectedAgent?.systemInstruction || null,
       connectedPlatforms: connectedPlatforms.map(p => p.platform),
+      omnichannelMetrics,
       chatId: currentChatId || null,
       projectId: activeProjectId || null,
       files: filesData,
