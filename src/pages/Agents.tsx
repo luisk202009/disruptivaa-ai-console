@@ -203,7 +203,7 @@ const Agents = () => {
               <div className="animate-fade-in">
                 <div className="text-center pt-12 pb-6">
                   <h2 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
-                    ¿Qué quieres hacer hoy?
+                    {t("agents.welcomePrompt")}
                   </h2>
                 </div>
 

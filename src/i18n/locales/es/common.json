@@ -44,7 +44,9 @@
     "noActivity": "Sin actividad",
     "loadingStats": "Cargando estadísticas...",
     "loginToView": "Inicia sesión para ver tu perfil",
-    "loginToChange": "Inicia sesión para cambiar tu contraseña"
+    "loginToChange": "Inicia sesión para cambiar tu contraseña",
+    "resetSuccess": "Te hemos enviado un correo para cambiar tu contraseña",
+    "resetError": "Error al enviar el correo de restablecimiento"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -56,7 +58,30 @@
   "agents": {
     "title": "Agentes AI",
     "subtitle": "Nuestros Agentes Especializados",
-    "selectPrompt": "Selecciona un agente para comenzar una conversación"
+    "selectPrompt": "Selecciona un agente para comenzar una conversación",
+    "welcomePrompt": "¿Qué quieres hacer hoy?",
+    "loginToChat": "Inicia sesión para chatear",
+    "loginPrompt": "🔒 Inicia sesión para interactuar con nuestros agentes AI",
+    "analyzing": "Analizando...",
+    "writeOrAttach": "Escribe o adjunta archivos para análisis...",
+    "selectToStart": "Selecciona un agente para comenzar...",
+    "loadingMessages": "Cargando mensajes...",
+    "connectAccount": "Conectar cuenta de Meta/Google",
+    "fileAttached": "Archivo adjuntado",
+    "fileReadyForAnalysis": "{{names}} listo para análisis",
+    "sessionExpired": "Sesión expirada",
+    "sessionExpiredDesc": "Por favor inicia sesión de nuevo.",
+    "rateLimitTitle": "Límite de velocidad excedido",
+    "rateLimitDesc": "Por favor espera un momento e intenta de nuevo.",
+    "creditsTitle": "Créditos agotados",
+    "creditsDesc": "Por favor agrega créditos a tu workspace.",
+    "requestError": "❌ Hubo un error al procesar tu solicitud. Por favor intenta de nuevo o revisa tu conexión.",
+    "requestErrorShort": "Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.",
+    "suggestions": {
+      "adsOptimizer": ["Optimizar campaña Meta", "Analizar rendimiento Ads", "Sugerir presupuesto"],
+      "aiCrmSales": ["Calificar nuevos leads", "Crear secuencia de emails", "Analizar pipeline"],
+      "default": ["¿Cómo puedes ayudarme?"]
+    }
   },
   "status": {
     "idle": "Inactivo",
@@ -65,14 +90,55 @@
     "error": "Error"
   },
   "common": {
-    "loading": "Cargando...",
+    "loading": "Loading...",
     "error": "Error",
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "edit": "Editar",
     "create": "Crear",
-    "search": "Buscar"
+    "search": "Buscar",
+    "configure": "Configurar",
+    "retry": "Reintentar",
+    "refresh": "Actualizar",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "saving": "Guardando...",
+    "saveChanges": "Guardar cambios",
+    "deleting": "Eliminando...",
+    "andMore": "+{{count}} más",
+    "addGoal": "Agregar Meta"
+  },
+  "projects": {
+    "moveToGeneral": "Mover a \"General\"",
+    "moveDescription": "Las conversaciones se mantendrán sin proyecto asignado",
+    "deleteProject": "Eliminar Proyecto",
+    "deleteAll": "Eliminar todo",
+    "deleteAllDesc": "Se eliminarán permanentemente todas las conversaciones",
+    "deleteConfirmTitle": "Eliminar Proyecto",
+    "deleteConfirmDesc": "¿Estás seguro de que deseas eliminar el proyecto",
+    "deleteConversationsQuestion": "¿Qué deseas hacer con las conversaciones de este proyecto?",
+    "editProject": "Editar Proyecto",
+    "projectName": "Nombre del proyecto",
+    "allMetricsDefined": "Has definido todas las métricas disponibles.",
+    "noGoalsDefined": "No hay metas definidas para este proyecto.",
+    "goalSaved": "Meta guardada",
+    "goalSavedDesc": "{{metric}} configurado correctamente.",
+    "goalDeleted": "Meta eliminada",
+    "goalDeletedDesc": "{{metric}} ha sido eliminada.",
+    "goalError": "No se pudo guardar la meta.",
+    "goalDeleteError": "No se pudo eliminar la meta.",
+    "projectGoals": "Metas del Proyecto",
+    "projectGoalsDesc": "Define objetivos para <strong>{{name}}</strong>. El agente AI los usará para generar reportes comparativos.",
+    "goalMetric": "Métrica",
+    "goalValue": "Valor Objetivo",
+    "goalPeriod": "Período",
+    "selectMetric": "Selecciona una métrica"
+  },
+  "conversations": {
+    "moveToProject": "Mover a proyecto",
+    "deleteConversation": "Eliminar Conversación",
+    "deleteConversationDesc": "¿Estás seguro de que deseas eliminar esta conversación? Esta acción no se puede deshacer."
   },
   "projectDetail": {
     "title": "Detalle del Proyecto",
@@ -136,10 +202,6 @@
     "errorAuth": "No estás autenticado. Inicia sesión e intenta nuevamente.",
     "errorCancelled": "El usuario canceló la autorización",
     "errorExchange": "Error al procesar la autorización"
-  },
-  "settings": {
-    "resetSuccess": "Te hemos enviado un correo para cambiar tu contraseña",
-    "resetError": "Error al enviar el correo de restablecimiento"
   },
   "exportReport": {
     "copied": "Informe copiado al portapapeles",
@@ -205,5 +267,59 @@
     "manageConnections": "Gestionar conexiones",
     "welcomeTitle": "Panel de Control",
     "welcomeSubtitle": "Resumen de tu rendimiento de marketing"
+  },
+  "widget": {
+    "configRequired": "Configuración requerida",
+    "selectAccount": "Selecciona una cuenta de anuncios en la configuración para ver métricas reales",
+    "connectionRequired": "Conexión requerida",
+    "connectMeta": "Conecta tu cuenta de Meta Ads para ver métricas reales",
+    "loadError": "Error al cargar datos",
+    "noData": "Sin datos disponibles",
+    "noMetricsData": "No hay datos de métricas para el período seleccionado",
+    "goalNotConfigured": "Meta no configurada",
+    "selectGoal": "Selecciona una meta del proyecto en la configuración",
+    "accountLabel": "Cuenta {{id}}",
+    "addWidget": "Añadir Widget",
+    "selectMetricStep": "Selecciona una métrica o tipo de gráfico.",
+    "selectTypeStep": "Selecciona cómo visualizar la métrica.",
+    "selectAccountStep": "Selecciona la cuenta de anuncios (opcional).",
+    "selectAccountLabel": "Selecciona una cuenta de anuncios",
+    "noAccountsConnected": "No hay cuentas de Meta Ads conectadas.",
+    "addWithoutAccount": "Puedes añadir el widget sin cuenta y configurarlo después.",
+    "metricsTab": "Métricas",
+    "chartsTab": "Gráficos",
+    "visualizationType": "Tipo de visualización",
+    "emptyCanvas": "Añade widgets para comenzar a visualizar tus métricas. Usa el botón \"Añadir Widget\" en la parte superior.",
+    "emptyCanvasTitle": "Panel vacío",
+    "loadingAccounts": "Cargando cuentas...",
+    "configureWidget": "Configurar Widget",
+    "configureWidgetDesc": "Personaliza la visualización y los datos de tu widget.",
+    "platform": "Plataforma",
+    "adAccount": "Cuenta de anuncios",
+    "noAccountsForPlatform": "No hay cuentas conectadas. Conecta {{platform}} primero.",
+    "selectAccountData": "Selecciona la cuenta de la que obtener los datos",
+    "title": "Título",
+    "titlePlaceholder": "Título del widget",
+    "type": "Tipo de visualización",
+    "metric": "Métrica",
+    "timePeriod": "Período de tiempo",
+    "showComparison": "Mostrar comparación",
+    "compareWithPrevious": "Comparar con el período anterior",
+    "goalOptional": "Meta (opcional)",
+    "goalPlaceholder": "Ej: 1000",
+    "goalProgress": "Establece un objetivo para mostrar progreso",
+    "select": {
+      "platform": "Seleccionar plataforma",
+      "account": "Seleccionar cuenta",
+      "type": "Seleccionar tipo",
+      "metric": "Seleccionar métrica",
+      "period": "Seleccionar período"
+    },
+    "editPanel": "Editar panel",
+    "editPanelDesc": "Modifica el nombre y descripción de tu panel.",
+    "panelName": "Nombre",
+    "panelNamePlaceholder": "Mi panel de métricas",
+    "panelDescLabel": "Descripción (opcional)",
+    "panelDescPlaceholder": "Panel para monitorear el rendimiento de campañas..."
   }
 }

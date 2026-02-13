@@ -38,7 +38,6 @@ const fileToBase64 = (file: File): Promise<string> => {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const result = reader.result as string;
-      // Remove data URL prefix (e.g., "data:application/pdf;base64,")
       const base64 = result.split(',')[1];
       resolve(base64);
     };
@@ -77,8 +76,8 @@ const CommandConsole = ({
   const handleFilesSelected = (files: File[]) => {
     setAttachedFiles(prev => [...prev, ...files]);
     toast({
-      title: "Archivo adjuntado",
-      description: `${files.map(f => f.name).join(', ')} listo para análisis`,
+      title: t("agents.fileAttached"),
+      description: t("agents.fileReadyForAnalysis", { names: files.map(f => f.name).join(', ') }),
     });
   };
 
@@ -93,7 +92,7 @@ const CommandConsole = ({
     }
   }, [autoFocus, isAuthenticated]);
 
-  // Auto-scroll to bottom when new messages arrive - using useLayoutEffect for immediate scroll
+  // Auto-scroll to bottom when new messages arrive
   useLayoutEffect(() => {
     if (messagesEndRef.current && messagesContainerRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -111,11 +110,9 @@ const CommandConsole = ({
     const userMessage = command.trim();
     setCommand("");
     
-    // Capture files before clearing
     const filesToSend = [...attachedFiles];
     setAttachedFiles([]);
     
-    // Generate chatId if not provided
     let currentChatId = chatId;
     const isNewConversation = !currentChatId;
     if (!currentChatId) {
@@ -123,28 +120,17 @@ const CommandConsole = ({
       onChatIdGenerated?.(currentChatId);
     }
     
-    // Build message content with file names
     const fileNamesText = filesToSend.length > 0 
       ? `\n📎 Archivos: ${filesToSend.map(f => f.name).join(', ')}` 
       : '';
     const fullMessageContent = userMessage + fileNamesText;
     
-    // OPTIMISTIC UI: Add user message immediately to local state
     addOptimisticMessage(fullMessageContent, "user", currentChatId);
     
-    // Create conversation in DB if this is a new conversation
     if (isNewConversation) {
       const activeProjectId = getActiveProjectId();
       const title = userMessage.length > 50 ? userMessage.substring(0, 50) + "..." : userMessage;
       
-      console.log("📝 Creating new conversation:", { 
-        chatId: currentChatId, 
-        title, 
-        userId: user.id, 
-        projectId: activeProjectId 
-      });
-      
-      // Create conversation record with agent_id - Supabase returns { data, error }, not exceptions
       const { data: conversationData, error: conversationError } = await supabase
         .from("conversations")
         .insert({
@@ -165,10 +151,7 @@ const CommandConsole = ({
       }
     }
     
-    // Save user message to Supabase with chat_id (async, in background)
     saveMessage(fullMessageContent, "user", currentChatId);
-    
-    // Notify parent if callback provided
     onCommand?.(userMessage);
     
     setIsLoading(true);
@@ -176,21 +159,19 @@ const CommandConsole = ({
     try {
       const connectedPlatforms = getConnectedPlatforms();
       
-      // Get the user's JWT token for authenticated requests
       const { data: { session } } = await supabase.auth.getSession();
       const userToken = session?.access_token;
       
       if (!userToken) {
         toast({
-          title: "Sesión expirada",
-          description: "Por favor inicia sesión de nuevo.",
+          title: t("agents.sessionExpired"),
+          description: t("agents.sessionExpiredDesc"),
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
       
-      // Convert attached files to base64
       const filesData = await Promise.all(
         filesToSend.map(async (file) => ({
           name: file.name,
@@ -202,10 +183,8 @@ const CommandConsole = ({
       
       const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0and6ZmJpbnNybW52bHNndnR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5NzY4MDUsImV4cCI6MjA4MTU1MjgwNX0.gvLt5ggffAwHp-HbBAqyGa18HuNZzJ5AHD6p4q6dk7E";
       
-    // Get project ID for goals context
     const activeProjectId = getActiveProjectId();
 
-    // Fetch omnichannel metrics for agent context
     let omnichannelMetrics = null;
     const isAdsOptimizerAgent = selectedAgent?.id === "ads-optimizer";
     if (connectedPlatforms.length > 0 && isAdsOptimizerAgent) {
@@ -255,16 +234,16 @@ const CommandConsole = ({
       if (!response.ok) {
         if (response.status === 429) {
           toast({
-            title: "Límite de velocidad excedido",
-            description: "Por favor espera un momento e intenta de nuevo.",
+            title: t("agents.rateLimitTitle"),
+            description: t("agents.rateLimitDesc"),
             variant: "destructive",
           });
           throw new Error("Rate limit exceeded");
         }
         if (response.status === 402) {
           toast({
-            title: "Créditos agotados",
-            description: "Por favor agrega créditos a tu workspace.",
+            title: t("agents.creditsTitle"),
+            description: t("agents.creditsDesc"),
             variant: "destructive",
           });
           throw new Error("Payment required");
@@ -275,8 +254,6 @@ const CommandConsole = ({
       const data = await response.json();
       console.log("📥 Response Data:", data);
       
-      // The edge function now saves the message directly, but we can use realtime to update
-      // If metaConnected info is returned, we could use it for UI updates
       if (data.metaConnected) {
         console.log("✅ Meta Ads connected, campaigns analyzed:", data.campaignsCount);
       }
@@ -284,13 +261,12 @@ const CommandConsole = ({
     } catch (error) {
       console.error("Error calling agent:", error);
       
-      // Add error message to chat UI (visible in conversation)
-      addErrorMessage("❌ Hubo un error al procesar tu solicitud. Por favor intenta de nuevo o revisa tu conexión.");
+      addErrorMessage(t("agents.requestError"));
       
       if (!(error instanceof Error && (error.message.includes("Rate limit") || error.message.includes("Payment")))) {
         toast({
-          title: "Error",
-          description: "Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.",
+          title: t("common.error"),
+          description: t("agents.requestErrorShort"),
           variant: "destructive",
         });
       }
@@ -304,11 +280,11 @@ const CommandConsole = ({
     if (selectedAgent) {
       switch (selectedAgent.id) {
         case "ads-optimizer":
-          return ["Optimizar campaña Meta", "Analizar rendimiento Ads", "Sugerir presupuesto"];
+          return t("agents.suggestions.adsOptimizer", { returnObjects: true }) as string[];
         case "ai-crm-sales":
-          return ["Calificar nuevos leads", "Crear secuencia de emails", "Analizar pipeline"];
+          return t("agents.suggestions.aiCrmSales", { returnObjects: true }) as string[];
         default:
-          return ["¿Cómo puedes ayudarme?"];
+          return t("agents.suggestions.default", { returnObjects: true }) as string[];
       }
     }
     return DISRUPTIVAA_AGENTS.map(a => t(`${a.id}.name`, { ns: "agents" }));
@@ -357,7 +333,7 @@ const CommandConsole = ({
                 className="text-xs border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
               >
                 <Link2 size={14} className="mr-1.5" />
-                Conectar cuenta de Meta/Google
+                {t("agents.connectAccount")}
               </Button>
             </div>
           )}
@@ -365,7 +341,7 @@ const CommandConsole = ({
           {messagesLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
-              <span className="ml-2 text-sm text-zinc-500">Cargando mensajes...</span>
+              <span className="ml-2 text-sm text-zinc-500">{t("agents.loadingMessages")}</span>
             </div>
           ) : (
             <>
@@ -484,12 +460,12 @@ const CommandConsole = ({
               onBlur={() => setIsFocused(false)}
               placeholder={
                 !isAuthenticated
-                  ? "Inicia sesión para chatear"
+                  ? t("agents.loginToChat")
                   : isLoading 
-                    ? "Analizando..." 
+                    ? t("agents.analyzing")
                     : selectedAgent 
-                      ? `Escribe o adjunta archivos para análisis...` 
-                      : "Selecciona un agente para comenzar..."
+                      ? t("agents.writeOrAttach")
+                      : t("agents.selectToStart")
               }
               disabled={isLoading || !isAuthenticated}
               className={cn(
@@ -522,7 +498,7 @@ const CommandConsole = ({
         {/* Login prompt for unauthenticated users */}
         {!isAuthenticated && (
           <p className="text-center text-xs text-muted-foreground mt-2">
-            🔒 Inicia sesión para interactuar con nuestros agentes AI
+            {t("agents.loginPrompt")}
           </p>
         )}
       </form>

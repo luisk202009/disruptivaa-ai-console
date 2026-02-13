@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,35 +17,21 @@ interface RenameProjectDialogProps {
   onRenameProject: (name: string, color: string) => Promise<void>;
 }
 
-export const RenameProjectDialog = ({
-  open,
-  onOpenChange,
-  projectName,
-  projectColor,
-  onRenameProject,
-}: RenameProjectDialogProps) => {
+export const RenameProjectDialog = ({ open, onOpenChange, projectName, projectColor, onRenameProject }: RenameProjectDialogProps) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(projectName);
   const [color, setColor] = useState(projectColor);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setName(projectName);
-    setColor(projectColor);
-  }, [projectName, projectColor]);
+  useEffect(() => { setName(projectName); setColor(projectColor); }, [projectName, projectColor]);
 
   const hasChanges = name.trim() !== projectName || color !== projectColor;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !hasChanges) return;
-
     setLoading(true);
-    try {
-      await onRenameProject(name.trim(), color);
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
-    }
+    try { await onRenameProject(name.trim(), color); onOpenChange(false); } finally { setLoading(false); }
   };
 
   return (
@@ -57,45 +40,24 @@ export const RenameProjectDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <Pencil className="h-5 w-5 text-primary" />
-            Editar Proyecto
+            {t("projects.editProject")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="project-name" className="text-muted-foreground">
-                Nombre del proyecto
-              </Label>
-              <Input
-                id="project-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: Marketing Q1"
-                className="mt-2 bg-zinc-800 border-zinc-700 text-foreground"
-                autoFocus
-              />
+              <Label htmlFor="project-name" className="text-muted-foreground">{t("projects.projectName")}</Label>
+              <Input id="project-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Marketing Q1" className="mt-2 bg-zinc-800 border-zinc-700 text-foreground" autoFocus />
             </div>
             <div>
               <Label className="text-muted-foreground">Color</Label>
-              <div className="mt-2">
-                <ColorPicker value={color} onChange={setColor} />
-              </div>
+              <div className="mt-2"><ColorPicker value={color} onChange={setColor} /></div>
             </div>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="border-zinc-700"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={!name.trim() || !hasChanges || loading}
-            >
-              {loading ? "Guardando..." : "Guardar"}
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="border-zinc-700">{t("common.cancel")}</Button>
+            <Button type="submit" disabled={!name.trim() || !hasChanges || loading}>
+              {loading ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>
