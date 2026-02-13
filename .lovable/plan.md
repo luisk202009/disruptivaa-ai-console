@@ -1,171 +1,95 @@
 
 
-# Plan: Exportacion de Informes y Snapshot de Proyecto
+# Plan: TikTok Ads Demo + Dashboard Omnicanal + Inteligencia 360
 
-## Resumen
+## Alcance Ajustado
 
-Crear un sistema de exportacion a nivel de proyecto que genere un informe ejecutivo combinando metas, metricas reales y recomendaciones del agente IA. Incluye copia al portapapeles (Markdown), descarga como archivo, y generacion de resumen ejecutivo con IA.
-
----
-
-## Analisis del Estado Actual
-
-| Componente | Estado |
-|------------|--------|
-| `ExportReportDialog.tsx` (dashboards) | Existe, pero es para widgets de dashboard, no proyectos |
-| `ProjectHealthCard.tsx` | Tiene datos de metas vs metricas reales |
-| `useGoalMetrics.ts` | Hook que obtiene metricas reales o demo |
-| `useProjectGoals.ts` | Hook con metas del proyecto |
-| `disruptivaa-agent` Edge Function | Soporta multilenguaje, tiene contexto de goals |
-| Traducciones ES/EN/PT | Infraestructura completa |
+El usuario prefiere omitir la implementacion completa de OAuth para TikTok por ahora. Se enfocara en:
+- TikTok conectado en modo demo (ya existe `fetch-tiktok-ads-metrics` con datos demo)
+- Nuevo componente `OmnichannelPerformance` con vista consolidada de 3 plataformas
+- Inteligencia del agente mejorada para sugerencias de redistribucion de presupuesto
+- Traducciones completas ES/EN/PT
 
 ---
 
-## Arquitectura de la Solucion
+## Cambios a Implementar
 
-### Nuevo Componente: `src/components/projects/ProjectExportDialog.tsx`
+### 1. Crear `src/components/OmnichannelPerformance.tsx`
 
-Modal con las siguientes secciones seleccionables via checkboxes:
+Componente que muestra una vista consolidada de rendimiento de las 3 plataformas.
 
-1. **Estado de Metas** - Tabla comparativa Meta vs Realidad con semaforo
-2. **Metricas de Plataformas** - Resumen de datos de Meta/Google Ads
-3. **Resumen Ejecutivo IA** - Parrafo generado por el agente
-
-El modal mostrara una vista previa del informe en Markdown y permitira:
-- Copiar al portapapeles (Markdown)
-- Descargar como .txt
-- Imprimir / Guardar como PDF (usando `window.print()` con estilos optimizados)
-
-### Nueva Edge Function Action: `generate-executive-summary`
-
-En lugar de crear una nueva Edge Function separada, se anadira una accion dentro de `disruptivaa-agent` que reciba los datos del proyecto y genere un parrafo ejecutivo. Esto reutiliza la autenticacion, el contexto multilingue y la conexion con la API de IA ya existentes.
-
-Se invocara enviando un mensaje especial con un flag `action: "executive-summary"` al endpoint existente.
-
----
-
-## Cambios Detallados
-
-### 1. Crear `src/components/projects/ProjectExportDialog.tsx`
+**Funcionalidad:**
+- Llama a los 3 edge functions de metricas (`fetch-meta-metrics`, `fetch-google-ads-metrics`, `fetch-tiktok-ads-metrics`) para obtener Spend, Clicks, Impressions, CPC, CTR y Conversions
+- Muestra 3 KPIs consolidados en la parte superior:
+  - Gasto Total (suma de las 3 plataformas)
+  - CPA Combinado (gasto total / conversiones totales)
+  - ROAS Promedio (si hay datos de conversiones con valor)
+- Grafico de barras comparativo (usando Recharts, ya instalado) mostrando inversion por plataforma
+- Cada barra con el color de la plataforma (Meta: #1877F2, Google: #4285F4, TikTok: #EF7911)
+- Indicador de datos demo cuando no hay conexion real
 
 **Props:**
 ```typescript
-interface ProjectExportDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  projectId: string;
-  projectName: string;
-  projectColor: string;
-  goals: ProjectGoal[];
-  metricsData: GoalMetricData[];
-  isDemo: boolean;
+interface OmnichannelPerformanceProps {
+  datePreset?: DatePreset;
 }
 ```
 
-**Funcionalidad:**
-- 3 checkboxes: "Incluir Metas", "Incluir Metricas", "Incluir Resumen IA"
-- Boton "Generar Resumen IA" que llama al edge function
-- Estado de carga mientras se genera el resumen
-- Vista previa en textarea readonly
-- Botones: Copiar Markdown, Descargar .txt, Imprimir
+**Datos a obtener por plataforma:**
+- spend (gasto)
+- clicks
+- impressions
+- cpc
+- conversions
 
-**Generacion del informe:**
-- Header con nombre del proyecto, fecha, hora (locale-aware)
-- Seccion "Metas vs Realidad" con tabla Markdown y emojis semaforo
-- Seccion "Metricas de Plataformas" con valores actuales
-- Seccion "Resumen Ejecutivo" con el texto generado por IA
-- Footer con creditos "Generado por Disruptivaa"
+El componente usara `supabase.auth.getSession()` para autenticar las llamadas a los edge functions.
 
-### 2. Modificar `supabase/functions/disruptivaa-agent/index.ts`
+### 2. Integrar en `src/pages/Index.tsx` o `src/components/Dashboard.tsx`
 
-Anadir deteccion de `action: "executive-summary"` en el body del request.
+Colocar el componente `OmnichannelPerformance` encima del chat del Dashboard (cuando no hay chat activo), o como una seccion visible antes de seleccionar un agente.
 
-Cuando se detecte esta accion:
-- Construir un prompt especifico para resumen ejecutivo
-- Incluir los datos de metas y metricas proporcionados en el body
-- Generar un parrafo conciso (3-5 oraciones) en el idioma del usuario
-- Retornar el resumen directamente sin persistir en `agent_messages`
+**Decision de ubicacion:** Agregar como seccion colapsable en la pantalla principal (Index) visible cuando el usuario esta autenticado y no tiene un chat activo. Esto le da una vista rapida del rendimiento antes de interactuar con los agentes.
 
-**Datos esperados en el body:**
-```typescript
-{
-  action: "executive-summary",
-  projectId: string,
-  goalsData: Array<{
-    metric_key: string;
-    target_value: number;
-    current_value: number;
-    is_on_track: boolean;
-  }>
-}
+En `Dashboard.tsx`, se mostrara el componente solo cuando:
+- El usuario esta autenticado
+- No hay un chat activo (`!isChatActive`)
+- Remplazara o acompanara la zona de seleccion de agentes
+
+### 3. Actualizar Inteligencia del Agente para Redistribucion de Presupuesto
+
+**Archivo:** `supabase/functions/disruptivaa-agent/index.ts`
+
+Enriquecer las instrucciones omnicanal (`OMNICHANNEL_INSTRUCTIONS`) para incluir logica de redistribucion de presupuesto explicita:
+
+```
+- Si CPA de TikTok es >15% menor que Google Ads, sugerir mover 10-15% del presupuesto
+- Si ROAS de una plataforma es >30% superior, recomendar incrementar inversion alli
+- Si CTR de una plataforma es <50% del promedio, sugerir pausar o reevaluar creatividades
+- Incluir estimacion del impacto: "Moviendo $X de Google a TikTok podrias generar ~Y conversiones adicionales"
 ```
 
-**Prompt del resumen:**
-```
-Genera un resumen ejecutivo de 3-5 oraciones sobre el desempenio
-de este proyecto de marketing digital. Usa un tono profesional
-y menciona las metricas clave, que metas se estan cumpliendo y
-cuales necesitan atencion. No uses emojis. Se directo y accionable.
-```
+Estas instrucciones ya existen parcialmente en `OMNICHANNEL_INSTRUCTIONS` pero se enriquecerian con umbrales concretos y ejemplos de sugerencias con numeros.
 
-### 3. Modificar `src/pages/ProjectDetail.tsx`
+### 4. Actualizar Traducciones
 
-- Importar `ProjectExportDialog`
-- Anadir estado `exportOpen` para controlar el modal
-- Anadir boton "Generar Informe" en el header (icono `FileText`)
-- Pasar `goals`, `metricsData` y `isDemo` al dialog
-
-Para obtener `metricsData` a nivel de ProjectDetail, se necesita elevar el uso de `useGoalMetrics` desde `ProjectHealthCard` hacia `ProjectDetail`. Actualmente `ProjectHealthCard` usa el hook internamente. El cambio:
-
-- Llamar `useGoalMetrics(goals)` en `ProjectDetail`
-- Pasar `metricsData` como prop a `ProjectHealthCard` (modificar sus props)
-- Pasar los mismos datos a `ProjectExportDialog`
-
-### 4. Modificar `src/components/projects/ProjectHealthCard.tsx`
-
-Cambiar para recibir `metricsData` como prop en lugar de llamar `useGoalMetrics` internamente:
-
-```typescript
-interface ProjectHealthCardProps {
-  projectId: string;
-  projectColor: string;
-  goals: ProjectGoal[];
-  metricsData: GoalMetricData[];
-  metricsLoading: boolean;
-  refreshing: boolean;
-  isDemo: boolean;
-  onRefresh: () => Promise<void>;
-}
-```
-
-### 5. Actualizar Traducciones
-
-**Nuevas claves en los 3 idiomas:**
+**Nuevas claves en los 3 idiomas para el componente omnicanal:**
 
 ES:
 ```json
 {
-  "projectExport": {
-    "title": "Generar Informe",
-    "description": "Selecciona que incluir en el informe del proyecto.",
-    "includeGoals": "Estado de Metas",
-    "includeMetrics": "Metricas de Plataformas",
-    "includeAISummary": "Resumen Ejecutivo (IA)",
-    "generateSummary": "Generar Resumen IA",
-    "generatingSummary": "Generando resumen...",
-    "copyMarkdown": "Copiar Markdown",
-    "downloadTxt": "Descargar .txt",
-    "print": "Imprimir",
-    "copied": "Informe copiado al portapapeles",
-    "copyError": "Error al copiar el informe",
-    "downloaded": "Informe descargado",
-    "summaryError": "Error al generar el resumen ejecutivo",
-    "goalsSection": "Estado de Metas",
-    "metricsSection": "Metricas Actuales",
-    "summarySection": "Resumen Ejecutivo",
-    "achieved": "Cumplido",
-    "notAchieved": "No cumplido",
-    "demoDisclaimer": "Datos de demostracion - conecta tus cuentas para datos reales"
+  "omnichannel": {
+    "title": "Rendimiento Omnicanal",
+    "totalSpend": "Gasto Total",
+    "combinedCPA": "CPA Combinado",
+    "avgROAS": "ROAS Promedio",
+    "spendByPlatform": "Inversión por Plataforma",
+    "noData": "Conecta al menos una plataforma para ver métricas consolidadas.",
+    "demoData": "Datos de demostración",
+    "metaAds": "Meta Ads",
+    "googleAds": "Google Ads",
+    "tiktokAds": "TikTok Ads",
+    "loading": "Cargando métricas...",
+    "period": "Período"
   }
 }
 ```
@@ -173,27 +97,19 @@ ES:
 EN:
 ```json
 {
-  "projectExport": {
-    "title": "Generate Report",
-    "description": "Select what to include in the project report.",
-    "includeGoals": "Goals Status",
-    "includeMetrics": "Platform Metrics",
-    "includeAISummary": "Executive Summary (AI)",
-    "generateSummary": "Generate AI Summary",
-    "generatingSummary": "Generating summary...",
-    "copyMarkdown": "Copy Markdown",
-    "downloadTxt": "Download .txt",
-    "print": "Print",
-    "copied": "Report copied to clipboard",
-    "copyError": "Error copying report",
-    "downloaded": "Report downloaded",
-    "summaryError": "Error generating executive summary",
-    "goalsSection": "Goals Status",
-    "metricsSection": "Current Metrics",
-    "summarySection": "Executive Summary",
-    "achieved": "Achieved",
-    "notAchieved": "Not achieved",
-    "demoDisclaimer": "Demo data - connect your accounts for real data"
+  "omnichannel": {
+    "title": "Omnichannel Performance",
+    "totalSpend": "Total Spend",
+    "combinedCPA": "Combined CPA",
+    "avgROAS": "Avg ROAS",
+    "spendByPlatform": "Spend by Platform",
+    "noData": "Connect at least one platform to see consolidated metrics.",
+    "demoData": "Demo data",
+    "metaAds": "Meta Ads",
+    "googleAds": "Google Ads",
+    "tiktokAds": "TikTok Ads",
+    "loading": "Loading metrics...",
+    "period": "Period"
   }
 }
 ```
@@ -201,27 +117,19 @@ EN:
 PT:
 ```json
 {
-  "projectExport": {
-    "title": "Gerar Relatorio",
-    "description": "Selecione o que incluir no relatorio do projeto.",
-    "includeGoals": "Status das Metas",
-    "includeMetrics": "Metricas das Plataformas",
-    "includeAISummary": "Resumo Executivo (IA)",
-    "generateSummary": "Gerar Resumo IA",
-    "generatingSummary": "Gerando resumo...",
-    "copyMarkdown": "Copiar Markdown",
-    "downloadTxt": "Baixar .txt",
-    "print": "Imprimir",
-    "copied": "Relatorio copiado para a area de transferencia",
-    "copyError": "Erro ao copiar o relatorio",
-    "downloaded": "Relatorio baixado",
-    "summaryError": "Erro ao gerar o resumo executivo",
-    "goalsSection": "Status das Metas",
-    "metricsSection": "Metricas Atuais",
-    "summarySection": "Resumo Executivo",
-    "achieved": "Cumprido",
-    "notAchieved": "Nao cumprido",
-    "demoDisclaimer": "Dados de demonstracao - conecte suas contas para dados reais"
+  "omnichannel": {
+    "title": "Desempenho Omnicanal",
+    "totalSpend": "Gasto Total",
+    "combinedCPA": "CPA Combinado",
+    "avgROAS": "ROAS Médio",
+    "spendByPlatform": "Investimento por Plataforma",
+    "noData": "Conecte pelo menos uma plataforma para ver métricas consolidadas.",
+    "demoData": "Dados de demonstração",
+    "metaAds": "Meta Ads",
+    "googleAds": "Google Ads",
+    "tiktokAds": "TikTok Ads",
+    "loading": "Carregando métricas...",
+    "period": "Período"
   }
 }
 ```
@@ -232,42 +140,27 @@ PT:
 
 | Archivo | Accion | Descripcion |
 |---------|--------|-------------|
-| `src/components/projects/ProjectExportDialog.tsx` | **Crear** | Modal de exportacion de informe |
-| `src/pages/ProjectDetail.tsx` | **Modificar** | Elevar useGoalMetrics, anadir boton y dialog |
-| `src/components/projects/ProjectHealthCard.tsx` | **Modificar** | Recibir metricsData como prop |
-| `supabase/functions/disruptivaa-agent/index.ts` | **Modificar** | Anadir accion executive-summary |
-| `src/i18n/locales/es/common.json` | **Modificar** | Nuevas claves projectExport |
-| `src/i18n/locales/en/common.json` | **Modificar** | Nuevas claves projectExport |
-| `src/i18n/locales/pt/common.json` | **Modificar** | Nuevas claves projectExport |
+| `src/components/OmnichannelPerformance.tsx` | **Crear** | Vista consolidada de 3 plataformas con KPIs y grafico de barras |
+| `src/components/Dashboard.tsx` | **Modificar** | Integrar OmnichannelPerformance cuando no hay chat activo |
+| `supabase/functions/disruptivaa-agent/index.ts` | **Modificar** | Enriquecer OMNICHANNEL_INSTRUCTIONS con logica de redistribucion |
+| `src/i18n/locales/es/common.json` | **Modificar** | Agregar claves omnichannel |
+| `src/i18n/locales/en/common.json` | **Modificar** | Agregar claves omnichannel |
+| `src/i18n/locales/pt/common.json` | **Modificar** | Agregar claves omnichannel |
 
 ---
 
-## Flujo del Usuario
+## Nota sobre TikTok OAuth
 
-```text
-1. Usuario abre ProjectDetail
-2. Hace clic en "Generar Informe" (boton en header)
-3. Se abre modal con checkboxes:
-   [x] Estado de Metas
-   [x] Metricas de Plataformas
-   [ ] Resumen Ejecutivo (IA)
-4. Si activa "Resumen Ejecutivo", hace clic en "Generar Resumen IA"
-5. Se llama al edge function con action: "executive-summary"
-6. El informe se renderiza en vista previa
-7. Usuario puede: Copiar Markdown | Descargar .txt | Imprimir
-```
+Se omite por ahora la creacion de `tiktok-oauth-exchange` y `TikTokCallback.tsx`. El edge function `fetch-tiktok-ads-metrics` ya existe y devuelve datos demo cuando no hay token real. Cuando el usuario tenga credenciales TikTok (App ID / Secret), se implementara el flujo OAuth completo siguiendo el patron de Meta/Google.
 
 ---
 
 ## Verificacion Post-Implementacion
 
-- [ ] El boton "Generar Informe" aparece en ProjectDetail
-- [ ] El modal muestra checkboxes funcionales
-- [ ] El informe incluye tabla de metas con semaforo cuando hay goals
-- [ ] El resumen IA se genera en el idioma correcto del usuario
-- [ ] "Copiar Markdown" funciona y el formato es legible en Slack/Notion
-- [ ] "Descargar .txt" genera archivo con nombre correcto
-- [ ] "Imprimir" abre dialogo del navegador
-- [ ] Todo el UI esta traducido en ES, EN y PT
-- [ ] Si no hay metas, se muestra mensaje informativo
+- [ ] El componente OmnichannelPerformance se muestra en la pantalla principal para usuarios autenticados
+- [ ] Los 3 KPIs (Gasto Total, CPA Combinado, ROAS) se calculan correctamente
+- [ ] El grafico de barras muestra la inversion por plataforma con colores correctos
+- [ ] El agente sugiere redistribucion de presupuesto cuando detecta diferencias >20% entre plataformas
+- [ ] Todas las etiquetas estan traducidas en ES, EN y PT
+- [ ] Los datos demo se muestran correctamente cuando no hay conexiones reales
 
