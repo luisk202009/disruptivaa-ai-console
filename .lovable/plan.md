@@ -1,135 +1,119 @@
 
 
-# Plan: TikTok Ads Demo + Dashboard Omnicanal + Inteligencia 360
+# Plan: Separacion de Dashboard (Widgets) y Agentes AI (Interaccion)
 
-## Alcance Ajustado
+## Resumen
 
-El usuario prefiere omitir la implementacion completa de OAuth para TikTok por ahora. Se enfocara en:
-- TikTok conectado en modo demo (ya existe `fetch-tiktok-ads-metrics` con datos demo)
-- Nuevo componente `OmnichannelPerformance` con vista consolidada de 3 plataformas
-- Inteligencia del agente mejorada para sugerencias de redistribucion de presupuesto
-- Traducciones completas ES/EN/PT
+Reorganizar la navegacion para que el Dashboard (`/`) sea una vista puramente analitica con widgets de rendimiento, y la pagina de Agentes AI (`/agents`) sea el centro de mando con la consola de chat completa.
 
 ---
 
-## Cambios a Implementar
+## Arquitectura Actual vs. Propuesta
 
-### 1. Crear `src/components/OmnichannelPerformance.tsx`
+```text
+ACTUAL:
+  / (Dashboard)  -> OmnichannelPerformance + Chat + Selector de Agentes
+  /agents        -> Catalogo de agentes (solo cards, redirige a / para chatear)
 
-Componente que muestra una vista consolidada de rendimiento de las 3 plataformas.
-
-**Funcionalidad:**
-- Llama a los 3 edge functions de metricas (`fetch-meta-metrics`, `fetch-google-ads-metrics`, `fetch-tiktok-ads-metrics`) para obtener Spend, Clicks, Impressions, CPC, CTR y Conversions
-- Muestra 3 KPIs consolidados en la parte superior:
-  - Gasto Total (suma de las 3 plataformas)
-  - CPA Combinado (gasto total / conversiones totales)
-  - ROAS Promedio (si hay datos de conversiones con valor)
-- Grafico de barras comparativo (usando Recharts, ya instalado) mostrando inversion por plataforma
-- Cada barra con el color de la plataforma (Meta: #1877F2, Google: #4285F4, TikTok: #EF7911)
-- Indicador de datos demo cuando no hay conexion real
-
-**Props:**
-```typescript
-interface OmnichannelPerformanceProps {
-  datePreset?: DatePreset;
-}
+PROPUESTO:
+  / (Dashboard)  -> OmnichannelPerformance + Widget Metas + Widget Actividad + Widget Conectividad
+  /agents        -> "Que quieres hacer hoy?" + Selector de Agentes + Consola de Chat completa
 ```
 
-**Datos a obtener por plataforma:**
-- spend (gasto)
-- clicks
-- impressions
-- cpc
-- conversions
+---
 
-El componente usara `supabase.auth.getSession()` para autenticar las llamadas a los edge functions.
+## Cambios Detallados
 
-### 2. Integrar en `src/pages/Index.tsx` o `src/components/Dashboard.tsx`
+### 1. Transformar `src/components/Dashboard.tsx` en Vista Analitica
 
-Colocar el componente `OmnichannelPerformance` encima del chat del Dashboard (cuando no hay chat activo), o como una seccion visible antes de seleccionar un agente.
+**Eliminar:**
+- Todo el estado y logica de chat (`isChatActive`, `activeChatId`, `selectedAgent`, `handleCommand`, etc.)
+- Componente `CommandConsole` y sus dos instancias
+- Selector de agentes (botones de agent cards)
+- Titulo "Que quieres hacer hoy?"
+- Event listeners de `newConversation`, `loadConversation`, `userLoggedOut`
 
-**Decision de ubicacion:** Agregar como seccion colapsable en la pantalla principal (Index) visible cuando el usuario esta autenticado y no tiene un chat activo. Esto le da una vista rapida del rendimiento antes de interactuar con los agentes.
+**Mantener:**
+- Header con avatar/sign-in
+- `OmnichannelPerformance` (ya existe)
+- `AuthModal`
+- Import de `DISRUPTIVAA_AGENTS` (se mantiene export para uso en Agents.tsx)
 
-En `Dashboard.tsx`, se mostrara el componente solo cuando:
-- El usuario esta autenticado
-- No hay un chat activo (`!isChatActive`)
-- Remplazara o acompanara la zona de seleccion de agentes
+**Agregar 3 nuevos widgets:**
 
-### 3. Actualizar Inteligencia del Agente para Redistribucion de Presupuesto
+a) **Widget Estado de Metas** - Componente inline que muestra un resumen de `project_goals` del primer proyecto del usuario (o un mensaje para crear uno). Usa `useProjects` + `useProjectGoals` para obtener datos. Muestra nombre del proyecto, cantidad de metas cumplidas vs total, con indicadores de color.
 
-**Archivo:** `supabase/functions/disruptivaa-agent/index.ts`
+b) **Widget Actividad Reciente** - Muestra las ultimas 3-5 recomendaciones del agente (ultimos mensajes de rol `assistant` de `agent_messages`). Cada item con titulo truncado, fecha relativa, y link para cargar la conversacion.
 
-Enriquecer las instrucciones omnicanal (`OMNICHANNEL_INSTRUCTIONS`) para incluir logica de redistribucion de presupuesto explicita:
+c) **Widget Conectividad** - Muestra el estado de las 3 plataformas (Meta, Google, TikTok) con indicadores verde/gris. Usa `useIntegrations` para verificar el estado. Boton "Gestionar" que navega a `/connections`.
 
-```
-- Si CPA de TikTok es >15% menor que Google Ads, sugerir mover 10-15% del presupuesto
-- Si ROAS de una plataforma es >30% superior, recomendar incrementar inversion alli
-- Si CTR de una plataforma es <50% del promedio, sugerir pausar o reevaluar creatividades
-- Incluir estimacion del impacto: "Moviendo $X de Google a TikTok podrias generar ~Y conversiones adicionales"
-```
+### 2. Transformar `src/pages/Agents.tsx` en Centro de Mando
 
-Estas instrucciones ya existen parcialmente en `OMNICHANNEL_INSTRUCTIONS` pero se enriquecerian con umbrales concretos y ejemplos de sugerencias con numeros.
+**Eliminar:**
+- El catalogo actual de agent cards con grid layout
+- La logica de redireccion a `/` con `selectedAgentId`
 
-### 4. Actualizar Traducciones
+**Reemplazar con:**
+- Toda la logica de chat que estaba en `Dashboard.tsx`:
+  - Estado: `selectedAgent`, `isChatActive`, `activeChatId`, `showAuthModal`
+  - Hooks: `useAgents`, `useMessages`, `useAuth`
+  - Funciones: `handleCommand`, `handleSelectAgent`, `handleClearAgent`, `handleConsoleFocus`
+  - Event listeners: `newConversation`, `loadConversation`, `userLoggedOut`
+- UI: Titulo "Que quieres hacer hoy?", CommandConsole, selector de agentes (mismo layout que tenia Dashboard)
+- Ya incluye `Sidebar` (no necesita cambios de layout)
 
-**Nuevas claves en los 3 idiomas para el componente omnicanal:**
+### 3. Actualizar Sidebar Event Listeners
 
-ES:
+**Archivo:** `src/components/Sidebar.tsx`
+
+- `handleNewConversation`: Cambiar `navigate("/")` a `navigate("/agents")`
+- `handleLoadConversation`: Cambiar `navigate("/")` a `navigate("/agents")`
+
+Esto asegura que al hacer clic en una conversacion reciente, el usuario llegue a la consola de chat en `/agents`.
+
+### 4. Actualizar Navegacion en Otros Componentes
+
+- `src/components/CommandConsole.tsx`: Importa `DISRUPTIVAA_AGENTS` de `Dashboard.tsx`. Esto seguira funcionando sin cambios porque el export se mantiene.
+- `src/App.tsx`: Sin cambios necesarios en rutas.
+
+### 5. Crear Widgets Nuevos para Dashboard
+
+**a) `src/components/dashboard/GoalsSummaryWidget.tsx`**
+- Consulta `useProjects` para obtener el primer proyecto
+- Consulta `useProjectGoals` para obtener metas
+- Muestra: nombre del proyecto, X/Y metas cumplidas, barra de progreso
+- Si no hay proyectos: "Crea un proyecto para establecer metas"
+- Link "Ver detalles" navega a `/project/:id`
+
+**b) `src/components/dashboard/RecentActivityWidget.tsx`**
+- Consulta directa a `agent_messages` (ultimos 5, rol=assistant)
+- Muestra: texto truncado (80 chars), fecha relativa con `date-fns`
+- Click en item navega a `/agents` y dispara `loadConversation`
+
+**c) `src/components/dashboard/ConnectivityWidget.tsx`**
+- Usa `useIntegrations` para estado de Meta, Google, TikTok
+- 3 filas con icono de plataforma, nombre, badge verde/gris
+- Boton "Gestionar conexiones" navega a `/connections`
+
+### 6. Actualizar Traducciones (ES, EN, PT)
+
+Nuevas claves:
+
 ```json
 {
-  "omnichannel": {
-    "title": "Rendimiento Omnicanal",
-    "totalSpend": "Gasto Total",
-    "combinedCPA": "CPA Combinado",
-    "avgROAS": "ROAS Promedio",
-    "spendByPlatform": "Inversión por Plataforma",
-    "noData": "Conecta al menos una plataforma para ver métricas consolidadas.",
-    "demoData": "Datos de demostración",
-    "metaAds": "Meta Ads",
-    "googleAds": "Google Ads",
-    "tiktokAds": "TikTok Ads",
-    "loading": "Cargando métricas...",
-    "period": "Período"
-  }
-}
-```
-
-EN:
-```json
-{
-  "omnichannel": {
-    "title": "Omnichannel Performance",
-    "totalSpend": "Total Spend",
-    "combinedCPA": "Combined CPA",
-    "avgROAS": "Avg ROAS",
-    "spendByPlatform": "Spend by Platform",
-    "noData": "Connect at least one platform to see consolidated metrics.",
-    "demoData": "Demo data",
-    "metaAds": "Meta Ads",
-    "googleAds": "Google Ads",
-    "tiktokAds": "TikTok Ads",
-    "loading": "Loading metrics...",
-    "period": "Period"
-  }
-}
-```
-
-PT:
-```json
-{
-  "omnichannel": {
-    "title": "Desempenho Omnicanal",
-    "totalSpend": "Gasto Total",
-    "combinedCPA": "CPA Combinado",
-    "avgROAS": "ROAS Médio",
-    "spendByPlatform": "Investimento por Plataforma",
-    "noData": "Conecte pelo menos uma plataforma para ver métricas consolidadas.",
-    "demoData": "Dados de demonstração",
-    "metaAds": "Meta Ads",
-    "googleAds": "Google Ads",
-    "tiktokAds": "TikTok Ads",
-    "loading": "Carregando métricas...",
-    "period": "Período"
+  "dashboardWidgets": {
+    "goalsTitle": "Estado de Metas",
+    "goalsEmpty": "Crea un proyecto para establecer metas",
+    "goalsProgress": "{{achieved}} de {{total}} metas cumplidas",
+    "viewDetails": "Ver detalles",
+    "activityTitle": "Actividad Reciente",
+    "activityEmpty": "Aun no hay recomendaciones de los agentes",
+    "connectivityTitle": "Conectividad",
+    "connected": "Conectado",
+    "disconnected": "No conectado",
+    "manageConnections": "Gestionar conexiones",
+    "welcomeTitle": "Panel de Control",
+    "welcomeSubtitle": "Resumen de tu rendimiento de marketing"
   }
 }
 ```
@@ -140,27 +124,45 @@ PT:
 
 | Archivo | Accion | Descripcion |
 |---------|--------|-------------|
-| `src/components/OmnichannelPerformance.tsx` | **Crear** | Vista consolidada de 3 plataformas con KPIs y grafico de barras |
-| `src/components/Dashboard.tsx` | **Modificar** | Integrar OmnichannelPerformance cuando no hay chat activo |
-| `supabase/functions/disruptivaa-agent/index.ts` | **Modificar** | Enriquecer OMNICHANNEL_INSTRUCTIONS con logica de redistribucion |
-| `src/i18n/locales/es/common.json` | **Modificar** | Agregar claves omnichannel |
-| `src/i18n/locales/en/common.json` | **Modificar** | Agregar claves omnichannel |
-| `src/i18n/locales/pt/common.json` | **Modificar** | Agregar claves omnichannel |
+| `src/components/Dashboard.tsx` | **Reescribir** | Eliminar chat, agregar 3 widgets analiticos |
+| `src/pages/Agents.tsx` | **Reescribir** | Mover logica de chat completa aqui |
+| `src/components/Sidebar.tsx` | **Modificar** | Cambiar navegacion de conversaciones a `/agents` |
+| `src/components/dashboard/GoalsSummaryWidget.tsx` | **Crear** | Widget de resumen de metas |
+| `src/components/dashboard/RecentActivityWidget.tsx` | **Crear** | Widget de actividad reciente |
+| `src/components/dashboard/ConnectivityWidget.tsx` | **Crear** | Widget de estado de APIs |
+| `src/i18n/locales/es/common.json` | **Modificar** | Agregar claves dashboardWidgets |
+| `src/i18n/locales/en/common.json` | **Modificar** | Agregar claves dashboardWidgets |
+| `src/i18n/locales/pt/common.json` | **Modificar** | Agregar claves dashboardWidgets |
 
 ---
 
-## Nota sobre TikTok OAuth
+## Flujo del Usuario Post-Cambio
 
-Se omite por ahora la creacion de `tiktok-oauth-exchange` y `TikTokCallback.tsx`. El edge function `fetch-tiktok-ads-metrics` ya existe y devuelve datos demo cuando no hay token real. Cuando el usuario tenga credenciales TikTok (App ID / Secret), se implementara el flujo OAuth completo siguiendo el patron de Meta/Google.
+```text
+1. Usuario entra a / (Dashboard)
+   -> Ve OmnichannelPerformance (KPIs consolidados)
+   -> Ve Estado de Metas (proyecto principal)
+   -> Ve Actividad Reciente (ultimas recomendaciones IA)
+   -> Ve Conectividad (Meta, Google, TikTok)
+
+2. Usuario hace clic en "Agentes AI" en sidebar
+   -> Llega a /agents con "Que quieres hacer hoy?"
+   -> Selecciona agente o escribe directamente
+   -> Chat se activa en pantalla completa
+
+3. Usuario hace clic en conversacion reciente en sidebar
+   -> Navega a /agents y carga la conversacion
+```
 
 ---
 
 ## Verificacion Post-Implementacion
 
-- [ ] El componente OmnichannelPerformance se muestra en la pantalla principal para usuarios autenticados
-- [ ] Los 3 KPIs (Gasto Total, CPA Combinado, ROAS) se calculan correctamente
-- [ ] El grafico de barras muestra la inversion por plataforma con colores correctos
-- [ ] El agente sugiere redistribucion de presupuesto cuando detecta diferencias >20% entre plataformas
-- [ ] Todas las etiquetas estan traducidas en ES, EN y PT
-- [ ] Los datos demo se muestran correctamente cuando no hay conexiones reales
+- [ ] Dashboard (/) muestra solo widgets analiticos, sin chat
+- [ ] Agentes AI (/agents) tiene la consola de chat completa funcionando
+- [ ] Seleccionar un agente en /agents inicia el chat correctamente
+- [ ] Click en conversacion reciente en sidebar navega a /agents y carga el chat
+- [ ] Los 3 widgets nuevos muestran datos correctos (o estados vacios apropiados)
+- [ ] Todo el UI esta traducido en ES, EN y PT
+- [ ] El componente OmnichannelPerformance sigue visible en el Dashboard
 
