@@ -174,5 +174,19 @@
     "agentDetected": "{{name}} detected",
     "consulting": "Consulting {{name}}",
     "isConsulting": "{{name}} is consulting..."
+  },
+  "omnichannel": {
+    "title": "Omnichannel Performance",
+    "totalSpend": "Total Spend",
+    "combinedCPA": "Combined CPA",
+    "avgROAS": "Avg ROAS",
+    "spendByPlatform": "Spend by Platform",
+    "noData": "Connect at least one platform to see consolidated metrics.",
+    "demoData": "Demo data",
+    "metaAds": "Meta Ads",
+    "googleAds": "Google Ads",
+    "tiktokAds": "TikTok Ads",
+    "loading": "Loading metrics...",
+    "period": "Period"
   }
 }

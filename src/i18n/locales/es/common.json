@@ -174,5 +174,19 @@
     "agentDetected": "{{name}} detectado",
     "consulting": "Consultando a {{name}}",
     "isConsulting": "{{name}} está consultando..."
+  },
+  "omnichannel": {
+    "title": "Rendimiento Omnicanal",
+    "totalSpend": "Gasto Total",
+    "combinedCPA": "CPA Combinado",
+    "avgROAS": "ROAS Promedio",
+    "spendByPlatform": "Inversión por Plataforma",
+    "noData": "Conecta al menos una plataforma para ver métricas consolidadas.",
+    "demoData": "Datos de demostración",
+    "metaAds": "Meta Ads",
+    "googleAds": "Google Ads",
+    "tiktokAds": "TikTok Ads",
+    "loading": "Cargando métricas...",
+    "period": "Período"
   }
 }

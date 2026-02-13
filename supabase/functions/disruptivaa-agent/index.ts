@@ -467,6 +467,19 @@ Si el usuario tiene más de una plataforma conectada (Meta, Google, TikTok):
 - Indica dónde está el mejor ROAS
 - Sugiere redistribución de presupuesto si hay diferencias >20%
 
+3. **🔄 Redistribución Inteligente de Presupuesto** (OBLIGATORIO cuando hay datos de 2+ plataformas):
+
+UMBRALES DE ACCIÓN:
+- Si CPA de una plataforma es >15% menor que otra → Sugerir mover 10-15% del presupuesto hacia ella
+- Si ROAS de una plataforma es >30% superior → Recomendar incrementar inversión allí
+- Si CTR de una plataforma es <50% del promedio → Sugerir pausar o reevaluar creatividades en esa plataforma
+- Si CPC de una plataforma es >40% más alto que las demás → Sugerir reducir inversión o ajustar pujas
+
+FORMATO DE SUGERENCIA (usa números concretos):
+"📊 He detectado que el CPA en [plataforma A] ($X) es un Y% menor que en [plataforma B] ($Z). 
+Sugiero mover un 10-15% del presupuesto de [B] a [A].
+Impacto estimado: Moviendo $W podrías generar ~N conversiones adicionales a un CPA de $X."
+
 IMPORTANTE: Si solo hay UNA plataforma conectada, NO menciones las otras.
 `,
   en: `
@@ -483,6 +496,19 @@ If the user has more than one connected platform (Meta, Google, TikTok):
 - Indicate where the best ROAS is
 - Suggest budget redistribution if differences >20%
 
+3. **🔄 Smart Budget Redistribution** (MANDATORY when data from 2+ platforms):
+
+ACTION THRESHOLDS:
+- If CPA on one platform is >15% lower than another → Suggest moving 10-15% of budget toward it
+- If ROAS on one platform is >30% higher → Recommend increasing investment there
+- If CTR on one platform is <50% of average → Suggest pausing or reevaluating creatives on that platform
+- If CPC on one platform is >40% higher than others → Suggest reducing investment or adjusting bids
+
+SUGGESTION FORMAT (use concrete numbers):
+"📊 I've detected that CPA on [platform A] ($X) is Y% lower than on [platform B] ($Z).
+I suggest moving 10-15% of budget from [B] to [A].
+Estimated impact: Moving $W could generate ~N additional conversions at a CPA of $X."
+
 IMPORTANT: If only ONE platform is connected, DO NOT mention the others.
 `,
   pt: `
@@ -498,6 +524,19 @@ Se o usuário tem mais de uma plataforma conectada (Meta, Google, TikTok):
 - Aponte qual plataforma tem o melhor CPC/CPA
 - Indique onde está o melhor ROAS
 - Sugira redistribuição de orçamento se houver diferenças >20%
+
+3. **🔄 Redistribuição Inteligente de Orçamento** (OBRIGATÓRIO quando há dados de 2+ plataformas):
+
+LIMIARES DE AÇÃO:
+- Se CPA de uma plataforma é >15% menor que outra → Sugerir mover 10-15% do orçamento para ela
+- Se ROAS de uma plataforma é >30% superior → Recomendar aumentar investimento ali
+- Se CTR de uma plataforma é <50% da média → Sugerir pausar ou reavaliar criativos nessa plataforma
+- Se CPC de uma plataforma é >40% mais alto que as demais → Sugerir reduzir investimento ou ajustar lances
+
+FORMATO DE SUGESTÃO (use números concretos):
+"📊 Detectei que o CPA na [plataforma A] ($X) é Y% menor que na [plataforma B] ($Z).
+Sugiro mover 10-15% do orçamento de [B] para [A].
+Impacto estimado: Movendo $W você poderia gerar ~N conversões adicionais a um CPA de $X."
 
 IMPORTANTE: Se apenas UMA plataforma está conectada, NÃO mencione as outras.
 `
