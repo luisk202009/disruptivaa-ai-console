@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { BarChart3, Users, Loader2, LogOut } from "lucide-react";
 import CommandConsole from "./CommandConsole";
 import AuthModal from "./AuthModal";
+import OmnichannelPerformance from "./OmnichannelPerformance";
 import { toast } from "@/hooks/use-toast";
 import { useAgents } from "@/hooks/useAgents";
 import { useAuth } from "@/contexts/AuthContext";
@@ -265,6 +266,9 @@ const Dashboard = () => {
           {/* Welcome section - Hidden when chat is active */}
           {!isChatActive && (
             <div className="animate-fade-in">
+              {/* Omnichannel Performance - Only for authenticated users */}
+              {user && <OmnichannelPerformance />}
+
               {/* Title - No logo */}
               <div className="text-center pt-12 pb-6">
                 <h2 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
