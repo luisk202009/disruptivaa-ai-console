@@ -44,7 +44,9 @@
     "noActivity": "Sem atividade",
     "loadingStats": "Carregando estatísticas...",
     "loginToView": "Faça login para ver seu perfil",
-    "loginToChange": "Faça login para alterar sua senha"
+    "loginToChange": "Faça login para alterar sua senha",
+    "resetSuccess": "Enviamos um e-mail para alterar sua senha",
+    "resetError": "Erro ao enviar o e-mail de redefinição"
   },
   "auth": {
     "signIn": "Entrar",
@@ -56,7 +58,30 @@
   "agents": {
     "title": "Agentes IA",
     "subtitle": "Nossos Agentes Especializados",
-    "selectPrompt": "Selecione um agente para iniciar uma conversa"
+    "selectPrompt": "Selecione um agente para iniciar uma conversa",
+    "welcomePrompt": "O que você quer fazer hoje?",
+    "loginToChat": "Faça login para conversar",
+    "loginPrompt": "🔒 Faça login para interagir com nossos agentes IA",
+    "analyzing": "Analisando...",
+    "writeOrAttach": "Escreva ou anexe arquivos para análise...",
+    "selectToStart": "Selecione um agente para começar...",
+    "loadingMessages": "Carregando mensagens...",
+    "connectAccount": "Conectar conta Meta/Google",
+    "fileAttached": "Arquivo anexado",
+    "fileReadyForAnalysis": "{{names}} pronto para análise",
+    "sessionExpired": "Sessão expirada",
+    "sessionExpiredDesc": "Por favor, faça login novamente.",
+    "rateLimitTitle": "Limite de taxa excedido",
+    "rateLimitDesc": "Por favor, aguarde um momento e tente novamente.",
+    "creditsTitle": "Créditos esgotados",
+    "creditsDesc": "Por favor, adicione créditos ao seu workspace.",
+    "requestError": "❌ Houve um erro ao processar sua solicitação. Por favor, tente novamente ou verifique sua conexão.",
+    "requestErrorShort": "Houve um erro ao processar sua solicitação. Por favor, tente novamente.",
+    "suggestions": {
+      "adsOptimizer": ["Otimizar campanha Meta", "Analisar desempenho Ads", "Sugerir orçamento"],
+      "aiCrmSales": ["Qualificar novos leads", "Criar sequência de e-mails", "Analisar pipeline"],
+      "default": ["Como você pode me ajudar?"]
+    }
   },
   "status": {
     "idle": "Inativo",
@@ -72,7 +97,48 @@
     "delete": "Excluir",
     "edit": "Editar",
     "create": "Criar",
-    "search": "Buscar"
+    "search": "Buscar",
+    "configure": "Configurar",
+    "retry": "Tentar novamente",
+    "refresh": "Atualizar",
+    "next": "Próximo",
+    "back": "Voltar",
+    "saving": "Salvando...",
+    "saveChanges": "Salvar alterações",
+    "deleting": "Excluindo...",
+    "andMore": "+{{count}} mais",
+    "addGoal": "Adicionar Meta"
+  },
+  "projects": {
+    "moveToGeneral": "Mover para \"Geral\"",
+    "moveDescription": "As conversas serão mantidas sem projeto atribuído",
+    "deleteProject": "Excluir Projeto",
+    "deleteAll": "Excluir tudo",
+    "deleteAllDesc": "Todas as conversas serão permanentemente excluídas",
+    "deleteConfirmTitle": "Excluir Projeto",
+    "deleteConfirmDesc": "Tem certeza de que deseja excluir o projeto",
+    "deleteConversationsQuestion": "O que deseja fazer com as conversas deste projeto?",
+    "editProject": "Editar Projeto",
+    "projectName": "Nome do projeto",
+    "allMetricsDefined": "Você definiu todas as métricas disponíveis.",
+    "noGoalsDefined": "Nenhuma meta definida para este projeto.",
+    "goalSaved": "Meta salva",
+    "goalSavedDesc": "{{metric}} configurado com sucesso.",
+    "goalDeleted": "Meta excluída",
+    "goalDeletedDesc": "{{metric}} foi excluída.",
+    "goalError": "Não foi possível salvar a meta.",
+    "goalDeleteError": "Não foi possível excluir a meta.",
+    "projectGoals": "Metas do Projeto",
+    "projectGoalsDesc": "Defina objetivos para <strong>{{name}}</strong>. O agente IA os usará para gerar relatórios comparativos.",
+    "goalMetric": "Métrica",
+    "goalValue": "Valor Alvo",
+    "goalPeriod": "Período",
+    "selectMetric": "Selecione uma métrica"
+  },
+  "conversations": {
+    "moveToProject": "Mover para projeto",
+    "deleteConversation": "Excluir Conversa",
+    "deleteConversationDesc": "Tem certeza de que deseja excluir esta conversa? Esta ação não pode ser desfeita."
   },
   "projectDetail": {
     "title": "Detalhe do Projeto",
@@ -136,10 +202,6 @@
     "errorAuth": "Você não está autenticado. Faça login e tente novamente.",
     "errorCancelled": "O usuário cancelou a autorização",
     "errorExchange": "Erro ao processar a autorização"
-  },
-  "settings": {
-    "resetSuccess": "Enviamos um e-mail para alterar sua senha",
-    "resetError": "Erro ao enviar o e-mail de redefinição"
   },
   "exportReport": {
     "copied": "Relatório copiado para a área de transferência",
@@ -205,5 +267,59 @@
     "manageConnections": "Gerenciar conexões",
     "welcomeTitle": "Painel de Controle",
     "welcomeSubtitle": "Resumo do seu desempenho de marketing"
+  },
+  "widget": {
+    "configRequired": "Configuração necessária",
+    "selectAccount": "Selecione uma conta de anúncios nas configurações para ver métricas reais",
+    "connectionRequired": "Conexão necessária",
+    "connectMeta": "Conecte sua conta de Meta Ads para ver métricas reais",
+    "loadError": "Erro ao carregar dados",
+    "noData": "Sem dados disponíveis",
+    "noMetricsData": "Sem dados de métricas para o período selecionado",
+    "goalNotConfigured": "Meta não configurada",
+    "selectGoal": "Selecione uma meta do projeto nas configurações",
+    "accountLabel": "Conta {{id}}",
+    "addWidget": "Adicionar Widget",
+    "selectMetricStep": "Selecione uma métrica ou tipo de gráfico.",
+    "selectTypeStep": "Selecione como visualizar a métrica.",
+    "selectAccountStep": "Selecione a conta de anúncios (opcional).",
+    "selectAccountLabel": "Selecione uma conta de anúncios",
+    "noAccountsConnected": "Nenhuma conta de Meta Ads conectada.",
+    "addWithoutAccount": "Você pode adicionar o widget sem conta e configurá-lo depois.",
+    "metricsTab": "Métricas",
+    "chartsTab": "Gráficos",
+    "visualizationType": "Tipo de visualização",
+    "emptyCanvas": "Adicione widgets para começar a visualizar suas métricas. Use o botão \"Adicionar Widget\" na parte superior.",
+    "emptyCanvasTitle": "Painel vazio",
+    "loadingAccounts": "Carregando contas...",
+    "configureWidget": "Configurar Widget",
+    "configureWidgetDesc": "Personalize a visualização e os dados do seu widget.",
+    "platform": "Plataforma",
+    "adAccount": "Conta de anúncios",
+    "noAccountsForPlatform": "Nenhuma conta conectada. Conecte {{platform}} primeiro.",
+    "selectAccountData": "Selecione a conta da qual obter os dados",
+    "title": "Título",
+    "titlePlaceholder": "Título do widget",
+    "type": "Tipo de visualização",
+    "metric": "Métrica",
+    "timePeriod": "Período de tempo",
+    "showComparison": "Mostrar comparação",
+    "compareWithPrevious": "Comparar com o período anterior",
+    "goalOptional": "Meta (opcional)",
+    "goalPlaceholder": "Ex: 1000",
+    "goalProgress": "Defina um objetivo para mostrar progresso",
+    "select": {
+      "platform": "Selecionar plataforma",
+      "account": "Selecionar conta",
+      "type": "Selecionar tipo",
+      "metric": "Selecionar métrica",
+      "period": "Selecionar período"
+    },
+    "editPanel": "Editar painel",
+    "editPanelDesc": "Modifique o nome e a descrição do seu painel.",
+    "panelName": "Nome",
+    "panelNamePlaceholder": "Meu painel de métricas",
+    "panelDescLabel": "Descrição (opcional)",
+    "panelDescPlaceholder": "Painel para monitorar o desempenho de campanhas..."
   }
 }

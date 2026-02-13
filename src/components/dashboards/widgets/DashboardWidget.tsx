@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { MoreVertical, GripVertical, Pencil, Trash2, RefreshCw, AlertCircle, Settings, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +32,7 @@ export const DashboardWidget = ({
   onEdit,
   onDelete,
 }: DashboardWidgetProps) => {
+  const { t } = useTranslation();
   const [data, setData] = useState<MetricData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,6 @@ export const DashboardWidget = ({
   const { fetchMetric } = useMetaMetrics();
 
   const loadData = async () => {
-    // Don't load if no account configured
     if (!widget.metric_config.account_id) {
       setLoading(false);
       setError("no_account");
@@ -60,10 +61,8 @@ export const DashboardWidget = ({
       setError(result.error);
       setData(null);
     } else if (result.data) {
-      // Check if this is demo data
       if ((result.data as any).is_demo) {
         setIsDemo(true);
-        // Don't show demo data - treat as no data
         setData(null);
         setError("no_integration");
       } else {
@@ -79,11 +78,9 @@ export const DashboardWidget = ({
     loadData();
   }, [widget.metric_config, globalDatePreset]);
 
-  // Check if account is configured
   const hasAccountConfigured = !!widget.metric_config.account_id;
 
   const renderContent = () => {
-    // Show empty state if no account is configured
     if (!hasAccountConfigured || error === "no_account") {
       return (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
@@ -91,20 +88,19 @@ export const DashboardWidget = ({
             <AlertTriangle size={24} className="text-amber-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium">⚠️ Configuración requerida</p>
+            <p className="text-sm font-medium">⚠️ {t("widget.configRequired")}</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-              Selecciona una cuenta de anuncios en la configuración para ver métricas reales
+              {t("widget.selectAccount")}
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
             <Settings size={14} />
-            Configurar
+            {t("common.configure")}
           </Button>
         </div>
       );
     }
 
-    // Show empty state if no Meta integration
     if (error === "no_integration" || isDemo) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
@@ -112,9 +108,9 @@ export const DashboardWidget = ({
             <AlertTriangle size={24} className="text-amber-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium">⚠️ Conexión requerida</p>
+            <p className="text-sm font-medium">⚠️ {t("widget.connectionRequired")}</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-              Conecta tu cuenta de Meta Ads para ver métricas reales
+              {t("widget.connectMeta")}
             </p>
           </div>
         </div>
@@ -133,10 +129,10 @@ export const DashboardWidget = ({
       return (
         <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2 p-4">
           <AlertCircle size={24} className="text-destructive" />
-          <p className="text-sm text-center">Error al cargar datos</p>
+          <p className="text-sm text-center">{t("widget.loadError")}</p>
           <Button variant="ghost" size="sm" onClick={loadData} className="gap-2">
             <RefreshCw size={14} />
-            Reintentar
+            {t("common.retry")}
           </Button>
         </div>
       );
@@ -146,9 +142,9 @@ export const DashboardWidget = ({
       return (
         <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-2 p-4">
           <AlertTriangle size={24} className="text-amber-500" />
-          <p className="text-sm text-center">Sin datos disponibles</p>
+          <p className="text-sm text-center">{t("widget.noData")}</p>
           <p className="text-xs text-center max-w-[180px]">
-            No hay datos de métricas para el período seleccionado
+            {t("widget.noMetricsData")}
           </p>
         </div>
       );
@@ -168,7 +164,6 @@ export const DashboardWidget = ({
       case "area":
         return <AreaChartWidget {...props} />;
       case "goal_tracker":
-        // Goal tracker requires a goal from metric_config
         const goal = widget.metric_config.goal_data as ProjectGoal | undefined;
         if (!goal) {
           return (
@@ -177,14 +172,14 @@ export const DashboardWidget = ({
                 <AlertTriangle size={24} className="text-amber-500" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium">⚠️ Meta no configurada</p>
+                <p className="text-sm font-medium">⚠️ {t("widget.goalNotConfigured")}</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
-                  Selecciona una meta del proyecto en la configuración
+                  {t("widget.selectGoal")}
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
                 <Settings size={14} />
-                Configurar
+                {t("common.configure")}
               </Button>
             </div>
           );
@@ -195,9 +190,8 @@ export const DashboardWidget = ({
     }
   };
 
-  // Get display account name
   const accountName = widget.metric_config.account_name || 
-    (widget.metric_config.account_id ? `Cuenta ${widget.metric_config.account_id}` : null);
+    (widget.metric_config.account_id ? t("widget.accountLabel", { id: widget.metric_config.account_id }) : null);
 
   return (
     <div className={cn(
@@ -231,15 +225,15 @@ export const DashboardWidget = ({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={loadData}>
               <RefreshCw size={14} className="mr-2" />
-              Actualizar
+              {t("common.refresh")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onEdit}>
               <Pencil size={14} className="mr-2" />
-              Editar
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
               <Trash2 size={14} className="mr-2" />
-              Eliminar
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

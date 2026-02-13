@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Widget, WidgetType, MetricType, DatePreset, DataSource } from "@/hooks/useWidgets";
@@ -42,6 +39,7 @@ const PLATFORM_LABELS: Record<DataSource, string> = {
 };
 
 export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoading: initialLoading, onUpdate, onClose }: WidgetSettingsProps) => {
+  const { t } = useTranslation();
   const { getAccountDetailsByPlatform } = useIntegrations();
   
   const [title, setTitle] = useState(widget.title);
@@ -54,26 +52,17 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
   const [accountId, setAccountId] = useState<string>(widget.metric_config.account_id || "");
   const [loading, setLoading] = useState(false);
   
-  // Platform-specific accounts
   const [accounts, setAccounts] = useState<MetaAccountDetail[]>(initialAccounts);
   const [accountsLoading, setAccountsLoading] = useState(initialLoading || false);
 
-  // Load accounts when platform changes
   useEffect(() => {
     const loadAccountsForPlatform = async () => {
-      if (platform === 'manual') {
-        setAccounts([]);
-        return;
-      }
-      
+      if (platform === 'manual') { setAccounts([]); return; }
       setAccountsLoading(true);
       try {
         const platformAccounts = await getAccountDetailsByPlatform(platform as 'meta_ads' | 'google_ads' | 'tiktok_ads');
         setAccounts(platformAccounts);
-        // Reset account selection if switching platforms
-        if (platform !== widget.data_source) {
-          setAccountId("");
-        }
+        if (platform !== widget.data_source) setAccountId("");
       } catch (error) {
         console.error("Error loading accounts:", error);
         setAccounts([]);
@@ -81,11 +70,9 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
         setAccountsLoading(false);
       }
     };
-    
     loadAccountsForPlatform();
   }, [platform, getAccountDetailsByPlatform]);
 
-  // Get account name for the selected account
   const getAccountName = (id: string): string => {
     const account = accounts.find((a) => a.id === id);
     return account?.name || "";
@@ -95,16 +82,10 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
     setLoading(true);
     try {
       const selectedAccountName = accountId ? getAccountName(accountId) : undefined;
-      
       await onUpdate({
-        title,
-        type,
-        data_source: platform,
+        title, type, data_source: platform,
         metric_config: {
-          ...widget.metric_config,
-          metric,
-          date_preset: datePreset,
-          comparison,
+          ...widget.metric_config, metric, date_preset: datePreset, comparison,
           goal: goal ? parseFloat(goal) : undefined,
           account_id: accountId || undefined,
           account_name: selectedAccountName,
@@ -119,31 +100,20 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
 
   return (
     <div className="h-full max-h-[85vh] flex flex-col">
-      {/* Header - Fixed */}
       <SheetHeader className="pb-4 flex-shrink-0">
-        <SheetTitle>Configurar Widget</SheetTitle>
-        <SheetDescription>
-          Personaliza la visualización y los datos de tu widget.
-        </SheetDescription>
+        <SheetTitle>{t("widget.configureWidget")}</SheetTitle>
+        <SheetDescription>{t("widget.configureWidgetDesc")}</SheetDescription>
       </SheetHeader>
 
-      {/* Content - Scrollable */}
       <div className="flex-1 min-h-0 overflow-y-auto pb-6 space-y-6">
         {/* Platform Selector */}
         <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            <Globe size={14} />
-            Plataforma
-          </Label>
+          <Label className="flex items-center gap-2"><Globe size={14} />{t("widget.platform")}</Label>
           <Select value={platform} onValueChange={(v) => setPlatform(v as DataSource)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar plataforma" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("widget.select.platform")} /></SelectTrigger>
             <SelectContent>
               {Object.entries(PLATFORM_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -152,62 +122,42 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
         {/* Account Selector */}
         {platform !== 'manual' && (
           <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Building2 size={14} />
-              Cuenta de anuncios
-            </Label>
+            <Label className="flex items-center gap-2"><Building2 size={14} />{t("widget.adAccount")}</Label>
             {hasNoAccounts ? (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                 <AlertCircle size={16} />
-                <span>No hay cuentas conectadas. Conecta {PLATFORM_LABELS[platform]} primero.</span>
+                <span>{t("widget.noAccountsForPlatform", { platform: PLATFORM_LABELS[platform] })}</span>
               </div>
             ) : (
-              <Select 
-                value={accountId} 
-                onValueChange={setAccountId}
-                disabled={accountsLoading}
-              >
+              <Select value={accountId} onValueChange={setAccountId} disabled={accountsLoading}>
                 <SelectTrigger>
-                  <SelectValue placeholder={accountsLoading ? "Cargando cuentas..." : "Seleccionar cuenta"} />
+                  <SelectValue placeholder={accountsLoading ? t("widget.loadingAccounts") : t("widget.select.account")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px]">
                   {accounts.map((account) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.name}
-                    </SelectItem>
+                    <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             )}
-            <p className="text-xs text-muted-foreground">
-              Selecciona la cuenta de la que obtener los datos
-            </p>
+            <p className="text-xs text-muted-foreground">{t("widget.selectAccountData")}</p>
           </div>
         )}
 
         {/* Title */}
         <div className="space-y-2">
-          <Label htmlFor="widget-title">Título</Label>
-          <Input
-            id="widget-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título del widget"
-          />
+          <Label htmlFor="widget-title">{t("widget.title")}</Label>
+          <Input id="widget-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("widget.titlePlaceholder")} />
         </div>
 
         {/* Widget Type */}
         <div className="space-y-2">
-          <Label>Tipo de visualización</Label>
+          <Label>{t("widget.type")}</Label>
           <Select value={type} onValueChange={(v) => setType(v as WidgetType)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar tipo" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("widget.select.type")} /></SelectTrigger>
             <SelectContent>
               {Object.entries(WIDGET_TYPE_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -215,16 +165,12 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
 
         {/* Metric */}
         <div className="space-y-2">
-          <Label>Métrica</Label>
+          <Label>{t("widget.metric")}</Label>
           <Select value={metric} onValueChange={(v) => setMetric(v as MetricType)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar métrica" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("widget.select.metric")} /></SelectTrigger>
             <SelectContent>
               {Object.entries(METRIC_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -232,16 +178,12 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
 
         {/* Date Preset */}
         <div className="space-y-2">
-          <Label>Período de tiempo</Label>
+          <Label>{t("widget.timePeriod")}</Label>
           <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Seleccionar período" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder={t("widget.select.period")} /></SelectTrigger>
             <SelectContent>
               {Object.entries(DATE_PRESET_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
+                <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -250,10 +192,8 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
         {/* Comparison Toggle */}
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>Mostrar comparación</Label>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Comparar con el período anterior
-            </p>
+            <Label>{t("widget.showComparison")}</Label>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t("widget.compareWithPrevious")}</p>
           </div>
           <Switch checked={comparison} onCheckedChange={setComparison} />
         </div>
@@ -261,17 +201,9 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
         {/* Goal (for KPI widgets) */}
         {type === "kpi" && (
           <div className="space-y-2">
-            <Label htmlFor="widget-goal">Meta (opcional)</Label>
-            <Input
-              id="widget-goal"
-              type="number"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              placeholder="Ej: 1000"
-            />
-            <p className="text-xs text-muted-foreground">
-              Establece un objetivo para mostrar progreso
-            </p>
+            <Label htmlFor="widget-goal">{t("widget.goalOptional")}</Label>
+            <Input id="widget-goal" type="number" value={goal} onChange={(e) => setGoal(e.target.value)} placeholder={t("widget.goalPlaceholder")} />
+            <p className="text-xs text-muted-foreground">{t("widget.goalProgress")}</p>
           </div>
         )}
       </div>
@@ -279,11 +211,9 @@ export const WidgetSettings = ({ widget, accounts: initialAccounts, accountsLoad
       {/* Footer - Sticky */}
       <div className="pt-4 border-t flex-shrink-0 bg-background">
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>
-            Cancelar
-          </Button>
+          <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>{t("common.cancel")}</Button>
           <Button className="flex-1" onClick={handleSave} disabled={loading}>
-            {loading ? "Guardando..." : "Guardar cambios"}
+            {loading ? t("common.saving") : t("common.saveChanges")}
           </Button>
         </div>
       </div>

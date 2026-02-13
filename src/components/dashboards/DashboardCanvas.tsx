@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { 
   GridLayout, 
   useContainerWidth,
@@ -29,6 +30,7 @@ export const DashboardCanvas = ({
   onEditWidget,
   onDeleteWidget,
 }: DashboardCanvasProps) => {
+  const { t } = useTranslation();
   const { width, containerRef, mounted } = useContainerWidth({
     initialWidth: 1200,
   });
@@ -80,10 +82,10 @@ export const DashboardCanvas = ({
           <LayoutGrid size={32} className="text-muted-foreground" />
         </div>
         <h3 className="text-xl font-semibold text-foreground mb-2">
-          Panel vacío
+          {t("widget.emptyCanvasTitle")}
         </h3>
         <p className="text-muted-foreground text-center max-w-md">
-          Añade widgets para comenzar a visualizar tus métricas. Usa el botón "Añadir Widget" en la parte superior.
+          {t("widget.emptyCanvas")}
         </p>
       </div>
     );

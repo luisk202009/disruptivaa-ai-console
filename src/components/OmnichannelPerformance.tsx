@@ -158,7 +158,7 @@ const OmnichannelPerformance = () => {
         <CollapsibleContent>
           <div className="px-4 pb-4 space-y-4">
             {/* KPI Cards */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <KPICard
                 icon={DollarSign}
                 label={t("omnichannel.totalSpend")}
@@ -210,7 +210,7 @@ const OmnichannelPerformance = () => {
                           color: "hsl(var(--foreground))",
                           fontSize: 12,
                         }}
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, "Spend"]}
+                        formatter={(value: number) => [`$${value.toFixed(2)}`, t("omnichannel.totalSpend")]}
                       />
                       <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                         {chartData.map((entry) => (

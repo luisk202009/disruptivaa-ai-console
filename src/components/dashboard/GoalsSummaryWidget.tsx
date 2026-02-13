@@ -65,7 +65,7 @@ const GoalsSummaryWidget = () => {
             </div>
           ))}
           {goals.length > 4 && (
-            <p className="text-xs text-muted-foreground">+{goals.length - 4} más</p>
+            <p className="text-xs text-muted-foreground">{t("common.andMore", { count: goals.length - 4 })}</p>
           )}
         </div>
       )}

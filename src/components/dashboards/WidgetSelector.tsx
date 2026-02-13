@@ -1,24 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
-  DollarSign, 
-  Eye, 
-  MousePointer, 
-  Percent, 
-  Users,
-  TrendingUp,
-  BarChart3,
-  PieChart,
-  Activity,
-  Table,
-  Building2,
-  CheckCircle2,
-  Loader2,
-  AlertCircle,
-  Target
+  DollarSign, Eye, MousePointer, Percent, Users, TrendingUp, BarChart3, PieChart,
+  Activity, Table, Building2, CheckCircle2, Loader2, AlertCircle, Target
 } from "lucide-react";
 import { Widget, WidgetType, MetricType, MetricConfig, GridSettings } from "@/hooks/useWidgets";
 import { METRIC_LABELS } from "@/hooks/useMetaMetrics";
@@ -47,81 +35,21 @@ interface ChartOption {
 }
 
 const METRIC_OPTIONS: MetricOption[] = [
-  { 
-    metric: "spend", 
-    icon: <DollarSign size={20} />, 
-    description: "Gasto total en publicidad",
-    suggestedType: "kpi"
-  },
-  { 
-    metric: "impressions", 
-    icon: <Eye size={20} />, 
-    description: "Número de veces que se mostraron tus anuncios",
-    suggestedType: "kpi"
-  },
-  { 
-    metric: "clicks", 
-    icon: <MousePointer size={20} />, 
-    description: "Clics en tus anuncios",
-    suggestedType: "kpi"
-  },
-  { 
-    metric: "ctr", 
-    icon: <Percent size={20} />, 
-    description: "Porcentaje de clics vs impresiones",
-    suggestedType: "kpi"
-  },
-  { 
-    metric: "cpc", 
-    icon: <DollarSign size={20} />, 
-    description: "Costo promedio por clic",
-    suggestedType: "kpi"
-  },
-  { 
-    metric: "cpm", 
-    icon: <DollarSign size={20} />, 
-    description: "Costo por mil impresiones",
-    suggestedType: "kpi"
-  },
-  { 
-    metric: "reach", 
-    icon: <Users size={20} />, 
-    description: "Usuarios únicos alcanzados",
-    suggestedType: "kpi"
-  },
+  { metric: "spend", icon: <DollarSign size={20} />, description: "Gasto total en publicidad", suggestedType: "kpi" },
+  { metric: "impressions", icon: <Eye size={20} />, description: "Número de veces que se mostraron tus anuncios", suggestedType: "kpi" },
+  { metric: "clicks", icon: <MousePointer size={20} />, description: "Clics en tus anuncios", suggestedType: "kpi" },
+  { metric: "ctr", icon: <Percent size={20} />, description: "Porcentaje de clics vs impresiones", suggestedType: "kpi" },
+  { metric: "cpc", icon: <DollarSign size={20} />, description: "Costo promedio por clic", suggestedType: "kpi" },
+  { metric: "cpm", icon: <DollarSign size={20} />, description: "Costo por mil impresiones", suggestedType: "kpi" },
+  { metric: "reach", icon: <Users size={20} />, description: "Usuarios únicos alcanzados", suggestedType: "kpi" },
 ];
 
 const CHART_OPTIONS: ChartOption[] = [
-  { 
-    type: "line", 
-    icon: <TrendingUp size={20} />, 
-    label: "Línea temporal",
-    description: "Visualiza tendencias a lo largo del tiempo"
-  },
-  { 
-    type: "bar", 
-    icon: <BarChart3 size={20} />, 
-    label: "Barras",
-    description: "Compara valores entre categorías"
-  },
-  { 
-    type: "pie", 
-    icon: <PieChart size={20} />, 
-    label: "Circular",
-    description: "Muestra distribución porcentual"
-  },
-  { 
-    type: "area", 
-    icon: <Activity size={20} />, 
-    label: "Área",
-    description: "Similar a línea con relleno"
-  },
-  { 
-    type: "goal_tracker", 
-    icon: <Target size={20} />, 
-    label: "Seguimiento de Meta",
-    description: "Progreso hacia objetivos del proyecto"
-  },
+  { type: "line", icon: <TrendingUp size={20} />, label: "Línea temporal", description: "Visualiza tendencias a lo largo del tiempo" },
+  { type: "bar", icon: <BarChart3 size={20} />, label: "Barras", description: "Compara valores entre categorías" },
+  { type: "pie", icon: <PieChart size={20} />, label: "Circular", description: "Muestra distribución porcentual" },
+  { type: "area", icon: <Activity size={20} />, label: "Área", description: "Similar a línea con relleno" },
+  { type: "goal_tracker", icon: <Target size={20} />, label: "Seguimiento de Meta", description: "Progreso hacia objetivos del proyecto" },
 ];
 
 const DEFAULT_GRID_SETTINGS: Record<WidgetType, GridSettings> = {
@@ -137,6 +65,7 @@ const DEFAULT_GRID_SETTINGS: Record<WidgetType, GridSettings> = {
 type Step = "metric" | "type" | "account";
 
 export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose }: WidgetSelectorProps) => {
+  const { t } = useTranslation();
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
   const [selectedType, setSelectedType] = useState<WidgetType | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
@@ -149,7 +78,7 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
   };
 
   const handleSelectChart = (type: WidgetType) => {
-    setSelectedMetric("impressions"); // Default metric for charts
+    setSelectedMetric("impressions");
     setSelectedType(type);
     setStep("account");
   };
@@ -187,89 +116,23 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
   const canAdd = selectedMetric && selectedType;
   const hasAccounts = accounts.length > 0;
 
-  const renderAccountStep = () => (
-    <div className="space-y-4 mt-4">
-      <div className="flex items-center gap-2 text-sm font-medium">
-        <Building2 size={16} />
-        <span>Selecciona una cuenta de anuncios</span>
-      </div>
-      
-      {accountsLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 size={24} className="animate-spin text-muted-foreground" />
-        </div>
-      ) : !hasAccounts ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <AlertCircle size={32} className="text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">
-            No hay cuentas de Meta Ads conectadas.
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Puedes añadir el widget sin cuenta y configurarlo después.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2 max-h-[300px] overflow-auto">
-          {accounts.map((account) => (
-            <Card
-              key={account.id}
-              className={cn(
-                "cursor-pointer transition-all hover:border-primary/50",
-                selectedAccount === account.id && "border-primary bg-primary/5"
-              )}
-              onClick={() => handleSelectAccount(account.id)}
-            >
-              <CardHeader className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      <Building2 size={20} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{account.name}</CardTitle>
-                      <CardDescription className="text-sm">
-                        ID: {account.id}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  {selectedAccount === account.id && (
-                    <CheckCircle2 size={20} className="text-primary" />
-                  )}
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="h-full max-h-[85vh] flex flex-col">
       {/* Header - Fixed */}
       <SheetHeader className="pb-4 flex-shrink-0">
-        <SheetTitle>Añadir Widget</SheetTitle>
+        <SheetTitle>{t("widget.addWidget")}</SheetTitle>
         <SheetDescription>
-          {step === "metric" && "Selecciona una métrica o tipo de gráfico."}
-          {step === "type" && "Selecciona cómo visualizar la métrica."}
-          {step === "account" && "Selecciona la cuenta de anuncios (opcional)."}
+          {step === "metric" && t("widget.selectMetricStep")}
+          {step === "type" && t("widget.selectTypeStep")}
+          {step === "account" && t("widget.selectAccountStep")}
         </SheetDescription>
       </SheetHeader>
 
       {/* Progress indicator - Fixed */}
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-        <div className={cn(
-          "h-1 flex-1 rounded-full transition-colors",
-          step === "metric" ? "bg-primary" : "bg-primary"
-        )} />
-        <div className={cn(
-          "h-1 flex-1 rounded-full transition-colors",
-          step === "type" || step === "account" ? "bg-primary" : "bg-muted"
-        )} />
-        <div className={cn(
-          "h-1 flex-1 rounded-full transition-colors",
-          step === "account" ? "bg-primary" : "bg-muted"
-        )} />
+        <div className={cn("h-1 flex-1 rounded-full transition-colors", step === "metric" ? "bg-primary" : "bg-primary")} />
+        <div className={cn("h-1 flex-1 rounded-full transition-colors", step === "type" || step === "account" ? "bg-primary" : "bg-muted")} />
+        <div className={cn("h-1 flex-1 rounded-full transition-colors", step === "account" ? "bg-primary" : "bg-muted")} />
       </div>
 
       {/* Content - Scrollable */}
@@ -278,7 +141,7 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Building2 size={16} />
-              <span>Selecciona una cuenta de anuncios</span>
+              <span>{t("widget.selectAccountLabel")}</span>
             </div>
             
             {accountsLoading ? (
@@ -288,12 +151,8 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
             ) : !hasAccounts ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <AlertCircle size={32} className="text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  No hay cuentas de Meta Ads conectadas.
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Puedes añadir el widget sin cuenta y configurarlo después.
-                </p>
+                <p className="text-sm text-muted-foreground">{t("widget.noAccountsConnected")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("widget.addWithoutAccount")}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -314,9 +173,7 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
                           </div>
                           <div className="min-w-0">
                             <CardTitle className="text-sm sm:text-base truncate">{account.name}</CardTitle>
-                            <CardDescription className="text-xs sm:text-sm truncate">
-                              ID: {account.id}
-                            </CardDescription>
+                            <CardDescription className="text-xs sm:text-sm truncate">ID: {account.id}</CardDescription>
                           </div>
                         </div>
                         {selectedAccount === account.id && (
@@ -332,8 +189,8 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
         ) : (
           <Tabs defaultValue="metrics" className="h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-              <TabsTrigger value="metrics">Métricas</TabsTrigger>
-              <TabsTrigger value="charts">Gráficos</TabsTrigger>
+              <TabsTrigger value="metrics">{t("widget.metricsTab")}</TabsTrigger>
+              <TabsTrigger value="charts">{t("widget.chartsTab")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="metrics" className="mt-4 flex-1">
@@ -364,7 +221,7 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
 
               {step === "type" && selectedMetric && (
                 <div className="mt-6 pt-6 border-t">
-                  <h4 className="font-medium mb-3 text-sm sm:text-base">Tipo de visualización</h4>
+                  <h4 className="font-medium mb-3 text-sm sm:text-base">{t("widget.visualizationType")}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
                       { type: "kpi" as const, label: "KPI", icon: <TrendingUp size={16} /> },
@@ -420,16 +277,12 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
       <div className="pt-4 border-t flex-shrink-0 bg-background">
         <div className="flex gap-2">
           {step !== "metric" ? (
-            <Button 
-              variant="outline" 
-              className="flex-1" 
-              onClick={() => setStep(step === "account" ? "type" : "metric")}
-            >
-              Atrás
+            <Button variant="outline" className="flex-1" onClick={() => setStep(step === "account" ? "type" : "metric")}>
+              {t("common.back")}
             </Button>
           ) : (
             <Button variant="outline" className="flex-1" onClick={onClose}>
-              Cancelar
+              {t("common.cancel")}
             </Button>
           )}
           <Button 
@@ -437,7 +290,7 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
             onClick={step === "account" ? handleAdd : () => setStep("account")}
             disabled={!canAdd}
           >
-            {step === "account" ? "Añadir Widget" : "Siguiente"}
+            {step === "account" ? t("widget.addWidget") : t("common.next")}
           </Button>
         </div>
       </div>

@@ -44,7 +44,9 @@
     "noActivity": "No activity",
     "loadingStats": "Loading statistics...",
     "loginToView": "Sign in to view your profile",
-    "loginToChange": "Sign in to change your password"
+    "loginToChange": "Sign in to change your password",
+    "resetSuccess": "We've sent you an email to change your password",
+    "resetError": "Error sending the password reset email"
   },
   "auth": {
     "signIn": "Sign in",
@@ -56,7 +58,30 @@
   "agents": {
     "title": "AI Agents",
     "subtitle": "Our Specialized Agents",
-    "selectPrompt": "Select an agent to start a conversation"
+    "selectPrompt": "Select an agent to start a conversation",
+    "welcomePrompt": "What do you want to do today?",
+    "loginToChat": "Sign in to chat",
+    "loginPrompt": "🔒 Sign in to interact with our AI agents",
+    "analyzing": "Analyzing...",
+    "writeOrAttach": "Type or attach files for analysis...",
+    "selectToStart": "Select an agent to get started...",
+    "loadingMessages": "Loading messages...",
+    "connectAccount": "Connect Meta/Google account",
+    "fileAttached": "File attached",
+    "fileReadyForAnalysis": "{{names}} ready for analysis",
+    "sessionExpired": "Session expired",
+    "sessionExpiredDesc": "Please sign in again.",
+    "rateLimitTitle": "Rate limit exceeded",
+    "rateLimitDesc": "Please wait a moment and try again.",
+    "creditsTitle": "Credits exhausted",
+    "creditsDesc": "Please add credits to your workspace.",
+    "requestError": "❌ There was an error processing your request. Please try again or check your connection.",
+    "requestErrorShort": "There was an error processing your request. Please try again.",
+    "suggestions": {
+      "adsOptimizer": ["Optimize Meta campaign", "Analyze Ads performance", "Suggest budget"],
+      "aiCrmSales": ["Qualify new leads", "Create email sequence", "Analyze pipeline"],
+      "default": ["How can you help me?"]
+    }
   },
   "status": {
     "idle": "Idle",
@@ -72,7 +97,48 @@
     "delete": "Delete",
     "edit": "Edit",
     "create": "Create",
-    "search": "Search"
+    "search": "Search",
+    "configure": "Configure",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "next": "Next",
+    "back": "Back",
+    "saving": "Saving...",
+    "saveChanges": "Save changes",
+    "deleting": "Deleting...",
+    "andMore": "+{{count}} more",
+    "addGoal": "Add Goal"
+  },
+  "projects": {
+    "moveToGeneral": "Move to \"General\"",
+    "moveDescription": "Conversations will be kept without an assigned project",
+    "deleteProject": "Delete Project",
+    "deleteAll": "Delete all",
+    "deleteAllDesc": "All conversations will be permanently deleted",
+    "deleteConfirmTitle": "Delete Project",
+    "deleteConfirmDesc": "Are you sure you want to delete the project",
+    "deleteConversationsQuestion": "What do you want to do with this project's conversations?",
+    "editProject": "Edit Project",
+    "projectName": "Project name",
+    "allMetricsDefined": "You have defined all available metrics.",
+    "noGoalsDefined": "No goals defined for this project.",
+    "goalSaved": "Goal saved",
+    "goalSavedDesc": "{{metric}} configured successfully.",
+    "goalDeleted": "Goal deleted",
+    "goalDeletedDesc": "{{metric}} has been deleted.",
+    "goalError": "Could not save the goal.",
+    "goalDeleteError": "Could not delete the goal.",
+    "projectGoals": "Project Goals",
+    "projectGoalsDesc": "Define objectives for <strong>{{name}}</strong>. The AI agent will use them to generate comparative reports.",
+    "goalMetric": "Metric",
+    "goalValue": "Target Value",
+    "goalPeriod": "Period",
+    "selectMetric": "Select a metric"
+  },
+  "conversations": {
+    "moveToProject": "Move to project",
+    "deleteConversation": "Delete Conversation",
+    "deleteConversationDesc": "Are you sure you want to delete this conversation? This action cannot be undone."
   },
   "projectDetail": {
     "title": "Project Detail",
@@ -136,10 +202,6 @@
     "errorAuth": "You are not authenticated. Sign in and try again.",
     "errorCancelled": "The user cancelled the authorization",
     "errorExchange": "Error processing the authorization"
-  },
-  "settings": {
-    "resetSuccess": "We've sent you an email to change your password",
-    "resetError": "Error sending the password reset email"
   },
   "exportReport": {
     "copied": "Report copied to clipboard",
@@ -205,5 +267,59 @@
     "manageConnections": "Manage connections",
     "welcomeTitle": "Dashboard",
     "welcomeSubtitle": "Your marketing performance summary"
+  },
+  "widget": {
+    "configRequired": "Configuration required",
+    "selectAccount": "Select an ad account in settings to see real metrics",
+    "connectionRequired": "Connection required",
+    "connectMeta": "Connect your Meta Ads account to see real metrics",
+    "loadError": "Error loading data",
+    "noData": "No data available",
+    "noMetricsData": "No metrics data for the selected period",
+    "goalNotConfigured": "Goal not configured",
+    "selectGoal": "Select a project goal in settings",
+    "accountLabel": "Account {{id}}",
+    "addWidget": "Add Widget",
+    "selectMetricStep": "Select a metric or chart type.",
+    "selectTypeStep": "Select how to visualize the metric.",
+    "selectAccountStep": "Select the ad account (optional).",
+    "selectAccountLabel": "Select an ad account",
+    "noAccountsConnected": "No Meta Ads accounts connected.",
+    "addWithoutAccount": "You can add the widget without an account and configure it later.",
+    "metricsTab": "Metrics",
+    "chartsTab": "Charts",
+    "visualizationType": "Visualization type",
+    "emptyCanvas": "Add widgets to start visualizing your metrics. Use the \"Add Widget\" button at the top.",
+    "emptyCanvasTitle": "Empty panel",
+    "loadingAccounts": "Loading accounts...",
+    "configureWidget": "Configure Widget",
+    "configureWidgetDesc": "Customize the visualization and data for your widget.",
+    "platform": "Platform",
+    "adAccount": "Ad account",
+    "noAccountsForPlatform": "No accounts connected. Connect {{platform}} first.",
+    "selectAccountData": "Select the account to get data from",
+    "title": "Title",
+    "titlePlaceholder": "Widget title",
+    "type": "Visualization type",
+    "metric": "Metric",
+    "timePeriod": "Time period",
+    "showComparison": "Show comparison",
+    "compareWithPrevious": "Compare with previous period",
+    "goalOptional": "Goal (optional)",
+    "goalPlaceholder": "E.g.: 1000",
+    "goalProgress": "Set a target to show progress",
+    "select": {
+      "platform": "Select platform",
+      "account": "Select account",
+      "type": "Select type",
+      "metric": "Select metric",
+      "period": "Select period"
+    },
+    "editPanel": "Edit panel",
+    "editPanelDesc": "Modify the name and description of your panel.",
+    "panelName": "Name",
+    "panelNamePlaceholder": "My metrics panel",
+    "panelDescLabel": "Description (optional)",
+    "panelDescPlaceholder": "Panel for monitoring campaign performance..."
   }
 }
