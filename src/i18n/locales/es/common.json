@@ -146,6 +146,28 @@
     "copyError": "Error al copiar el informe",
     "downloaded": "Informe descargado"
   },
+  "projectExport": {
+    "title": "Generar Informe",
+    "description": "Selecciona qué incluir en el informe del proyecto.",
+    "includeGoals": "Estado de Metas",
+    "includeMetrics": "Métricas de Plataformas",
+    "includeAISummary": "Resumen Ejecutivo (IA)",
+    "generateSummary": "Generar Resumen IA",
+    "generatingSummary": "Generando resumen...",
+    "copyMarkdown": "Copiar Markdown",
+    "downloadTxt": "Descargar .txt",
+    "print": "Imprimir",
+    "copied": "Informe copiado al portapapeles",
+    "copyError": "Error al copiar el informe",
+    "downloaded": "Informe descargado",
+    "summaryError": "Error al generar el resumen ejecutivo",
+    "goalsSection": "Estado de Metas",
+    "metricsSection": "Métricas Actuales",
+    "summarySection": "Resumen Ejecutivo",
+    "achieved": "✅ Cumplido",
+    "notAchieved": "⚠️ No cumplido",
+    "demoDisclaimer": "Datos de demostración - conecta tus cuentas para datos reales"
+  },
   "dashboard": {
     "agentSelectedTitle": "{{name}} seleccionado",
     "agentSelectedDesc": "Ahora estás hablando con {{name}}",

@@ -1,5 +1,5 @@
-import { useProjectGoals, GOAL_METRIC_LABELS, formatGoalValue, type ProjectGoal } from "@/hooks/useProjectGoals";
-import { useGoalMetrics } from "@/hooks/useGoalMetrics";
+import { GOAL_METRIC_LABELS, formatGoalValue, type ProjectGoal } from "@/hooks/useProjectGoals";
+import type { GoalMetricData } from "@/hooks/useGoalMetrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,9 +10,12 @@ import { useTranslation } from "react-i18next";
 interface ProjectHealthCardProps {
   projectId: string;
   projectColor: string;
-  accountId?: string;
-  platform?: "meta_ads" | "google_ads";
-  onRefresh?: () => void;
+  goals: ProjectGoal[];
+  metricsData: GoalMetricData[];
+  metricsLoading: boolean;
+  refreshing: boolean;
+  isDemo: boolean;
+  onRefresh: () => Promise<void>;
 }
 
 type HealthStatus = {
@@ -63,19 +66,16 @@ const getProgressColor = (isOnTrack: boolean): string => {
 export const ProjectHealthCard = ({ 
   projectId, 
   projectColor,
-  accountId,
-  platform = "meta_ads",
-  onRefresh 
+  goals,
+  metricsData,
+  metricsLoading,
+  refreshing,
+  isDemo,
+  onRefresh,
 }: ProjectHealthCardProps) => {
   const { t } = useTranslation();
-  const { goals, loading: goalsLoading } = useProjectGoals({ projectId });
-  const { metricsData, loading: metricsLoading, refreshing, refresh, isDemo } = useGoalMetrics(
-    goals,
-    accountId,
-    platform
-  );
 
-  const loading = goalsLoading || metricsLoading;
+  const loading = metricsLoading;
 
   // Calculate overall health from real metrics data
   const calculateOverallHealth = (): HealthStatus => {
@@ -101,8 +101,7 @@ export const ProjectHealthCard = ({
   };
 
   const handleRefresh = async () => {
-    await refresh();
-    onRefresh?.();
+    await onRefresh();
   };
 
   if (loading) {

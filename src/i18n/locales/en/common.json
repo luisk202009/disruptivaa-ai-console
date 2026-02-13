@@ -146,6 +146,28 @@
     "copyError": "Error copying report",
     "downloaded": "Report downloaded"
   },
+  "projectExport": {
+    "title": "Generate Report",
+    "description": "Select what to include in the project report.",
+    "includeGoals": "Goals Status",
+    "includeMetrics": "Platform Metrics",
+    "includeAISummary": "Executive Summary (AI)",
+    "generateSummary": "Generate AI Summary",
+    "generatingSummary": "Generating summary...",
+    "copyMarkdown": "Copy Markdown",
+    "downloadTxt": "Download .txt",
+    "print": "Print",
+    "copied": "Report copied to clipboard",
+    "copyError": "Error copying report",
+    "downloaded": "Report downloaded",
+    "summaryError": "Error generating executive summary",
+    "goalsSection": "Goals Status",
+    "metricsSection": "Current Metrics",
+    "summarySection": "Executive Summary",
+    "achieved": "✅ Achieved",
+    "notAchieved": "⚠️ Not achieved",
+    "demoDisclaimer": "Demo data - connect your accounts for real data"
+  },
   "dashboard": {
     "agentSelectedTitle": "{{name}} selected",
     "agentSelectedDesc": "Now talking to {{name}}",

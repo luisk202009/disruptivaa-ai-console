@@ -554,16 +554,67 @@ serve(async (req) => {
     const userId = userData.user.id;
 
     // Parse request body - ignore any userId from body for security
-    const { message, agentId, agentName, systemInstruction, chatId, projectId, files } = await req.json();
+    const body = await req.json();
+    const { message, agentId, agentName, systemInstruction, chatId, projectId, files, action, goalsData } = body;
     
-    console.info("Request received for agent:", agentId);
+    console.info("Request received for agent:", agentId, "action:", action);
 
-    // Validate allowed agent IDs
+    // Validate allowed agent IDs (skip for executive-summary action)
     const ALLOWED_AGENT_IDS = ["ads-optimizer", "ai-crm-sales"];
     if (agentId && !ALLOWED_AGENT_IDS.includes(agentId)) {
       return new Response(
         JSON.stringify({ error: "Invalid agent ID" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle executive-summary action
+    if (action === "executive-summary") {
+      // Fetch user's preferred language
+      const { data: userProfile } = await supabaseUserClient
+        .from("profiles")
+        .select("language")
+        .eq("id", userId)
+        .maybeSingle();
+      const lang = userProfile?.language || 'es';
+
+      if (!LOVABLE_API_KEY) {
+        throw new Error("LOVABLE_API_KEY is not configured");
+      }
+
+      const langPrompts: Record<string, string> = {
+        es: "Genera un resumen ejecutivo de 3-5 oraciones sobre el desempeño de este proyecto de marketing digital. Usa un tono profesional y menciona las métricas clave, qué metas se están cumpliendo y cuáles necesitan atención. No uses emojis. Sé directo y accionable.",
+        en: "Generate an executive summary of 3-5 sentences about this digital marketing project's performance. Use a professional tone, mention key metrics, which goals are being met and which need attention. No emojis. Be direct and actionable.",
+        pt: "Gere um resumo executivo de 3-5 frases sobre o desempenho deste projeto de marketing digital. Use um tom profissional, mencione as métricas-chave, quais metas estão sendo cumpridas e quais precisam de atenção. Sem emojis. Seja direto e acionável.",
+      };
+
+      const goalsDescription = (goalsData || []).map((g: { metric_key: string; target_value: number; current_value: number; is_on_track: boolean }) =>
+        `${g.metric_key}: target=${g.target_value}, current=${g.current_value}, on_track=${g.is_on_track}`
+      ).join("\n");
+
+      const summaryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.0-flash-001",
+          messages: [
+            { role: "system", content: langPrompts[lang] || langPrompts.es },
+            { role: "user", content: `Project goals data:\n${goalsDescription}` },
+          ],
+          max_tokens: 500,
+          temperature: 0.4,
+        }),
+      });
+
+      const summaryData = await summaryResponse.json();
+      const summary = summaryData?.choices?.[0]?.message?.content || "";
+
+      return new Response(
+        JSON.stringify({ summary }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
