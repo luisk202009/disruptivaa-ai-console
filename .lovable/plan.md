@@ -1,261 +1,273 @@
 
-# Plan: Simplificar Catálogo de Agentes y Completar Traducción de Títulos
 
-## Estado Actual de Agentes
+# Plan: Exportacion de Informes y Snapshot de Proyecto
 
-### Agentes Definidos en `src/components/Dashboard.tsx`
-1. smart-brand-architect
-2. ghostwriter-pro
-3. ads-optimizer
-4. ai-crm-sales
-5. visual-content-bot
+## Resumen
 
-### Objetivo
-Eliminar 3 agentes (Smart Brand Architect, GhostWriter Pro, Visual Content Bot) y mantener solo 2 (Ads Optimizer Agent, AI-CRM Sales Bot).
+Crear un sistema de exportacion a nivel de proyecto que genere un informe ejecutivo combinando metas, metricas reales y recomendaciones del agente IA. Incluye copia al portapapeles (Markdown), descarga como archivo, y generacion de resumen ejecutivo con IA.
 
 ---
 
-## Análisis de Impacto
+## Analisis del Estado Actual
 
-### Archivo: `src/components/Dashboard.tsx`
-- **Líneas 14-145**: Definición del array `DISRUPTIVAA_AGENTS`
-  - Eliminar entrada de "smart-brand-architect" (líneas 15-39)
-  - Eliminar entrada de "ghostwriter-pro" (líneas 40-64)
-  - Mantener entrada de "ads-optimizer" (líneas 65-94)
-  - Mantener entrada de "ai-crm-sales" (líneas 95-119)
-  - Eliminar entrada de "visual-content-bot" (líneas 120-144)
-- **Líneas 178, 233, 269**: Toast messages que usan `agent.name`
-  - Estos necesitarán usar traducción para el nombre del agente
-
-### Archivos: Traducción en `src/i18n/locales/[es, en, pt]/agents.json`
-- Actualmente tienen 5 agentes
-- Eliminar claves para 3 agentes
-- Mantener claves para 2 agentes
-- La estructura actual ya usa `${agent.id}.name`, `${agent.id}.description`, `${agent.id}.keywords`
-
-### Archivo: `src/pages/Agents.tsx`
-- **Línea 56-105**: Loop `DISRUPTIVAA_AGENTS.map()`
-  - Automáticamente se ajustará cuando se eliminen del array
-  - Ya usa `t()` para nombres y descripciones (líneas 87, 90)
-
-### Archivo: `src/components/CommandConsole.tsx`
-- **Línea 309**: Usa `selectedAgent.name` directamente
-- **Línea 395**: Usa `selectedAgent.name` directamente
-- Estos necesitarán traducción
-
-### Archivo: `supabase/functions/disruptivaa-agent/index.ts`
-- **Línea 680**: Validación específica para "ads-optimizer"
-- **Línea 557**: Recibe `agentId` del cliente
-- No hay validación explícita de agentes permitidos (recomendación agregar)
-
-### Archivos de Traducción Actuales
-- `src/i18n/locales/es/agents.json`: Contiene 5 agentes
-- `src/i18n/locales/en/agents.json`: Contiene 5 agentes
-- `src/i18n/locales/pt/agents.json`: Contiene 5 agentes
+| Componente | Estado |
+|------------|--------|
+| `ExportReportDialog.tsx` (dashboards) | Existe, pero es para widgets de dashboard, no proyectos |
+| `ProjectHealthCard.tsx` | Tiene datos de metas vs metricas reales |
+| `useGoalMetrics.ts` | Hook que obtiene metricas reales o demo |
+| `useProjectGoals.ts` | Hook con metas del proyecto |
+| `disruptivaa-agent` Edge Function | Soporta multilenguaje, tiene contexto de goals |
+| Traducciones ES/EN/PT | Infraestructura completa |
 
 ---
 
-## Cambios a Implementar
+## Arquitectura de la Solucion
 
-### 1. Actualizar `DISRUPTIVAA_AGENTS` en `src/components/Dashboard.tsx`
+### Nuevo Componente: `src/components/projects/ProjectExportDialog.tsx`
 
-**Acción**: Eliminar 3 agentes del array, mantener solo 2.
+Modal con las siguientes secciones seleccionables via checkboxes:
 
-Resultado:
+1. **Estado de Metas** - Tabla comparativa Meta vs Realidad con semaforo
+2. **Metricas de Plataformas** - Resumen de datos de Meta/Google Ads
+3. **Resumen Ejecutivo IA** - Parrafo generado por el agente
+
+El modal mostrara una vista previa del informe en Markdown y permitira:
+- Copiar al portapapeles (Markdown)
+- Descargar como .txt
+- Imprimir / Guardar como PDF (usando `window.print()` con estilos optimizados)
+
+### Nueva Edge Function Action: `generate-executive-summary`
+
+En lugar de crear una nueva Edge Function separada, se anadira una accion dentro de `disruptivaa-agent` que reciba los datos del proyecto y genere un parrafo ejecutivo. Esto reutiliza la autenticacion, el contexto multilingue y la conexion con la API de IA ya existentes.
+
+Se invocara enviando un mensaje especial con un flag `action: "executive-summary"` al endpoint existente.
+
+---
+
+## Cambios Detallados
+
+### 1. Crear `src/components/projects/ProjectExportDialog.tsx`
+
+**Props:**
 ```typescript
-export const DISRUPTIVAA_AGENTS = [
-  {
-    id: "ads-optimizer",
-    dbName: "Ads Optimizer Agent",
-    name: "Ads Optimizer Agent",
-    // ... resto del objeto
-  },
-  {
-    id: "ai-crm-sales",
-    dbName: "AI-CRM Sales Bot",
-    name: "AI-CRM Sales Bot",
-    // ... resto del objeto
-  },
-];
+interface ProjectExportDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  projectId: string;
+  projectName: string;
+  projectColor: string;
+  goals: ProjectGoal[];
+  metricsData: GoalMetricData[];
+  isDemo: boolean;
+}
 ```
 
-### 2. Actualizar Archivos de Traducción
+**Funcionalidad:**
+- 3 checkboxes: "Incluir Metas", "Incluir Metricas", "Incluir Resumen IA"
+- Boton "Generar Resumen IA" que llama al edge function
+- Estado de carga mientras se genera el resumen
+- Vista previa en textarea readonly
+- Botones: Copiar Markdown, Descargar .txt, Imprimir
 
-**Archivos a Modificar**:
-- `src/i18n/locales/es/agents.json`
-- `src/i18n/locales/en/agents.json`
-- `src/i18n/locales/pt/agents.json`
+**Generacion del informe:**
+- Header con nombre del proyecto, fecha, hora (locale-aware)
+- Seccion "Metas vs Realidad" con tabla Markdown y emojis semaforo
+- Seccion "Metricas de Plataformas" con valores actuales
+- Seccion "Resumen Ejecutivo" con el texto generado por IA
+- Footer con creditos "Generado por Disruptivaa"
 
-**Acción**: Eliminar objetos para:
-- "smart-brand-architect"
-- "ghostwriter-pro"
-- "visual-content-bot"
+### 2. Modificar `supabase/functions/disruptivaa-agent/index.ts`
 
-**Mantener solo**:
-- "ads-optimizer"
-- "ai-crm-sales"
+Anadir deteccion de `action: "executive-summary"` en el body del request.
 
-**Ejemplo de resultado para ES**:
+Cuando se detecte esta accion:
+- Construir un prompt especifico para resumen ejecutivo
+- Incluir los datos de metas y metricas proporcionados en el body
+- Generar un parrafo conciso (3-5 oraciones) en el idioma del usuario
+- Retornar el resumen directamente sin persistir en `agent_messages`
+
+**Datos esperados en el body:**
+```typescript
+{
+  action: "executive-summary",
+  projectId: string,
+  goalsData: Array<{
+    metric_key: string;
+    target_value: number;
+    current_value: number;
+    is_on_track: boolean;
+  }>
+}
+```
+
+**Prompt del resumen:**
+```
+Genera un resumen ejecutivo de 3-5 oraciones sobre el desempenio
+de este proyecto de marketing digital. Usa un tono profesional
+y menciona las metricas clave, que metas se estan cumpliendo y
+cuales necesitan atencion. No uses emojis. Se directo y accionable.
+```
+
+### 3. Modificar `src/pages/ProjectDetail.tsx`
+
+- Importar `ProjectExportDialog`
+- Anadir estado `exportOpen` para controlar el modal
+- Anadir boton "Generar Informe" en el header (icono `FileText`)
+- Pasar `goals`, `metricsData` y `isDemo` al dialog
+
+Para obtener `metricsData` a nivel de ProjectDetail, se necesita elevar el uso de `useGoalMetrics` desde `ProjectHealthCard` hacia `ProjectDetail`. Actualmente `ProjectHealthCard` usa el hook internamente. El cambio:
+
+- Llamar `useGoalMetrics(goals)` en `ProjectDetail`
+- Pasar `metricsData` como prop a `ProjectHealthCard` (modificar sus props)
+- Pasar los mismos datos a `ProjectExportDialog`
+
+### 4. Modificar `src/components/projects/ProjectHealthCard.tsx`
+
+Cambiar para recibir `metricsData` como prop en lugar de llamar `useGoalMetrics` internamente:
+
+```typescript
+interface ProjectHealthCardProps {
+  projectId: string;
+  projectColor: string;
+  goals: ProjectGoal[];
+  metricsData: GoalMetricData[];
+  metricsLoading: boolean;
+  refreshing: boolean;
+  isDemo: boolean;
+  onRefresh: () => Promise<void>;
+}
+```
+
+### 5. Actualizar Traducciones
+
+**Nuevas claves en los 3 idiomas:**
+
+ES:
 ```json
 {
-  "ads-optimizer": {
-    "name": "Ads Optimizer Agent",
-    "description": "Analista de campañas publicitarias",
-    "keywords": ["Meta Ads", "Google Ads", "Optimización"]
-  },
-  "ai-crm-sales": {
-    "name": "AI-CRM Sales Bot",
-    "description": "Analista de leads y pipeline",
-    "keywords": ["CRM", "Ventas", "Pipeline"]
+  "projectExport": {
+    "title": "Generar Informe",
+    "description": "Selecciona que incluir en el informe del proyecto.",
+    "includeGoals": "Estado de Metas",
+    "includeMetrics": "Metricas de Plataformas",
+    "includeAISummary": "Resumen Ejecutivo (IA)",
+    "generateSummary": "Generar Resumen IA",
+    "generatingSummary": "Generando resumen...",
+    "copyMarkdown": "Copiar Markdown",
+    "downloadTxt": "Descargar .txt",
+    "print": "Imprimir",
+    "copied": "Informe copiado al portapapeles",
+    "copyError": "Error al copiar el informe",
+    "downloaded": "Informe descargado",
+    "summaryError": "Error al generar el resumen ejecutivo",
+    "goalsSection": "Estado de Metas",
+    "metricsSection": "Metricas Actuales",
+    "summarySection": "Resumen Ejecutivo",
+    "achieved": "Cumplido",
+    "notAchieved": "No cumplido",
+    "demoDisclaimer": "Datos de demostracion - conecta tus cuentas para datos reales"
   }
 }
 ```
 
-### 3. Internacionalizar Names en Toast Messages
-
-**Archivo**: `src/components/Dashboard.tsx`
-
-**Ubicaciones a cambiar**:
-- Líneas 178-179: Toast al seleccionar agente (location state)
-- Líneas 233-234: Toast al seleccionar agente (click button)
-- Líneas 269-270: Toast al detectar agente automáticamente
-
-**Cambio de**:
-```typescript
-toast({
-  title: `${agent.name} seleccionado`,
-  description: `Ahora estás hablando con ${agent.name}`,
-});
-```
-
-**Cambio a**:
-```typescript
-toast({
-  title: t(`${agent.id}.name`, { ns: "agents" }) + " " + t("dashboard.agentSelected", { ns: "common" }),
-  description: t("dashboard.nowTalking", { ns: "common", name: t(`${agent.id}.name`, { ns: "agents" }) }),
-});
-```
-
-O más simple usando nuevas claves genéricas:
-```typescript
-toast({
-  title: t("dashboard.agentSelectedTitle", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
-  description: t("dashboard.agentSelectedDesc", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
-});
-```
-
-**Ubicación al detectar**:
-- Líneas 269-270: Cambiar "detectado" a traducción
-```typescript
-toast({
-  title: t("dashboard.agentDetected", { name: t(`${agent.id}.name`, { ns: "agents" }) }),
-  description: t("common.processing"),
-});
-```
-
-### 4. Internacionalizar Names en CommandConsole
-
-**Archivo**: `src/components/CommandConsole.tsx`
-
-**Ubicaciones a cambiar**:
-- Línea 309: Usar traducción para nombre del agente
-  ```typescript
-  // De: Consultando a {selectedAgent.name}
-  // A: Consultando a {t(`${selectedAgent.id}.name`, { ns: "agents" })}
-  ```
-
-- Línea 395: Usar traducción para nombre del agente
-  ```typescript
-  // De: {selectedAgent.name} está consultando...
-  // A: {t(`${selectedAgent.id}.name`, { ns: "agents" })} está consultando...
-  ```
-
-### 5. Añadir Validación en Edge Function
-
-**Archivo**: `supabase/functions/disruptivaa-agent/index.ts`
-
-**Ubicación**: Después de recibir `agentId` (línea 557-559)
-
-**Cambio**: Validar que `agentId` sea uno de los 2 agentes permitidos:
-```typescript
-const ALLOWED_AGENT_IDS = ["ads-optimizer", "ai-crm-sales"];
-
-if (!ALLOWED_AGENT_IDS.includes(agentId)) {
-  return new Response(
-    JSON.stringify({ error: "Invalid agent ID" }),
-    { status: 400, headers: corsHeaders }
-  );
-}
-```
-
-### 6. Actualizar Claves de Traducción en Common
-
-**Archivos**: `src/i18n/locales/[es, en, pt]/common.json`
-
-**Nuevas claves a agregar**:
+EN:
 ```json
 {
-  "dashboard": {
-    "agentSelectedTitle": "{name} seleccionado",
-    "agentSelectedDesc": "Ahora estás hablando con {name}",
-    "agentDetected": "{name} detectado",
-    "consulting": "Consultando a {name}",
-    "isConsulting": "{name} está consultando..."
+  "projectExport": {
+    "title": "Generate Report",
+    "description": "Select what to include in the project report.",
+    "includeGoals": "Goals Status",
+    "includeMetrics": "Platform Metrics",
+    "includeAISummary": "Executive Summary (AI)",
+    "generateSummary": "Generate AI Summary",
+    "generatingSummary": "Generating summary...",
+    "copyMarkdown": "Copy Markdown",
+    "downloadTxt": "Download .txt",
+    "print": "Print",
+    "copied": "Report copied to clipboard",
+    "copyError": "Error copying report",
+    "downloaded": "Report downloaded",
+    "summaryError": "Error generating executive summary",
+    "goalsSection": "Goals Status",
+    "metricsSection": "Current Metrics",
+    "summarySection": "Executive Summary",
+    "achieved": "Achieved",
+    "notAchieved": "Not achieved",
+    "demoDisclaimer": "Demo data - connect your accounts for real data"
   }
 }
 ```
 
-**Versión en inglés (EN)**:
+PT:
 ```json
 {
-  "dashboard": {
-    "agentSelectedTitle": "{name} selected",
-    "agentSelectedDesc": "Now talking to {name}",
-    "agentDetected": "{name} detected",
-    "consulting": "Consulting {name}",
-    "isConsulting": "{name} is consulting..."
-  }
-}
-```
-
-**Versión en portugués (PT)**:
-```json
-{
-  "dashboard": {
-    "agentSelectedTitle": "{name} selecionado",
-    "agentSelectedDesc": "Agora falando com {name}",
-    "agentDetected": "{name} detectado",
-    "consulting": "Consultando {name}",
-    "isConsulting": "{name} está consultando..."
+  "projectExport": {
+    "title": "Gerar Relatorio",
+    "description": "Selecione o que incluir no relatorio do projeto.",
+    "includeGoals": "Status das Metas",
+    "includeMetrics": "Metricas das Plataformas",
+    "includeAISummary": "Resumo Executivo (IA)",
+    "generateSummary": "Gerar Resumo IA",
+    "generatingSummary": "Gerando resumo...",
+    "copyMarkdown": "Copiar Markdown",
+    "downloadTxt": "Baixar .txt",
+    "print": "Imprimir",
+    "copied": "Relatorio copiado para a area de transferencia",
+    "copyError": "Erro ao copiar o relatorio",
+    "downloaded": "Relatorio baixado",
+    "summaryError": "Erro ao gerar o resumo executivo",
+    "goalsSection": "Status das Metas",
+    "metricsSection": "Metricas Atuais",
+    "summarySection": "Resumo Executivo",
+    "achieved": "Cumprido",
+    "notAchieved": "Nao cumprido",
+    "demoDisclaimer": "Dados de demonstracao - conecte suas contas para dados reais"
   }
 }
 ```
 
 ---
 
-## Resumen de Archivos a Modificar
+## Resumen de Archivos
 
-| Archivo | Acción | Descripción |
+| Archivo | Accion | Descripcion |
 |---------|--------|-------------|
-| `src/components/Dashboard.tsx` | **Modificar** | Eliminar 3 agentes del array, traducir toasts |
-| `src/components/CommandConsole.tsx` | **Modificar** | Usar traducción para nombres de agentes |
-| `src/i18n/locales/es/agents.json` | **Modificar** | Eliminar 3 agentes, mantener 2 |
-| `src/i18n/locales/en/agents.json` | **Modificar** | Eliminar 3 agentes, mantener 2 |
-| `src/i18n/locales/pt/agents.json` | **Modificar** | Eliminar 3 agentes, mantener 2 |
-| `src/i18n/locales/es/common.json` | **Modificar** | Agregar claves de dashboard |
-| `src/i18n/locales/en/common.json` | **Modificar** | Agregar claves de dashboard |
-| `src/i18n/locales/pt/common.json` | **Modificar** | Agregar claves de dashboard |
-| `supabase/functions/disruptivaa-agent/index.ts` | **Modificar** | Validar agentId permitidos |
+| `src/components/projects/ProjectExportDialog.tsx` | **Crear** | Modal de exportacion de informe |
+| `src/pages/ProjectDetail.tsx` | **Modificar** | Elevar useGoalMetrics, anadir boton y dialog |
+| `src/components/projects/ProjectHealthCard.tsx` | **Modificar** | Recibir metricsData como prop |
+| `supabase/functions/disruptivaa-agent/index.ts` | **Modificar** | Anadir accion executive-summary |
+| `src/i18n/locales/es/common.json` | **Modificar** | Nuevas claves projectExport |
+| `src/i18n/locales/en/common.json` | **Modificar** | Nuevas claves projectExport |
+| `src/i18n/locales/pt/common.json` | **Modificar** | Nuevas claves projectExport |
 
 ---
 
-## Verificación Post-Implementación
+## Flujo del Usuario
 
-- [ ] Solo 2 agentes aparecen en la pantalla principal (Ads Optimizer, AI-CRM Sales Bot)
-- [ ] Los nombres de agentes en toasts se muestran en el idioma seleccionado
-- [ ] El contexto "Consultando a [nombre]" muestra nombre traducido
-- [ ] La página `/agents` solo muestra 2 agentes
-- [ ] Cambiar idioma a inglés y portugués verifica que todos los nombres estén traducidos
-- [ ] Intentar acceder a agentes eliminados desde URL no causa errores
-- [ ] La Edge Function rechaza solicitudes de agentes no permitidos (opcional pero recomendado)
+```text
+1. Usuario abre ProjectDetail
+2. Hace clic en "Generar Informe" (boton en header)
+3. Se abre modal con checkboxes:
+   [x] Estado de Metas
+   [x] Metricas de Plataformas
+   [ ] Resumen Ejecutivo (IA)
+4. Si activa "Resumen Ejecutivo", hace clic en "Generar Resumen IA"
+5. Se llama al edge function con action: "executive-summary"
+6. El informe se renderiza en vista previa
+7. Usuario puede: Copiar Markdown | Descargar .txt | Imprimir
+```
+
+---
+
+## Verificacion Post-Implementacion
+
+- [ ] El boton "Generar Informe" aparece en ProjectDetail
+- [ ] El modal muestra checkboxes funcionales
+- [ ] El informe incluye tabla de metas con semaforo cuando hay goals
+- [ ] El resumen IA se genera en el idioma correcto del usuario
+- [ ] "Copiar Markdown" funciona y el formato es legible en Slack/Notion
+- [ ] "Descargar .txt" genera archivo con nombre correcto
+- [ ] "Imprimir" abre dialogo del navegador
+- [ ] Todo el UI esta traducido en ES, EN y PT
+- [ ] Si no hay metas, se muestra mensaje informativo
 
