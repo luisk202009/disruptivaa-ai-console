@@ -7,6 +7,7 @@ import { useIntegrations } from "@/hooks/useIntegrations";
 import { useAuth } from "@/contexts/AuthContext";
 import { DisruptivaaAgent, DISRUPTIVAA_AGENTS } from "./Dashboard";
 import { useOmnichannelMetrics } from "@/hooks/useOmnichannelMetrics";
+import { useSmartAlerts } from "@/hooks/useSmartAlerts";
 import { Button } from "./ui/button";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -72,6 +73,7 @@ const CommandConsole = ({
   const { messages, loading: messagesLoading, saveMessage, addOptimisticMessage, addErrorMessage } = useMessages(chatId);
   const { getConnectedPlatforms } = useIntegrations();
   const { fetchAllMetrics: fetchOmnichannelMetrics } = useOmnichannelMetrics();
+  const { alerts: smartAlerts } = useSmartAlerts();
 
   const handleFilesSelected = (files: File[]) => {
     setAttachedFiles(prev => [...prev, ...files]);
@@ -215,6 +217,15 @@ const CommandConsole = ({
       chatId: currentChatId || null,
       projectId: activeProjectId || null,
       files: filesData,
+      activeAlerts: isAdsOptimizerAgent && smartAlerts.length > 0
+        ? smartAlerts.map(a => ({
+            metricKey: a.metricKey,
+            level: a.level,
+            currentValue: a.currentValue,
+            targetValue: a.targetValue,
+            deviationPercent: a.deviationPercent,
+          }))
+        : undefined,
     };
       
       console.log("📤 Request Body:", { ...requestBody, files: filesData.map(f => ({ name: f.name, size: f.size })) });
