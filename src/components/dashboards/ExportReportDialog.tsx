@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ export const ExportReportDialog = ({
   widgets,
   dashboardName,
 }: ExportReportDialogProps) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const generateReport = (): string => {
@@ -109,10 +111,10 @@ export const ExportReportDialog = ({
     try {
       await navigator.clipboard.writeText(reportText);
       setCopied(true);
-      toast.success("Informe copiado al portapapeles");
+      toast.success(t("exportReport.copied"));
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      toast.error("Error al copiar el informe");
+      toast.error(t("exportReport.copyError"));
     }
   };
 
@@ -126,7 +128,7 @@ export const ExportReportDialog = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success("Informe descargado");
+    toast.success(t("exportReport.downloaded"));
   };
 
   return (

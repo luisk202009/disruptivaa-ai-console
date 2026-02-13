@@ -99,5 +99,51 @@
     "noGoals": "Sem objetivos definidos",
     "defineGoal": "Definir Meta",
     "demoData": "Demo"
+  },
+  "connections": {
+    "title": "Conexões",
+    "subtitle": "Conecte suas contas de publicidade para que nossos agentes possam analisar suas métricas e otimizar suas campanhas.",
+    "metaDescription": "Conecte sua conta de Facebook e Instagram Ads",
+    "googleDescription": "Conecte sua conta de Google Ads",
+    "tiktokDescription": "Conecte sua conta de TikTok Business",
+    "connected": "Conectado",
+    "disconnected": "Não conectado",
+    "disconnect": "Desconectar",
+    "connectAccount": "Conectar Conta",
+    "validating": "Validando...",
+    "connectSuccess": "Conta conectada com sucesso",
+    "connectError": "Erro ao conectar a conta",
+    "disconnectSuccess": "Conta desconectada",
+    "disconnectError": "Erro ao desconectar a conta",
+    "googleSuccess": "Conta do Google Ads vinculada com sucesso.",
+    "metaSuccess": "Conta vinculada com sucesso. {{count}} conta(s) detectada(s).",
+    "loginRequired": "Faça login para conectar suas contas de publicidade.",
+    "oauthNote": "A conexão com Meta Ads usa o fluxo seguro do Facebook Login. O token de acesso dura 60 dias.",
+    "oauthLabel": "OAuth 2.0",
+    "accountsDetected": "Contas detectadas:",
+    "andMore": "... e mais {{count}}",
+    "redirecting": "Redirecionando para Conexões...",
+    "processingGoogle": "Conectando com Google Ads...",
+    "processingGoogleDesc": "Estamos validando sua autorização e obtendo acesso à sua conta.",
+    "processingMeta": "Conectando com Meta Ads...",
+    "processingMetaDesc": "Estamos validando sua autorização e obtendo acesso às suas contas.",
+    "successTitle": "Conexão bem-sucedida!",
+    "successGoogle": "Sua conta do Google Ads foi vinculada com sucesso. Redirecionando...",
+    "successMeta": "Sua conta do Meta Ads foi vinculada com sucesso. Redirecionando...",
+    "errorTitle": "Erro de conexão",
+    "errorNoCode": "Nenhum código de autorização recebido",
+    "errorSecurity": "Erro de segurança: Estado inválido. Tente conectar novamente.",
+    "errorAuth": "Você não está autenticado. Faça login e tente novamente.",
+    "errorCancelled": "O usuário cancelou a autorização",
+    "errorExchange": "Erro ao processar a autorização"
+  },
+  "settings": {
+    "resetSuccess": "Enviamos um e-mail para alterar sua senha",
+    "resetError": "Erro ao enviar o e-mail de redefinição"
+  },
+  "exportReport": {
+    "copied": "Relatório copiado para a área de transferência",
+    "copyError": "Erro ao copiar o relatório",
+    "downloaded": "Relatório baixado"
   }
 }
