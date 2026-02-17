@@ -17,9 +17,10 @@ export interface MetricConfig {
   campaign_id?: string;
   comparison?: boolean;
   goal?: number;
-  goal_id?: string; // Reference to project_goals.id for GoalTracker widgets
-  goal_data?: ProjectGoal; // Full goal object for rendering
-  currency?: string; // Currency override for this widget
+  goal_id?: string;
+  goal_data?: ProjectGoal;
+  currency?: string;
+  data_source?: DataSource;
 }
 
 export interface GridSettings {
