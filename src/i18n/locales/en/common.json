@@ -429,7 +429,10 @@
     "title": "Your subscription is pending",
     "subtitle": "Contact support to activate your account and access the platform.",
     "contactSupport": "Contact Support",
-    "pending": "Pending"
+    "pending": "Pending",
+    "paymentConfirmed": "Payment confirmed! Your access has been activated",
+    "paymentFailed": "There was a problem with your payment",
+    "canceled": "Your subscription has been canceled"
   },
   "onboarding": {
     "title": "Welcome to Disruptivaa",
