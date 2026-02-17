@@ -10,6 +10,7 @@ import { es, enUS, ptBR } from "date-fns/locale";
 import { useState } from "react";
 import MetaOAuthButton from "@/components/MetaOAuthButton";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
+import TikTokOAuthButton from "@/components/TikTokOAuthButton";
 
 const DATE_LOCALES: Record<string, typeof es> = { es, en: enUS, pt: ptBR };
 
@@ -191,6 +192,8 @@ const Connections = () => {
                       <MetaOAuthButton isConnecting={isConnecting} />
                     ) : platform.id === 'google_ads' ? (
                       <GoogleOAuthButton isConnecting={isConnecting} />
+                    ) : platform.id === 'tiktok_ads' ? (
+                      <TikTokOAuthButton isConnecting={isConnecting} />
                     ) : (
                       <Button className="w-full gap-2" style={{ backgroundColor: '#EF7911' }} onClick={() => handleConnect(platform.id)} disabled={isConnecting}>
                         {isConnecting ? <Loader2 className="animate-spin" size={16} /> : <ExternalLink size={16} />}

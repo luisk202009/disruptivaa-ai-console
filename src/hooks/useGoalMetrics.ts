@@ -49,7 +49,7 @@ const getSimulatedValue = (metricKey: string): number => {
 export const useGoalMetrics = (
   goals: ProjectGoal[],
   accountId?: string,
-  platform: "meta_ads" | "google_ads" = "meta_ads"
+  platform: "meta_ads" | "google_ads" | "tiktok_ads" = "meta_ads"
 ): UseGoalMetricsResult => {
   const { user } = useAuth();
   const [metricsData, setMetricsData] = useState<GoalMetricData[]>([]);
@@ -111,7 +111,11 @@ export const useGoalMetrics = (
       }
 
       // Fetch real metrics for each goal
-      const functionName = platform === "meta_ads" ? "fetch-meta-metrics" : "fetch-google-ads-metrics";
+      const functionName = platform === "meta_ads" 
+        ? "fetch-meta-metrics" 
+        : platform === "google_ads" 
+          ? "fetch-google-ads-metrics" 
+          : "fetch-tiktok-ads-metrics";
       const targetAccountId = accountId || integration.account_ids[0];
 
       const results = await Promise.all(

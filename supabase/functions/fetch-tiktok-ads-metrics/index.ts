@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface MetricRequest {
@@ -18,7 +18,6 @@ interface DateRange {
   until: string;
 }
 
-// Calculate date ranges based on preset
 function calculateDateRanges(datePreset: string): { current: DateRange; previous: DateRange } {
   const today = new Date();
   
@@ -65,20 +64,9 @@ function calculateDateRanges(datePreset: string): { current: DateRange; previous
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
   return {
-    current: {
-      since: formatDate(currentSince),
-      until: formatDate(currentUntil),
-    },
-    previous: {
-      since: formatDate(previousSince),
-      until: formatDate(previousUntil),
-    },
+    current: { since: formatDate(currentSince), until: formatDate(currentUntil) },
+    previous: { since: formatDate(previousSince), until: formatDate(previousUntil) },
   };
-}
-
-function formatDateLabel(dateStr: string): string {
-  const date = new Date(dateStr + "T12:00:00");
-  return date.toLocaleDateString("es-MX", { weekday: "short", day: "numeric" });
 }
 
 // Map our metrics to TikTok Ads API fields
@@ -91,17 +79,118 @@ const metricFieldMap: Record<string, string> = {
   cpc: "cpc",
   cpm: "cpm",
   conversions: "conversion",
+  cpa: "cost_per_conversion",
+  roas: "value_per_cost",
 };
+
+// TikTok API metric names for the report request
+const tiktokApiMetrics = [
+  "spend", "show_cnt", "click_cnt", "conversion", "ctr", "cpc", "cpm",
+  "cost_per_conversion", "value_per_cost",
+];
+
+async function fetchTikTokReport(
+  accessToken: string,
+  advertiserId: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, number>> {
+  const response = await fetch(
+    "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/",
+    {
+      method: "POST",
+      headers: {
+        "Access-Token": accessToken,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        advertiser_id: advertiserId,
+        report_type: "BASIC",
+        data_level: "AUCTION_ADVERTISER",
+        dimensions: ["stat_time_day"],
+        metrics: tiktokApiMetrics,
+        start_date: startDate,
+        end_date: endDate,
+        page_size: 365,
+      }),
+    }
+  );
+
+  const data = await response.json();
+  
+  if (data.code !== 0) {
+    console.error("❌ TikTok API error:", data.message);
+    throw new Error(data.message || "TikTok API error");
+  }
+
+  // Aggregate daily data
+  const totals: Record<string, number> = {};
+  const rows = data.data?.list || [];
+
+  for (const row of rows) {
+    const metrics = row.metrics || {};
+    for (const [key, value] of Object.entries(metrics)) {
+      const numVal = Number(value) || 0;
+      totals[key] = (totals[key] || 0) + numVal;
+    }
+  }
+
+  // Recalculate rate metrics as averages
+  if (rows.length > 0) {
+    for (const key of ["ctr", "cpc", "cpm", "cost_per_conversion", "value_per_cost"]) {
+      if (totals[key]) {
+        totals[key] = totals[key] / rows.length;
+      }
+    }
+  }
+
+  return totals;
+}
+
+function extractMetricValue(totals: Record<string, number>, metric: string): number {
+  const tiktokField = metricFieldMap[metric] || metric;
+  return Math.round((totals[tiktokField] || 0) * 100) / 100;
+}
+
+// Demo data generators (fallback)
+function generateDemoValue(metric: string): number {
+  switch (metric) {
+    case "impressions": return Math.floor(15000 + Math.random() * 60000);
+    case "clicks": return Math.floor(800 + Math.random() * 3000);
+    case "spend": return Math.round((150 + Math.random() * 600) * 100) / 100;
+    case "reach": return Math.floor(12000 + Math.random() * 50000);
+    case "ctr": return Math.round((1.5 + Math.random() * 4) * 100) / 100;
+    case "cpc": return Math.round((0.3 + Math.random() * 1.2) * 100) / 100;
+    case "cpm": return Math.round((4 + Math.random() * 12) * 100) / 100;
+    case "conversions": return Math.floor(15 + Math.random() * 120);
+    case "cpa": return Math.round((5 + Math.random() * 15) * 100) / 100;
+    case "roas": return Math.round((1.5 + Math.random() * 4) * 100) / 100;
+    default: return Math.floor(1500 + Math.random() * 6000);
+  }
+}
+
+function generateDemoDataPoints(datePreset: string, metric: string): { date: string; value: number }[] {
+  const days = datePreset === "last_30d" ? 30 : datePreset === "last_7d" ? 7 : 1;
+  const dataPoints: { date: string; value: number }[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    dataPoints.push({
+      date: date.toLocaleDateString("es-MX", { weekday: "short", day: "numeric" }),
+      value: generateDemoValue(metric) / days,
+    });
+  }
+  return dataPoints;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.error("❌ No authorization header provided");
       return new Response(
         JSON.stringify({ error: "No authorization header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -112,7 +201,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Decode JWT to extract user ID (reliable in signing-keys environment)
+    // Decode JWT
     const token = authHeader.replace("Bearer ", "");
     let userId: string;
     try {
@@ -121,22 +210,19 @@ serve(async (req) => {
       userId = payload.sub;
       if (!userId) throw new Error("No sub claim");
     } catch (e) {
-      console.error("❌ Invalid token:", e.message);
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`👤 User authenticated: ${userId}`);
-
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
 
-    console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
+    console.log(`📊 TikTok metrics: user=${userId}, metric=${metric}, preset=${date_preset}`);
 
-    // Get user's TikTok Ads integration
-    const { data: integration, error: integrationError } = await supabaseAdmin
+    // Get user's TikTok integration
+    const { data: integration } = await supabaseAdmin
       .from("user_integrations")
       .select("access_token, account_ids")
       .eq("user_id", userId)
@@ -144,37 +230,18 @@ serve(async (req) => {
       .eq("status", "connected")
       .single();
 
-    if (integrationError) {
-      console.error("❌ Error fetching integration:", integrationError.message);
-    }
-
-    if (!integration?.access_token) {
-      console.log("ℹ️ No TikTok Ads integration found, returning demo data");
+    if (!integration?.access_token || !integration.account_ids?.length) {
+      console.log("ℹ️ No TikTok integration, returning demo data");
+      const demoValue = generateDemoValue(metric);
       return new Response(
-        JSON.stringify({ 
-          error: "No TikTok Ads integration found",
-          is_demo: true,
-          value: generateDemoValue(metric),
-          previous_value: generateDemoValue(metric) * 0.85,
+        JSON.stringify({
+          value: demoValue,
+          previous_value: demoValue * 0.85,
           change_percent: 15,
           trend: "up",
           data_points: generateDemoDataPoints(date_preset, metric),
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!integration.account_ids?.length) {
-      console.log("ℹ️ No account IDs found, returning demo data");
-      return new Response(
-        JSON.stringify({ 
-          error: "No ad accounts connected",
           is_demo: true,
-          value: generateDemoValue(metric),
-          previous_value: generateDemoValue(metric) * 0.85,
-          change_percent: 15,
-          trend: "up",
-          data_points: generateDemoDataPoints(date_preset, metric),
+          platform: "tiktok_ads",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -183,72 +250,58 @@ serve(async (req) => {
     const targetAccountId = account_id || integration.account_ids[0];
     const dateRanges = calculateDateRanges(date_preset);
 
-    console.log(`📊 Fetching ${metric} for TikTok Ads account ${targetAccountId}`);
+    console.log(`📊 Fetching real TikTok data for account ${targetAccountId}`);
 
-    // Note: In production, you would call the TikTok Ads API here
-    // For now, return demo data with proper structure
-    const demoValue = generateDemoValue(metric);
-    const previousValue = demoValue * (0.75 + Math.random() * 0.5);
-    const changePercent = ((demoValue - previousValue) / previousValue) * 100;
+    // Fetch current period
+    const currentTotals = await fetchTikTokReport(
+      integration.access_token,
+      targetAccountId,
+      dateRanges.current.since,
+      dateRanges.current.until
+    );
+
+    const value = extractMetricValue(currentTotals, metric);
+
+    let previousValue: number | undefined;
+    let changePercent: number | undefined;
+    let trend = "neutral";
+
+    if (comparison) {
+      try {
+        const previousTotals = await fetchTikTokReport(
+          integration.access_token,
+          targetAccountId,
+          dateRanges.previous.since,
+          dateRanges.previous.until
+        );
+        previousValue = extractMetricValue(previousTotals, metric);
+        if (previousValue > 0) {
+          changePercent = ((value - previousValue) / previousValue) * 100;
+          trend = changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral";
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not fetch comparison data:", e.message);
+      }
+    }
 
     return new Response(
       JSON.stringify({
-        value: demoValue,
-        previous_value: comparison ? previousValue : undefined,
-        change_percent: comparison ? changePercent : undefined,
-        trend: changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral",
-        data_points: generateDemoDataPoints(date_preset, metric),
+        value,
+        previous_value: previousValue,
+        change_percent: changePercent != null ? Math.round(changePercent * 100) / 100 : undefined,
+        trend,
         account_name: `TikTok Ads ${targetAccountId}`,
         currency: "USD",
-        is_demo: true,
+        is_demo: false,
         platform: "tiktok_ads",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("❌ Error fetching metric:", error);
+    console.error("❌ Error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
-
-function generateDemoValue(metric: string): number {
-  switch (metric) {
-    case "impressions":
-      return Math.floor(15000 + Math.random() * 60000);
-    case "clicks":
-      return Math.floor(800 + Math.random() * 3000);
-    case "spend":
-      return Math.round((150 + Math.random() * 600) * 100) / 100;
-    case "reach":
-      return Math.floor(12000 + Math.random() * 50000);
-    case "ctr":
-      return Math.round((1.5 + Math.random() * 4) * 100) / 100;
-    case "cpc":
-      return Math.round((0.3 + Math.random() * 1.2) * 100) / 100;
-    case "cpm":
-      return Math.round((4 + Math.random() * 12) * 100) / 100;
-    case "conversions":
-      return Math.floor(15 + Math.random() * 120);
-    default:
-      return Math.floor(1500 + Math.random() * 6000);
-  }
-}
-
-function generateDemoDataPoints(datePreset: string, metric: string): { date: string; value: number }[] {
-  const days = datePreset === "last_30d" ? 30 : datePreset === "last_7d" ? 7 : 1;
-  const dataPoints: { date: string; value: number }[] = [];
-  
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    dataPoints.push({
-      date: date.toLocaleDateString("es-MX", { weekday: "short", day: "numeric" }),
-      value: generateDemoValue(metric) / days,
-    });
-  }
-  
-  return dataPoints;
-}

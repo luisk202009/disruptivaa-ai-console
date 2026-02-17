@@ -13,6 +13,7 @@ import Agents from "./pages/Agents";
 import Connections from "./pages/Connections";
 import MetaCallback from "./pages/MetaCallback";
 import GoogleCallback from "./pages/GoogleCallback";
+import TikTokCallback from "./pages/TikTokCallback";
 import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
 import ProjectDetail from "./pages/ProjectDetail";
@@ -74,6 +75,7 @@ const App = () => (
               />
               <Route path="/auth/meta/callback" element={<MetaCallback />} />
               <Route path="/auth/google/callback" element={<GoogleCallback />} />
+              <Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
               <Route
                 path="/dashboards"
                 element={
