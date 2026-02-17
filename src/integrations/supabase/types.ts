@@ -256,6 +256,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+          read_by: string[]
+          title: string
+          type: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          read_by?: string[]
+          title: string
+          type?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          read_by?: string[]
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_id: string | null
@@ -540,6 +578,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_notification_read: {
+        Args: { _notification_id: string }
+        Returns: undefined
       }
     }
     Enums: {

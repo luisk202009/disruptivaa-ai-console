@@ -396,7 +396,21 @@
     "plan": "Plan",
     "noSubscriptions": "No hay suscripciones registradas.",
     "subscriptionCreated": "Suscripción creada correctamente",
-    "statusUpdated": "Estado actualizado"
+    "statusUpdated": "Estado actualizado",
+    "notifications": "Notificaciones"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "noNotifications": "No hay notificaciones",
+    "markRead": "Marcar como leída",
+    "sendNotification": "Enviar Notificación",
+    "allCompanies": "Todas las Empresas",
+    "notifTitle": "Título",
+    "notifBody": "Mensaje",
+    "notifType": "Tipo",
+    "destination": "Destino",
+    "global": "Global",
+    "sent": "Notificación enviada"
   },
   "subscription": {
     "title": "Tu suscripción está pendiente",

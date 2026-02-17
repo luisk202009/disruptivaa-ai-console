@@ -396,7 +396,21 @@
     "plan": "Plan",
     "noSubscriptions": "No subscriptions registered.",
     "subscriptionCreated": "Subscription created successfully",
-    "statusUpdated": "Status updated"
+    "statusUpdated": "Status updated",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "No notifications",
+    "markRead": "Mark as read",
+    "sendNotification": "Send Notification",
+    "allCompanies": "All Companies",
+    "notifTitle": "Title",
+    "notifBody": "Message",
+    "notifType": "Type",
+    "destination": "Destination",
+    "global": "Global",
+    "sent": "Notification sent"
   },
   "subscription": {
     "title": "Your subscription is pending",
