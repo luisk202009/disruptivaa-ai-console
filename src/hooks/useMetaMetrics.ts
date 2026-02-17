@@ -9,6 +9,7 @@ export interface MetricData {
   change_percent?: number;
   trend?: "up" | "down" | "neutral";
   data_points?: { date: string; value: number }[];
+  currency?: string;
 }
 
 interface MetricResult {
@@ -109,16 +110,34 @@ export const useMetaMetrics = () => {
     }
   }, [user, cache, CACHE_TTL]);
 
-  const formatValue = (value: number, metric: MetricType): string => {
+  const formatValue = (value: number, metric: MetricType, currency: string = "USD"): string => {
     const format = METRIC_FORMATS[metric];
     
+    // Determine locale based on currency
+    const getLocale = (cur: string): string => {
+      switch (cur) {
+        case "COP": return "es-CO";
+        case "EUR": return "es-ES";
+        case "MXN": return "es-MX";
+        case "BRL": return "pt-BR";
+        case "ARS": return "es-AR";
+        case "CLP": return "es-CL";
+        case "PEN": return "es-PE";
+        default: return "en-US";
+      }
+    };
+
+    // Currencies that don't use decimals
+    const noDecimalCurrencies = ["COP", "CLP", "JPY", "KRW"];
+    const useDecimals = !noDecimalCurrencies.includes(currency);
+
     switch (format) {
       case "currency":
-        return new Intl.NumberFormat("es-MX", {
+        return new Intl.NumberFormat(getLocale(currency), {
           style: "currency",
-          currency: "USD",
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
+          currency,
+          minimumFractionDigits: useDecimals ? 2 : 0,
+          maximumFractionDigits: useDecimals ? 2 : 0,
         }).format(value);
       case "percent":
         return `${value.toFixed(2)}%`;

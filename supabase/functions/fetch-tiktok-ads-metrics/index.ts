@@ -199,6 +199,7 @@ serve(async (req) => {
         trend: changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral",
         data_points: generateDemoDataPoints(date_preset, metric),
         account_name: `TikTok Ads ${targetAccountId}`,
+        currency: "USD",
         is_demo: true,
         platform: "tiktok_ads",
       }),

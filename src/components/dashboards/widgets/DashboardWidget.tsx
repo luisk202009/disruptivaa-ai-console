@@ -66,7 +66,12 @@ export const DashboardWidget = ({
         setData(null);
         setError("no_integration");
       } else {
-        setData(result.data);
+        // Inject currency from response into MetricData
+        const metricData = { ...result.data };
+        if ((result.data as any).currency) {
+          metricData.currency = (result.data as any).currency;
+        }
+        setData(metricData);
       }
     } else {
       setData(null);

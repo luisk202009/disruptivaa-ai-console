@@ -18,7 +18,8 @@ interface AreaChartWidgetProps {
 
 export const AreaChartWidget = ({ widget, data }: AreaChartWidgetProps) => {
   const { formatValue } = useMetaMetrics();
-  const { metric } = widget.metric_config;
+  const { metric, currency: configCurrency } = widget.metric_config;
+  const currency = data.currency || configCurrency || "USD";
 
   // Only use real data_points - no fallback to mock data
   const chartData = data.data_points || [];
@@ -53,7 +54,7 @@ export const AreaChartWidget = ({ widget, data }: AreaChartWidgetProps) => {
             tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(value) => formatValue(value, metric)}
+            tickFormatter={(value) => formatValue(value, metric, currency)}
           />
           <Tooltip
             contentStyle={{
@@ -62,7 +63,7 @@ export const AreaChartWidget = ({ widget, data }: AreaChartWidgetProps) => {
               borderRadius: "8px",
               fontSize: "12px",
             }}
-            formatter={(value: number) => [formatValue(value, metric), widget.title]}
+            formatter={(value: number) => [formatValue(value, metric, currency), widget.title]}
             labelStyle={{ color: "hsl(var(--foreground))" }}
           />
           <Area
