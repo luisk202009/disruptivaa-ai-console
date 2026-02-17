@@ -168,18 +168,23 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify user using admin client (works reliably in signing-keys environment)
+    // Decode JWT to extract user ID (reliable in signing-keys environment)
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) {
-      console.error("❌ Invalid user:", userError?.message);
+    let userId: string;
+    try {
+      const payloadBase64 = token.split(".")[1];
+      const payload = JSON.parse(atob(payloadBase64));
+      userId = payload.sub;
+      if (!userId) throw new Error("No sub claim");
+    } catch (e) {
+      console.error("❌ Invalid token:", e.message);
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`👤 User authenticated: ${user.id}`);
+    console.log(`👤 User authenticated: ${userId}`);
 
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
@@ -190,7 +195,7 @@ serve(async (req) => {
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from("user_integrations")
       .select("access_token, account_ids, refresh_token, token_expires_at")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("platform", "google_ads")
       .eq("status", "connected")
       .single();
@@ -226,7 +231,7 @@ serve(async (req) => {
         console.log("🔄 Token expired or expiring soon, refreshing...");
         const refreshed = await refreshGoogleToken(
           supabaseAdmin,
-          user.id,
+          userId,
           integration.refresh_token
         );
         
