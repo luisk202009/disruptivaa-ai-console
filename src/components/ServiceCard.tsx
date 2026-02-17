@@ -27,7 +27,10 @@ const ServiceCard = ({ url, siteType, companyColor }: ServiceCardProps) => {
     <motion.div
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      onClick={() => window.open(url, "_blank")}
+      onClick={() => {
+        const normalizedUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+        window.open(normalizedUrl, "_blank");
+      }}
       className="cursor-pointer rounded-xl border border-border/50 bg-card p-5 transition-colors hover:border-primary/30 group"
       style={{ fontFamily: "'Fira Sans', sans-serif" }}
     >
