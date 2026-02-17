@@ -429,7 +429,10 @@
     "title": "Tu suscripción está pendiente",
     "subtitle": "Contacta con soporte para activar tu cuenta y acceder a la plataforma.",
     "contactSupport": "Contactar Soporte",
-    "pending": "Pendiente"
+    "pending": "Pendiente",
+    "paymentConfirmed": "¡Pago confirmado! Tu acceso ha sido activado",
+    "paymentFailed": "Hubo un problema con tu pago",
+    "canceled": "Tu suscripción ha sido cancelada"
   },
   "onboarding": {
     "title": "Bienvenido a Disruptivaa",
