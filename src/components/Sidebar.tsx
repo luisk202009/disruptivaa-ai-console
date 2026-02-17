@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useCompanyBranding } from "@/hooks/useCompanyBranding";
+import NotificationCenter from "@/components/NotificationCenter";
 import logo from "@/assets/logo-disruptivaa.png";
 import isologo from "@/assets/isologo.png";
 import {
@@ -178,6 +179,11 @@ const Sidebar = () => {
               collapsed={collapsed}
               onClick={() => navigate("/connections")}
             />
+          </div>
+
+          {/* ── NOTIFICACIONES ── */}
+          <div className="px-4 mt-2 mb-6">
+            <NotificationCenter collapsed={collapsed} />
           </div>
         </div>
       </div>

@@ -396,7 +396,21 @@
     "plan": "Plano",
     "noSubscriptions": "Nenhuma assinatura registrada.",
     "subscriptionCreated": "Assinatura criada com sucesso",
-    "statusUpdated": "Status atualizado"
+    "statusUpdated": "Status atualizado",
+    "notifications": "Notificações"
+  },
+  "notifications": {
+    "title": "Notificações",
+    "noNotifications": "Sem notificações",
+    "markRead": "Marcar como lida",
+    "sendNotification": "Enviar Notificação",
+    "allCompanies": "Todas as Empresas",
+    "notifTitle": "Título",
+    "notifBody": "Mensagem",
+    "notifType": "Tipo",
+    "destination": "Destino",
+    "global": "Global",
+    "sent": "Notificação enviada"
   },
   "subscription": {
     "title": "Sua assinatura está pendente",
