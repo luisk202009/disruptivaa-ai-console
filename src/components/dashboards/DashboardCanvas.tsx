@@ -10,6 +10,7 @@ import {
 import { Widget, GridSettings, DatePreset } from "@/hooks/useWidgets";
 import { DashboardWidget } from "./widgets/DashboardWidget";
 import { LayoutGrid } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -65,11 +66,10 @@ export const DashboardCanvas = ({
   if (loading) {
     return (
       <div className="grid grid-cols-12 gap-4">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className={`col-span-${i % 2 === 0 ? 6 : 3} h-48 glass rounded-xl animate-pulse`}
-          />
+        {[3, 6, 3, 6, 4, 4, 4].map((span, i) => (
+          <div key={i} className={`col-span-${span}`}>
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
         ))}
       </div>
     );

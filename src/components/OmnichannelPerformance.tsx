@@ -1,26 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { TrendingUp, DollarSign, Target, Loader2, AlertTriangle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { cn } from "@/lib/utils";
+import { TrendingUp, DollarSign, Target, AlertTriangle, AlertCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-interface PlatformMetrics {
-  spend: number;
-  clicks: number;
-  impressions: number;
-  cpc: number;
-  conversions: number;
-  isDemo: boolean;
-  currency?: string;
-}
-
-interface PlatformData {
-  meta: PlatformMetrics | null;
-  google: PlatformMetrics | null;
-  tiktok: PlatformMetrics | null;
-}
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOmnichannelMetrics, PlatformMetrics } from "@/hooks/useOmnichannelMetrics";
 
 const PLATFORM_COLORS: Record<string, string> = {
   meta: "#1877F2",
@@ -30,94 +14,24 @@ const PLATFORM_COLORS: Record<string, string> = {
 
 const OmnichannelPerformance = () => {
   const { t } = useTranslation("common");
-  const [data, setData] = useState<PlatformData>({ meta: null, google: null, tiktok: null });
+  const { data: omnichannelData, fetchAllMetrics } = useOmnichannelMetrics();
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(true);
 
-  const fetchPlatformMetrics = useCallback(async (
-    functionName: string,
-    metric: string
-  ): Promise<{ value: number; is_demo: boolean; currency?: string } | null> => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ metric, date_preset: "last_30d", comparison: false }),
-        }
-      );
-
-      if (!response.ok) return null;
-      const result = await response.json();
-      return { value: result.value ?? 0, is_demo: result.is_demo ?? true, currency: result.currency };
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const fetchAllMetrics = useCallback(async () => {
-    setLoading(true);
-
-    const platforms = [
-      { key: "meta" as const, fn: "fetch-meta-metrics" },
-      { key: "google" as const, fn: "fetch-google-ads-metrics" },
-      { key: "tiktok" as const, fn: "fetch-tiktok-ads-metrics" },
-    ];
-
-    const metrics = ["spend", "clicks", "impressions", "cpc", "conversions"];
-    const result: PlatformData = { meta: null, google: null, tiktok: null };
-
-    // Fetch all platforms in parallel
-    await Promise.all(
-      platforms.map(async (platform) => {
-        const results = await Promise.all(
-          metrics.map((m) => fetchPlatformMetrics(platform.fn, m))
-        );
-
-        // If at least spend came back, build platform data
-        if (results[0]) {
-          let isDemo = false;
-          const values: number[] = [];
-          for (let i = 0; i < metrics.length; i++) {
-            values.push(results[i]?.value ?? 0);
-            if (results[i]?.is_demo) isDemo = true;
-          }
-
-          result[platform.key] = {
-            spend: values[0],
-            clicks: values[1],
-            impressions: values[2],
-            cpc: values[3],
-            conversions: values[4],
-            isDemo,
-            currency: results[0]?.currency ?? "USD",
-          };
-        }
-      })
-    );
-
-    setData(result);
-    setLoading(false);
-  }, [fetchPlatformMetrics]);
-
   useEffect(() => {
-    fetchAllMetrics();
+    const load = async () => {
+      setLoading(true);
+      await fetchAllMetrics();
+      setLoading(false);
+    };
+    load();
   }, [fetchAllMetrics]);
 
-  // Compute consolidated KPIs
+  const data = omnichannelData.platforms;
+
+  // Use consolidated data from hook
   const activePlatforms = Object.entries(data).filter(([, v]) => v !== null) as [string, PlatformMetrics][];
-  const totalSpend = activePlatforms.reduce((sum, [, v]) => sum + v.spend, 0);
-  const totalConversions = activePlatforms.reduce((sum, [, v]) => sum + v.conversions, 0);
-  const combinedCPA = totalConversions > 0 ? totalSpend / totalConversions : 0;
-  const avgROAS = totalSpend > 0 && totalConversions > 0 ? (totalConversions * 10) / totalSpend : 0;
-  const allDemo = activePlatforms.every(([, v]) => v.isDemo);
+  const { totalSpend, combinedCPA, avgROAS, allDemo } = omnichannelData.consolidated;
   
   // Get currency from first active platform
   const detectedCurrency = activePlatforms.length > 0 ? (activePlatforms[0][1].currency || "USD") : "USD";
@@ -143,10 +57,27 @@ const OmnichannelPerformance = () => {
 
   if (loading) {
     return (
+      <div className="glass rounded-xl p-6 mb-6 animate-fade-in space-y-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="w-4 h-4 rounded" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-lg" />
+          <Skeleton className="h-20 rounded-lg" />
+        </div>
+        <Skeleton className="h-40 rounded-lg" />
+      </div>
+    );
+  }
+
+  if (omnichannelData.error) {
+    return (
       <div className="glass rounded-xl p-6 mb-6 animate-fade-in">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">{t("omnichannel.loading")}</span>
+        <div className="flex items-center gap-3 text-destructive">
+          <AlertCircle className="w-4 h-4" />
+          <span className="text-sm">{omnichannelData.error}</span>
         </div>
       </div>
     );

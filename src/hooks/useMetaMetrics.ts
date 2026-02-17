@@ -1,7 +1,13 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { MetricConfig, MetricType, DatePreset } from "./useWidgets";
+import { MetricConfig, MetricType, DatePreset, DataSource } from "./useWidgets";
+
+const EDGE_FUNCTION_MAP: Record<string, string> = {
+  meta_ads: "fetch-meta-metrics",
+  google_ads: "fetch-google-ads-metrics",
+  tiktok_ads: "fetch-tiktok-ads-metrics",
+};
 
 export interface MetricData {
   value: number;
@@ -77,7 +83,8 @@ export const useMetaMetrics = () => {
         return { data: null, loading: false, error: "No session" };
       }
 
-      const response = await supabase.functions.invoke("fetch-meta-metrics", {
+      const edgeFunction = EDGE_FUNCTION_MAP[config.data_source || "meta_ads"] || "fetch-meta-metrics";
+      const response = await supabase.functions.invoke(edgeFunction, {
         body: {
           metric: config.metric,
           date_preset: config.date_preset,

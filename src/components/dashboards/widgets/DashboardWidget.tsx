@@ -53,6 +53,7 @@ export const DashboardWidget = ({
     const config = {
       ...widget.metric_config,
       date_preset: globalDatePreset,
+      data_source: widget.data_source,
     };
     
     const result = await fetchMetric(config);
