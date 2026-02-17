@@ -338,7 +338,7 @@
   },
   "admin": {
     "title": "Panel de Administración",
-    "subtitle": "Gestiona empresas y sus sitios web",
+    "subtitle": "Gestiona empresas, usuarios y planes",
     "companyName": "Empresa",
     "color": "Color",
     "actions": "Acciones",
@@ -351,6 +351,30 @@
     "type": "Tipo",
     "websiteAdded": "Sitio web agregado correctamente",
     "websiteDeleted": "Sitio web eliminado",
-    "websiteError": "Error al procesar la solicitud"
+    "websiteError": "Error al procesar la solicitud",
+    "companies": "Empresas",
+    "users": "Usuarios",
+    "plans": "Planes",
+    "promote": "Promover a Admin",
+    "promoted": "Usuario promovido a Admin",
+    "alreadyAdmin": "Ya es Admin",
+    "email": "Email",
+    "role": "Rol",
+    "company": "Empresa",
+    "planName": "Nombre del Plan",
+    "planPrice": "Precio",
+    "stripeId": "Stripe ID",
+    "mockBadge": "Simulado"
+  },
+  "onboarding": {
+    "title": "Bienvenido a Disruptivaa",
+    "subtitle": "Configura tu empresa para comenzar",
+    "companyName": "Nombre de la empresa",
+    "companyPlaceholder": "Ej: Mi Agencia Digital",
+    "brandColor": "Color de marca",
+    "createCompany": "Crear Empresa",
+    "creating": "Creando...",
+    "success": "Empresa creada exitosamente",
+    "error": "Error al crear la empresa"
   }
 }
