@@ -1,160 +1,168 @@
 
-# Sprint 8 - Tarea 3: Webhooks de Stripe Reales
+# Migracion de TikTok Demo a Conexion Real
 
 ## Resumen
 
-Crear una edge function `stripe-webhook` que reciba eventos de Stripe, valide la firma, y actualice la tabla `subscriptions` en tiempo real. Ademas, agregar realtime al hook `useSubscription` para que el paywall se retire automaticamente al confirmar el pago.
+Eliminar el modo demo de TikTok Ads e implementar el flujo OAuth real completo: edge function de intercambio de tokens, pagina de callback, datos reales en el dashboard, e integracion con Smart Alerts.
+
+## Prerequisitos
+
+Antes de implementar, necesitas obtener las credenciales de tu aplicacion TikTok for Business:
+
+- **TIKTOK_APP_ID**: App ID del portal de desarrolladores de TikTok for Business
+- **TIKTOK_APP_SECRET**: Secret de la misma aplicacion
+
+Estas se solicitaran como secrets de Supabase durante la implementacion.
+
+Tambien deberas configurar en el portal de TikTok la URL de redireccion:
+`https://disruptivaa.lovable.app/auth/tiktok/callback`
 
 ## Cambios
 
-### 1. Migracion de Base de Datos
+### 1. Secrets de TikTok
 
-Agregar dos columnas a la tabla `subscriptions`:
+Solicitar `TIKTOK_APP_ID` y `TIKTOK_APP_SECRET` como secrets de Supabase para uso en las edge functions.
 
-- `stripe_customer_id` (text, nullable)
-- `stripe_subscription_id` (text, nullable)
+### 2. Edge Function: `tiktok-oauth-exchange`
 
-Habilitar Realtime en la tabla `subscriptions` para que el hook pueda reaccionar a cambios.
+Crear `supabase/functions/tiktok-oauth-exchange/index.ts`:
 
+- Recibe `auth_code` y `redirect_uri` del frontend
+- Valida JWT del usuario via `getClaims()`
+- Realiza POST a `https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/` con `app_id`, `secret` y `auth_code`
+- Extrae `access_token` y `advertiser_ids` de la respuesta
+- Upsert en `user_integrations` con `platform: 'tiktok_ads'`, guardando token, account_ids, y status `connected`
+- Retorna `{ success: true, accountsCount }`
+
+Configuracion en `supabase/config.toml`:
 ```text
-ALTER TABLE subscriptions ADD COLUMN stripe_customer_id text;
-ALTER TABLE subscriptions ADD COLUMN stripe_subscription_id text;
-ALTER PUBLICATION supabase_realtime ADD TABLE subscriptions;
+[functions.tiktok-oauth-exchange]
+verify_jwt = false
 ```
 
-### 2. Secret: STRIPE_WEBHOOK_SECRET
+### 3. Componente: `TikTokOAuthButton.tsx`
 
-Solicitar al usuario el secreto `STRIPE_WEBHOOK_SECRET` (obtenido desde el Dashboard de Stripe > Webhooks > Signing secret). Este secreto es necesario para validar la firma `stripe-signature` de cada evento.
+Crear un boton OAuth similar a `GoogleOAuthButton` y `MetaOAuthButton`:
 
-### 3. Edge Function `stripe-webhook/index.ts`
+- Genera un `state` aleatorio y lo guarda en `sessionStorage`
+- Construye la URL de autorizacion de TikTok: `https://business-api.tiktok.com/portal/auth?app_id={APP_ID}&state={state}&redirect_uri={redirect_uri}`
+- El `APP_ID` se obtiene desde una variable de entorno publica o se hardcodea (es un ID publico, no un secret)
+- Redirige al usuario a TikTok para autorizar
 
-Crear la funcion en `supabase/functions/stripe-webhook/index.ts`:
+### 4. Pagina: `TikTokCallback.tsx`
 
-**Flujo principal:**
+Crear `src/pages/TikTokCallback.tsx` siguiendo el patron exacto de `MetaCallback.tsx` y `GoogleCallback.tsx`:
 
+- Captura `auth_code` de los query params
+- Valida `state` contra sessionStorage
+- Invoca la edge function `tiktok-oauth-exchange`
+- Muestra estados: processing, success, error
+- Toast traducido: "TikTok conectado con exito!"
+- Redirige a `/connections`
+
+### 5. Ruta en `App.tsx`
+
+Agregar la ruta:
 ```text
-POST /stripe-webhook
-  -> Leer body raw + header stripe-signature
-  -> Validar firma HMAC-SHA256 con STRIPE_WEBHOOK_SECRET
-  -> Parsear evento JSON
-  -> Switch por event.type:
-
-    "checkout.session.completed":
-      -> Extraer client_reference_id (company_id)
-      -> Extraer customer, subscription de la session
-      -> UPDATE subscriptions SET status='active',
-           stripe_customer_id=customer,
-           stripe_subscription_id=subscription
-         WHERE company_id = client_reference_id
-      -> INSERT notification "Pago confirmado! Tu acceso completo ha sido activado"
-
-    "invoice.payment_failed":
-      -> Extraer customer del invoice
-      -> UPDATE subscriptions SET status='past_due'
-         WHERE stripe_customer_id = customer
-      -> INSERT notification de alerta
-
-    "customer.subscription.deleted":
-      -> Extraer subscription id
-      -> UPDATE subscriptions SET status='canceled'
-         WHERE stripe_subscription_id = subscription.id
-      -> INSERT notification informativa
-
-  -> Responder 200 OK
+<Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
 ```
 
-**Validacion de firma Stripe:**
-Se implementara verificacion HMAC-SHA256 manual usando Web Crypto API (compatible con Deno), comparando el hash del payload con la firma del header.
+### 6. Actualizacion de `Connections.tsx`
 
-**Configuracion:**
-- `verify_jwt = false` en config.toml (los webhooks de Stripe no envian JWT)
-- Se usa `SUPABASE_SERVICE_ROLE_KEY` para operaciones de escritura (el webhook no tiene contexto de usuario autenticado)
+Reemplazar el boton generico de TikTok por el nuevo `TikTokOAuthButton` (similar a como Meta y Google usan sus botones OAuth dedicados).
 
-### 4. Realtime en `useSubscription`
+### 7. Edge Function: `fetch-tiktok-ads-metrics` (datos reales)
 
-Agregar suscripcion a cambios de Postgres en la tabla `subscriptions` dentro del hook, para que cuando el webhook actualice el status a `active`, el componente `SubscriptionPending` desaparezca automaticamente sin recargar.
+Modificar la edge function existente para hacer llamadas reales a la TikTok Marketing API:
 
-**Cambios en el hook:**
-- Escuchar `UPDATE` en `subscriptions` filtrado por `company_id`
-- Al recibir un cambio, invalidar la query de React Query para refrescar datos
+- Cuando hay `access_token` y `account_ids`, llamar a:
+  `https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/`
+- Campos: `spend`, `impressions`, `clicks`, `conversion` (mapeados via `metricFieldMap` existente)
+- Parametros: `advertiser_id`, `start_date`, `end_date`, `report_type: BASIC`, `data_level: AUCTION_ADVERTISER`
+- Eliminar el bloque de datos demo cuando hay integracion real (lineas 188-207)
+- Mantener fallback a demo solo cuando no hay integracion conectada
 
-### 5. Traducciones
+### 8. Smart Alerts: Integracion TikTok
 
-Agregar claves i18n para las notificaciones generadas por el webhook:
+Modificar `useGoalMetrics.ts` para soportar `tiktok_ads` como plataforma:
+
+- Agregar `"tiktok_ads"` al tipo union de `platform`
+- Mapear a `fetch-tiktok-ads-metrics` en la logica de seleccion de funcion
+- El hook `useSmartAlerts` ya consume `useGoalMetrics` y calculara desviaciones automaticamente para TikTok
+
+### 9. OmnichannelPerformance: Limpiar nota demo
+
+En `OmnichannelPerformance.tsx`:
+- Eliminar la seccion de "TikTok Demo Note" condicional (lineas 128-133) ya que dejara de haber modo demo cuando haya conexion real
+- La nota solo se mostrara si `isDemo` es true (ya manejado por la logica existente de `allDemo`)
+
+### 10. Traducciones i18n
+
+Agregar/actualizar claves en `es.json`, `en.json`, `pt.json`:
 
 | Clave | ES | EN | PT |
 |-------|----|----|-----|
-| `subscription.paymentConfirmed` | Pago confirmado! Tu acceso ha sido activado | Payment confirmed! Your access has been activated | Pagamento confirmado! Seu acesso foi ativado |
-| `subscription.paymentFailed` | Hubo un problema con tu pago | There was a problem with your payment | Houve um problema com seu pagamento |
-| `subscription.canceled` | Tu suscripcion ha sido cancelada | Your subscription has been canceled | Sua assinatura foi cancelada |
-
-Nota: Estas traducciones se usan como texto de notificaciones insertadas en la tabla `notifications` desde el webhook. El webhook insertara el texto en espanol por defecto (el idioma se podria determinar por el perfil del usuario en futuras iteraciones).
+| `connections.tiktokSuccess` | TikTok conectado con exito! | TikTok connected successfully! | TikTok conectado com sucesso! |
+| `connections.processingTikTok` | Conectando con TikTok... | Connecting to TikTok... | Conectando com TikTok... |
+| `connections.processingTikTokDesc` | Verificando tu cuenta de TikTok Ads | Verifying your TikTok Ads account | Verificando sua conta TikTok Ads |
+| `connections.successTikTok` | Tu cuenta de TikTok Ads ha sido vinculada | Your TikTok Ads account has been linked | Sua conta TikTok Ads foi vinculada |
+| `connections.tiktokConnectLabel` | Conectar con TikTok | Connect with TikTok | Conectar com TikTok |
 
 ## Seccion Tecnica
 
-### Verificacion de firma Stripe en Deno
+### Flujo OAuth de TikTok
 
-```typescript
-async function verifyStripeSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): Promise<boolean> {
-  const parts = signature.split(',');
-  const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
-  const sig = parts.find(p => p.startsWith('v1='))?.split('=')[1];
-  if (!timestamp || !sig) return false;
+```text
+Usuario -> Click "Conectar con TikTok"
+  -> Redirige a business-api.tiktok.com/portal/auth
+  -> Usuario autoriza
+  -> TikTok redirige a /auth/tiktok/callback?auth_code=XXX&state=YYY
+  -> TikTokCallback.tsx valida state
+  -> Invoca tiktok-oauth-exchange edge function
+  -> Edge function intercambia auth_code por access_token
+  -> Guarda en user_integrations
+  -> Toast de exito + redirige a /connections
+```
 
-  const signedPayload = `${timestamp}.${payload}`;
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedPayload));
-  const expected = Array.from(new Uint8Array(mac))
-    .map(b => b.toString(16).padStart(2, '0')).join('');
-  return expected === sig;
+### TikTok Marketing API - Report Endpoint
+
+```text
+POST https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/
+
+Headers:
+  Access-Token: {access_token}
+  Content-Type: application/json
+
+Body:
+{
+  "advertiser_id": "123456",
+  "report_type": "BASIC",
+  "data_level": "AUCTION_ADVERTISER",
+  "dimensions": ["stat_time_day"],
+  "metrics": ["spend", "impressions", "clicks", "conversion", "cpc", "ctr", "cpm"],
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-17",
+  "page_size": 365
 }
 ```
 
-### Uso de Service Role Key
+### Nota sobre APP_ID publico
 
-El webhook opera sin contexto de usuario autenticado. Se usa `SUPABASE_SERVICE_ROLE_KEY` para bypassear RLS y actualizar `subscriptions` y crear `notifications`.
-
-### Realtime en useSubscription
-
-```typescript
-useEffect(() => {
-  if (!profile?.company_id) return;
-  const channel = supabase
-    .channel('subscription-realtime')
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'subscriptions',
-        filter: `company_id=eq.${profile.company_id}` },
-      () => { queryClient.invalidateQueries({ queryKey: ['subscription', profile.company_id] }); }
-    )
-    .subscribe();
-  return () => { supabase.removeChannel(channel); };
-}, [profile?.company_id]);
-```
+El `TIKTOK_APP_ID` se necesita tanto en el frontend (para construir la URL de autorizacion) como en el backend (para el intercambio de token). Dado que es un identificador publico (similar al Client ID de Google), se puede exponer en el frontend como variable de entorno `VITE_TIKTOK_APP_ID` en el archivo `.env`, o se puede hardcodear. El `TIKTOK_APP_SECRET` permanece exclusivamente como secret de Supabase.
 
 ## Archivos afectados
 
 | Archivo | Accion |
 |---------|--------|
-| Nueva migracion SQL | Agregar columnas stripe + habilitar realtime |
-| `supabase/functions/stripe-webhook/index.ts` | Nuevo: edge function webhook |
-| `supabase/config.toml` | Agregar configuracion stripe-webhook |
-| `src/hooks/useSubscription.ts` | Agregar realtime subscription |
-| `src/i18n/locales/es/common.json` | Agregar traducciones |
-| `src/i18n/locales/en/common.json` | Agregar traducciones |
-| `src/i18n/locales/pt/common.json` | Agregar traducciones |
-
-## Prerequisitos
-
-- El usuario debe proporcionar el `STRIPE_WEBHOOK_SECRET` desde su Dashboard de Stripe.
-- En Stripe, configurar el endpoint del webhook apuntando a: `https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/stripe-webhook`
-- Eventos a suscribir en Stripe: `checkout.session.completed`, `invoice.payment_failed`, `customer.subscription.deleted`
+| `supabase/functions/tiktok-oauth-exchange/index.ts` | Nuevo: edge function OAuth |
+| `supabase/config.toml` | Agregar config tiktok-oauth-exchange |
+| `src/components/TikTokOAuthButton.tsx` | Nuevo: boton OAuth |
+| `src/pages/TikTokCallback.tsx` | Nuevo: pagina callback |
+| `src/App.tsx` | Agregar ruta /auth/tiktok/callback |
+| `src/pages/Connections.tsx` | Usar TikTokOAuthButton |
+| `supabase/functions/fetch-tiktok-ads-metrics/index.ts` | Reemplazar demo por API real |
+| `src/hooks/useGoalMetrics.ts` | Agregar soporte tiktok_ads |
+| `src/components/OmnichannelPerformance.tsx` | Limpiar nota demo TikTok |
+| `src/i18n/locales/es/common.json` | Traducciones TikTok |
+| `src/i18n/locales/en/common.json` | Traducciones TikTok |
+| `src/i18n/locales/pt/common.json` | Traducciones TikTok |
