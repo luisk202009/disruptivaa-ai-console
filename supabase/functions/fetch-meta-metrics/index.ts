@@ -118,21 +118,24 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify user
+    // Verify user using getClaims (validates JWT locally without network call)
+    const token = authHeader.replace("Bearer ", "");
     const supabaseClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      console.error("❌ Invalid user:", userError?.message);
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error("❌ Invalid user:", claimsError?.message || "No claims");
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`👤 User authenticated: ${user.id}`);
+    const userId = claimsData.claims.sub as string;
+
+    console.log(`👤 User authenticated: ${userId}`);
 
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
@@ -143,7 +146,7 @@ serve(async (req) => {
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from("user_integrations")
       .select("access_token, account_ids")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("platform", "meta_ads")
       .eq("status", "connected")
       .single();
