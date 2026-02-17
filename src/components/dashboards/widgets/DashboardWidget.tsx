@@ -200,7 +200,9 @@ export const DashboardWidget = ({
     (widget.metric_config.account_id ? t("widget.accountLabel", { id: widget.metric_config.account_id }) : null);
 
   return (
-    <div className={cn(
+    <div
+      data-widget-type={widget.type}
+      className={cn(
       "h-full flex flex-col glass rounded-xl overflow-hidden",
       "transition-shadow hover:shadow-lg"
     )}>

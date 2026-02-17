@@ -216,7 +216,12 @@
   "exportReport": {
     "copied": "Report copied to clipboard",
     "copyError": "Error copying report",
-    "downloaded": "Report downloaded"
+    "downloaded": "Report downloaded",
+    "generatingPdf": "Generating PDF...",
+    "pdfSuccess": "PDF downloaded successfully",
+    "pdfError": "Error generating PDF",
+    "downloadPdf": "Download PDF",
+    "copyClipboard": "Copy to Clipboard"
   },
   "projectExport": {
     "title": "Generate Report",
