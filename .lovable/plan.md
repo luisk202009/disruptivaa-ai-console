@@ -1,141 +1,94 @@
 
-# Sprint 7 - Tarea 5: Central de Notificaciones
+# Sprint 7 - Tarea 6: Reportes PDF Branded
 
 ## Resumen
 
-Crear un sistema completo de notificaciones con tabla en Supabase, gestion desde el Admin Dashboard y un centro de notificaciones para los usuarios con badge de no leidos y funcion "marcar como leido".
+Transformar el componente `ExportReportDialog` para generar PDFs profesionales con branding dinamico de la empresa, capturando las graficas visibles del dashboard mediante `html2canvas` y construyendo el documento con `jspdf`.
 
 ## Cambios
 
-### 1. Migracion de Base de Datos: Tabla `notifications`
+### 1. Nuevas Dependencias
 
-Crear tabla con los siguientes campos:
+Instalar `jspdf` y `html2canvas` para la generacion de PDFs con capturas de graficas.
 
-| Columna | Tipo | Default | Nullable |
-|---------|------|---------|----------|
-| id | uuid | gen_random_uuid() | No |
-| company_id | uuid (FK companies) | NULL | Si (null = global) |
-| title | text | - | No |
-| message | text | - | No |
-| type | text | 'info' | No |
-| read_by | uuid[] | '{}' | No |
-| created_at | timestamptz | now() | Yes |
+### 2. Refactor de `ExportReportDialog.tsx`
 
-Politicas RLS:
-- **Admins**: ALL (usando `has_role()`)
-- **Users SELECT**: notificaciones donde `company_id` es NULL (globales) O donde `company_id` coincide con su `profiles.company_id`
+Reemplazar la logica actual de exportacion de texto plano con generacion PDF:
 
-### 2. Hook `useNotifications.ts` (Nuevo)
+**Estructura del PDF**:
+- **Encabezado**: Nombre de la empresa (obtenido de `useCompanyBranding`) + fecha de generacion. Linea decorativa con el `branding_color` de la empresa.
+- **Seccion KPIs**: Tabla con los KPIs principales (Spend, Impressions, Clicks, CTR, Conversions) extraidos de los widgets tipo `kpi`.
+- **Seccion Graficas**: Capturas de pantalla de los widgets tipo chart (`area`, `bar`, `line`, `pie`) mediante `html2canvas`, insertadas como imagenes en el PDF.
+- **Pie de pagina**: "Generado por Disruptivaa AI Console - [Fecha]" en cada pagina.
 
-- Consulta notificaciones visibles para el usuario (globales + de su empresa)
-- Calcula `unreadCount` filtrando las que NO contienen `auth.uid()` en `read_by`
-- Expone funcion `markAsRead(notificationId)` que hace un UPDATE al array `read_by` usando `array_append`
-- Devuelve `{ notifications, unreadCount, isLoading, markAsRead }`
+**Estilos dinamicos del PDF**:
+- Titulos y bordes usando el `branding_color` de la empresa (convertido de hex a RGB para jsPDF).
+- Tipografia Fira Sans (se usara la fuente helvetica como fallback en jsPDF, ya que embeber fuentes custom requiere conversion base64 que seria excesivo).
 
-Se necesita una funcion SQL `mark_notification_read` (security definer) que haga el `array_append` sin exponer UPDATE directo a los usuarios.
+**UX mejorada**:
+- Boton "Descargar PDF" reemplaza el boton "Descargar .txt".
+- Loading spinner mientras se genera el PDF (captura de graficas puede tomar unos segundos).
+- Toast de exito al completar la descarga.
+- Se mantiene la opcion de copiar el texto markdown al portapapeles.
 
-### 3. Admin Dashboard - Pestana "Notificaciones"
+### 3. Captura de Graficas
 
-Agregar una cuarta pestana en `AdminDashboard.tsx`:
+Para capturar las graficas del canvas:
+- Seleccionar los elementos DOM de los widgets via `document.querySelectorAll` dentro del canvas del dashboard.
+- Usar `html2canvas` para renderizar cada widget como imagen.
+- Insertar las imagenes en el PDF con dimensiones proporcionales.
 
-**Formulario de envio**:
-- Input: Titulo
-- Textarea: Cuerpo del mensaje
-- Select: Tipo (info, warning, success, error)
-- Select: Empresa destino (lista de companies + opcion "Todas las empresas" con valor NULL)
-- Boton "Enviar Notificacion"
+### 4. Props Actualizadas
 
-**Tabla de notificaciones enviadas** (debajo del formulario):
-- Columnas: Titulo, Tipo (badge con color), Destino (empresa o "Global"), Fecha
-- Boton eliminar por fila
+El componente necesita recibir informacion adicional:
+- Se importara `useCompanyBranding` internamente para obtener `companyName` y `companyColor`.
+- No se requiere cambiar las props externas; el componente obtiene el branding via hook.
 
-Badges de tipo con colores:
-- `info` -> azul (border-blue-500/30, text-blue-400)
-- `warning` -> amarillo (border-amber-500/30, text-amber-400)
-- `success` -> verde (border-green-500/30, text-green-400)
-- `error` -> rojo (border-red-500/30, text-red-400)
+### 5. Traducciones
 
-### 4. Centro de Notificaciones en Sidebar
-
-Agregar un icono `Bell` en la seccion de navegacion del Sidebar (antes del footer, despues de "Ecosistema Digital"):
-
-- Icono con badge rojo que muestra `unreadCount` cuando > 0
-- Al hacer click, abre un `Popover` con la lista de notificaciones
-- Cada notificacion muestra: tipo (icono/color), titulo, mensaje truncado, fecha relativa
-- Boton "Marcar como leida" por notificacion (o click para marcar)
-- Maximo 20 notificaciones, ordenadas por fecha desc
-- Notificaciones de tipo `info` usan el color dinamico de la empresa
-
-### 5. Componente `NotificationCenter.tsx` (Nuevo)
-
-Componente independiente que encapsula:
-- El icono Bell con badge
-- El Popover con la lista
-- La logica de marcar como leido
-- Importado por `Sidebar.tsx`
-
-### 6. Traducciones
-
-Agregar claves en los 3 idiomas:
-
-```text
-notifications.title = "Notificaciones" / "Notifications" / "Notificacoes"
-notifications.noNotifications = "No hay notificaciones" / "No notifications" / "Sem notificacoes"
-notifications.markRead = "Marcar como leida" / "Mark as read" / "Marcar como lida"
-notifications.sendNotification = "Enviar Notificacion" / "Send Notification" / "Enviar Notificacao"
-notifications.allCompanies = "Todas las Empresas" / "All Companies" / "Todas as Empresas"
-notifications.notifTitle = "Titulo" / "Title" / "Titulo"
-notifications.notifBody = "Mensaje" / "Message" / "Mensagem"
-notifications.notifType = "Tipo" / "Type" / "Tipo"
-notifications.destination = "Destino" / "Destination" / "Destino"
-notifications.global = "Global"
-notifications.sent = "Notificacion enviada" / "Notification sent" / "Notificacao enviada"
-admin.notifications = "Notificaciones" / "Notifications" / "Notificacoes"
-```
+Agregar nuevas claves i18n:
+- `exportReport.generatingPdf` - "Generando PDF..." / "Generating PDF..." / "Gerando PDF..."
+- `exportReport.pdfSuccess` - "PDF descargado correctamente" / "PDF downloaded successfully" / "PDF baixado com sucesso"
+- `exportReport.pdfError` - "Error al generar el PDF" / "Error generating PDF" / "Erro ao gerar o PDF"
+- `exportReport.downloadPdf` - "Descargar PDF" / "Download PDF" / "Baixar PDF"
 
 ## Seccion Tecnica
 
-### Funcion SQL `mark_notification_read`
-
-Se necesita una funcion `security definer` para que los usuarios puedan agregar su UUID al array `read_by` sin tener permiso UPDATE general:
-
-```sql
-CREATE OR REPLACE FUNCTION public.mark_notification_read(_notification_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  UPDATE notifications
-  SET read_by = array_append(read_by, auth.uid())
-  WHERE id = _notification_id
-    AND NOT (read_by @> ARRAY[auth.uid()]);
-END;
-$$;
-```
-
-### Flujo de datos
+### Flujo de generacion del PDF
 
 ```text
-Admin crea notificacion -> INSERT en notifications (company_id o NULL)
-                        -> RLS permite SELECT a usuarios de esa empresa o global
-                        -> useNotifications consulta y filtra unread
-                        -> Badge en Sidebar muestra conteo
-                        -> Usuario abre Popover, ve lista
-                        -> Click "marcar leida" -> llama mark_notification_read()
-                        -> read_by se actualiza -> unreadCount baja
+Usuario click "Descargar PDF"
+  -> setState(generating: true) -> muestra spinner
+  -> html2canvas captura cada widget del canvas
+  -> jsPDF crea documento A4 landscape
+  -> Dibuja encabezado (empresa + color + fecha)
+  -> Inserta tabla KPIs
+  -> Inserta imagenes de graficas (una por pagina si es necesario)
+  -> Dibuja pie de pagina en cada pagina
+  -> doc.save(filename)
+  -> toast.success()
+  -> setState(generating: false)
+```
+
+### Conversion de color hex a RGB para jsPDF
+
+```typescript
+const hexToRgb = (hex: string) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  } : { r: 0, g: 163, b: 255 };
+};
 ```
 
 ## Archivos afectados
 
 | Archivo | Accion |
 |---------|--------|
-| Nueva migracion SQL | Crear tabla `notifications`, funcion `mark_notification_read`, RLS |
-| `src/hooks/useNotifications.ts` | Nuevo: hook para consultar y gestionar notificaciones |
-| `src/components/NotificationCenter.tsx` | Nuevo: icono Bell + Popover con lista de notificaciones |
-| `src/pages/AdminDashboard.tsx` | Agregar pestana "Notificaciones" con formulario y tabla |
-| `src/components/Sidebar.tsx` | Importar y renderizar `NotificationCenter` |
-| `src/i18n/locales/es/common.json` | Agregar traducciones |
-| `src/i18n/locales/en/common.json` | Agregar traducciones |
-| `src/i18n/locales/pt/common.json` | Agregar traducciones |
+| `package.json` | Agregar `jspdf` y `html2canvas` |
+| `src/components/dashboards/ExportReportDialog.tsx` | Refactorizar con generacion PDF |
+| `src/i18n/locales/es/common.json` | Agregar traducciones PDF |
+| `src/i18n/locales/en/common.json` | Agregar traducciones PDF |
+| `src/i18n/locales/pt/common.json` | Agregar traducciones PDF |
