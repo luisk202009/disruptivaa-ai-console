@@ -71,6 +71,8 @@
     "loginToChat": "Sign in to chat",
     "loginPrompt": "🔒 Sign in to interact with our AI agents",
     "analyzing": "Analyzing...",
+    "tabGallery": "Gallery",
+    "tabHistory": "History",
     "writeOrAttach": "Type or attach files for analysis...",
     "selectToStart": "Select an agent to get started...",
     "loadingMessages": "Loading messages...",

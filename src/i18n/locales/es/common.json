@@ -71,6 +71,8 @@
     "loginToChat": "Inicia sesión para chatear",
     "loginPrompt": "🔒 Inicia sesión para interactuar con nuestros agentes AI",
     "analyzing": "Analizando...",
+    "tabGallery": "Galería",
+    "tabHistory": "Historial",
     "writeOrAttach": "Escribe o adjunta archivos para análisis...",
     "selectToStart": "Selecciona un agente para comenzar...",
     "loadingMessages": "Cargando mensajes...",
