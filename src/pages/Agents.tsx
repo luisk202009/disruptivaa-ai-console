@@ -65,9 +65,15 @@ const Agents = () => {
     return projects.filter(project => project.name.toLowerCase().includes(query));
   }, [projects, searchQuery]);
 
-  // Check if redirected with agent pre-selected
+  const [activeTab, setActiveTab] = useState("gallery");
+
+  // Check if redirected with agent pre-selected or openCreateProject
   useEffect(() => {
-    if (location.state?.selectedAgentId) {
+    if (location.state?.openCreateProject) {
+      setActiveTab("history");
+      setShowCreateProject(true);
+      window.history.replaceState({}, document.title);
+    } else if (location.state?.selectedAgentId) {
       const agent = DISRUPTIVAA_AGENTS.find(a => a.id === location.state.selectedAgentId);
       if (agent) {
         setSelectedAgent(agent);
@@ -244,7 +250,7 @@ const Agents = () => {
             {/* Welcome section with Tabs - Hidden when chat is active */}
             {!isChatActive && (
               <div className="animate-fade-in">
-                <Tabs defaultValue="gallery" className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="bg-transparent border-b border-white/[0.06] rounded-none w-full justify-start h-auto p-0 mb-8">
                     <TabsTrigger
                       value="gallery"
