@@ -19,8 +19,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, Trash2, Plus, Globe, CreditCard, Link2, Copy } from "lucide-react";
+import { Loader2, ExternalLink, Trash2, Plus, Globe, CreditCard, Link2, Copy, ChevronDown } from "lucide-react";
 
 interface Company {
   id: string;
@@ -45,15 +48,29 @@ interface AdminProfile {
   created_at: string | null;
 }
 
+interface Subscription {
+  id: string;
+  company_id: string;
+  plan_name: string;
+  billing_cycle: string;
+  price: number;
+  currency: string | null;
+  status: string;
+  starts_at: string;
+  expires_at: string | null;
+  stripe_link: string | null;
+}
+
 const SITE_TYPES = ["Landing", "Website", "Ecommerce"] as const;
-
-const MOCK_PLANS = [
-  { name: "Starter", priceMonthly: "$49/mo", priceAnnual: "$470/yr", stripe_id: "price_starter_mock" },
-  { name: "Growth", priceMonthly: "$149/mo", priceAnnual: "$1,430/yr", stripe_id: "price_growth_mock" },
-  { name: "Enterprise", priceMonthly: "$499/mo", priceAnnual: "$4,790/yr", stripe_id: "price_enterprise_mock" },
-];
-
+const PLAN_OPTIONS = ["Starter", "Growth", "Enterprise"] as const;
 const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
+
+const statusBadgeClass: Record<string, string> = {
+  active: "border-green-500/30 text-green-400",
+  pending: "border-amber-500/30 text-amber-400",
+  expired: "border-red-500/30 text-red-400",
+  canceled: "border-zinc-500/30 text-zinc-400",
+};
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -64,10 +81,12 @@ const AdminDashboard = () => {
   const [newUrl, setNewUrl] = useState("");
   const [newType, setNewType] = useState<string>("");
 
-  // Checkout link generator state
-  const [checkoutCompany, setCheckoutCompany] = useState("");
-  const [checkoutPlan, setCheckoutPlan] = useState("");
-  const [checkoutBilling, setCheckoutBilling] = useState("");
+  // Subscription form state
+  const [subCompany, setSubCompany] = useState("");
+  const [subPlan, setSubPlan] = useState("");
+  const [subCycle, setSubCycle] = useState("");
+  const [subPrice, setSubPrice] = useState("");
+  const [subStartDate, setSubStartDate] = useState("");
 
   // Fetch companies
   const { data: companies, isLoading: companiesLoading } = useQuery({
@@ -106,6 +125,20 @@ const AdminDashboard = () => {
         .select("user_id, role");
       if (error) throw error;
       return data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch subscriptions
+  const { data: subscriptions, isLoading: subsLoading } = useQuery({
+    queryKey: ["admin_subscriptions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Subscription[];
     },
     enabled: isAdmin,
   });
@@ -195,6 +228,66 @@ const AdminDashboard = () => {
     onError: () => toast.error(t("admin.websiteError")),
   });
 
+  // Create subscription
+  const createSubscription = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("subscriptions").insert({
+        company_id: subCompany,
+        plan_name: subPlan,
+        billing_cycle: subCycle || "monthly",
+        price: parseFloat(subPrice),
+        status: "pending",
+        starts_at: subStartDate || new Date().toISOString(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_subscriptions"] });
+      setSubCompany("");
+      setSubPlan("");
+      setSubCycle("");
+      setSubPrice("");
+      setSubStartDate("");
+      toast.success(t("admin.subscriptionCreated"));
+    },
+    onError: () => toast.error(t("admin.websiteError")),
+  });
+
+  // Update subscription status
+  const updateSubStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ status })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_subscriptions"] });
+      toast.success(t("admin.statusUpdated"));
+    },
+    onError: () => toast.error(t("admin.websiteError")),
+  });
+
+  // Generate stripe link placeholder
+  const generateStripeLink = useMutation({
+    mutationFn: async (id: string) => {
+      const link = `https://checkout.stripe.com/pay/${id.slice(0, 8)}_${Date.now()}`;
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ stripe_link: link })
+        .eq("id", id);
+      if (error) throw error;
+      return link;
+    },
+    onSuccess: (link) => {
+      if (link) navigator.clipboard.writeText(link);
+      queryClient.invalidateQueries({ queryKey: ["admin_subscriptions"] });
+      toast.success(t("admin.linkGenerated"));
+    },
+    onError: () => toast.error(t("admin.websiteError")),
+  });
+
   const handleToggleAdmin = (userId: string, currentlyAdmin: boolean) => {
     if (currentlyAdmin) {
       revokeAdmin.mutate(userId);
@@ -203,14 +296,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleGenerateLink = () => {
-    if (!checkoutCompany || !checkoutPlan || !checkoutBilling) return;
-    const mockLink = `https://checkout.stripe.com/mock/${checkoutPlan}_${checkoutBilling}_${Date.now()}`;
-    navigator.clipboard.writeText(mockLink);
-    toast.success(t("admin.linkGenerated"));
-  };
-
-  // Map company_id to company name
   const companyMap = new Map(companies?.map(c => [c.id, c.name]) ?? []);
 
   if (rolesLoading) {
@@ -370,71 +455,108 @@ const AdminDashboard = () => {
             {/* ===== SUBSCRIPTIONS TAB ===== */}
             <TabsContent value="subscriptions">
               <div className="space-y-6">
-                {/* Plans table */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-xs">
-                      {t("admin.mockBadge")}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{t("admin.linkMock")}</span>
+                {/* Subscriptions table */}
+                {subsLoading ? (
+                  <div className="flex justify-center py-16">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
+                ) : !subscriptions?.length ? (
+                  <p className="text-muted-foreground text-center py-10">{t("admin.noSubscriptions")}</p>
+                ) : (
                   <div className="border border-white/[0.06] rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow className="border-white/[0.06] hover:bg-transparent">
-                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                            {t("admin.planName")}
-                          </TableHead>
-                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                            {t("admin.monthly")}
-                          </TableHead>
-                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                            {t("admin.annual")}
-                          </TableHead>
-                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                            {t("admin.stripeId")}
-                          </TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.company")}</TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.plan")}</TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.billingCycle")}</TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.price")}</TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.status")}</TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-right">{t("admin.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {MOCK_PLANS.map((plan) => (
-                          <TableRow key={plan.stripe_id} className="border-white/[0.06]">
-                            <TableCell className="text-foreground font-medium flex items-center gap-2">
-                              <CreditCard size={14} className="text-muted-foreground" />
-                              {plan.name}
+                        {subscriptions.map((sub) => (
+                          <TableRow key={sub.id} className="border-white/[0.06]">
+                            <TableCell className="text-foreground font-medium">
+                              {companyMap.get(sub.company_id) || sub.company_id.slice(0, 8)}
                             </TableCell>
-                            <TableCell className="text-muted-foreground">{plan.priceMonthly}</TableCell>
-                            <TableCell className="text-muted-foreground">{plan.priceAnnual}</TableCell>
-                            <TableCell className="text-muted-foreground font-mono text-xs">{plan.stripe_id}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              <div className="flex items-center gap-1.5">
+                                <CreditCard size={14} className="text-muted-foreground" />
+                                {sub.plan_name}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground capitalize">{sub.billing_cycle}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {sub.currency || "USD"} {sub.price}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={`text-xs capitalize ${statusBadgeClass[sub.status] || "border-white/10"}`}>
+                                {sub.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center gap-1 justify-end">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="border-white/10 text-xs h-7">
+                                      {t("admin.status")} <ChevronDown size={12} className="ml-1" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    {SUBSCRIPTION_STATES.map((s) => (
+                                      <DropdownMenuItem
+                                        key={s}
+                                        onClick={() => updateSubStatus.mutate({ id: sub.id, status: s })}
+                                        className="capitalize"
+                                      >
+                                        {s}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                {sub.stripe_link ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(sub.stripe_link!);
+                                      toast.success(t("admin.linkGenerated"));
+                                    }}
+                                  >
+                                    <Copy size={12} />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2"
+                                    onClick={() => generateStripeLink.mutate(sub.id)}
+                                    disabled={generateStripeLink.isPending}
+                                  >
+                                    <Link2 size={12} />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                </div>
+                )}
 
-                {/* Subscription States */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-muted-foreground">{t("admin.subscriptionStates")}:</span>
-                  {SUBSCRIPTION_STATES.map((state) => (
-                    <Badge key={state} variant="outline" className="text-xs border-white/10 capitalize">
-                      {state}
-                    </Badge>
-                  ))}
-                </div>
-
-                {/* Generate Payment Link */}
+                {/* New Subscription Form */}
                 <div className="p-5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
                   <div className="flex items-center gap-2 mb-4">
-                    <Link2 size={18} className="text-primary" />
-                    <h3 className="font-medium text-foreground">{t("admin.generateLink")}</h3>
-                    <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-xs ml-auto">
-                      {t("admin.mockBadge")}
-                    </Badge>
+                    <Plus size={18} className="text-primary" />
+                    <h3 className="font-medium text-foreground">{t("admin.newSubscription")}</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                    <Select value={checkoutCompany} onValueChange={setCheckoutCompany}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                    <Select value={subCompany} onValueChange={setSubCompany}>
                       <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
                         <SelectValue placeholder={t("admin.selectCompany")} />
                       </SelectTrigger>
@@ -445,35 +567,54 @@ const AdminDashboard = () => {
                       </SelectContent>
                     </Select>
 
-                    <Select value={checkoutPlan} onValueChange={setCheckoutPlan}>
+                    <Select value={subPlan} onValueChange={setSubPlan}>
                       <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
                         <SelectValue placeholder={t("admin.selectPlan")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {MOCK_PLANS.map((p) => (
-                          <SelectItem key={p.stripe_id} value={p.stripe_id}>{p.name}</SelectItem>
+                        {PLAN_OPTIONS.map((p) => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
 
-                    <Select value={checkoutBilling} onValueChange={setCheckoutBilling}>
+                    <Select value={subCycle} onValueChange={setSubCycle}>
                       <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
-                        <SelectValue placeholder={t("admin.selectPlan")} />
+                        <SelectValue placeholder={t("admin.billingCycle")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="monthly">{t("admin.monthly")}</SelectItem>
                         <SelectItem value="annual">{t("admin.annual")}</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    <Input
+                      type="number"
+                      value={subPrice}
+                      onChange={(e) => setSubPrice(e.target.value)}
+                      placeholder={t("admin.price")}
+                      className="bg-white/[0.03] border-white/[0.08]"
+                    />
+
+                    <Input
+                      type="date"
+                      value={subStartDate}
+                      onChange={(e) => setSubStartDate(e.target.value)}
+                      className="bg-white/[0.03] border-white/[0.08]"
+                    />
                   </div>
 
                   <Button
-                    onClick={handleGenerateLink}
-                    disabled={!checkoutCompany || !checkoutPlan || !checkoutBilling}
+                    onClick={() => createSubscription.mutate()}
+                    disabled={!subCompany || !subPlan || !subPrice || createSubscription.isPending}
                     className="w-full"
                   >
-                    <Copy size={14} className="mr-2" />
-                    {t("admin.generateLink")}
+                    {createSubscription.isPending ? (
+                      <Loader2 size={14} className="animate-spin mr-2" />
+                    ) : (
+                      <CreditCard size={14} className="mr-2" />
+                    )}
+                    {t("admin.createSubscription")}
                   </Button>
                 </div>
               </div>
