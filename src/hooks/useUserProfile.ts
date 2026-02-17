@@ -11,6 +11,7 @@ export interface UserProfile {
   language: SupportedLanguage;
   role: string | null;
   company_id: string | null;
+  full_name: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -76,10 +77,32 @@ export const useUserProfile = () => {
     },
   });
 
+  const updateFullName = useMutation({
+    mutationFn: async (fullName: string) => {
+      if (!user) throw new Error('Not authenticated');
+      
+      // Update auth metadata
+      await supabase.auth.updateUser({ data: { full_name: fullName } });
+      
+      // Update profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName } as any)
+        .eq('id', user.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+
   return {
     profile,
     isLoading,
     updateLanguage: updateLanguage.mutate,
     isUpdatingLanguage: updateLanguage.isPending,
+    updateFullName: updateFullName.mutateAsync,
+    isUpdatingFullName: updateFullName.isPending,
   };
 };

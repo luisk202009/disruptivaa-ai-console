@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings as SettingsIcon, User, Bell, Palette, Shield, Mail, Calendar, MessageSquare, Activity, Key } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Palette, Shield, Mail, Calendar, MessageSquare, Activity, Key, Save } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useUserProfile } from "@/hooks/useUserProfile";
 
@@ -18,7 +19,8 @@ interface UserStats {
 const Settings = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile, updateFullName, isUpdatingFullName } = useUserProfile();
+  const [fullName, setFullName] = useState("");
   const [stats, setStats] = useState<UserStats>({
     totalMessages: 0,
     userMessages: 0,
@@ -26,6 +28,25 @@ const Settings = () => {
   });
   const [loadingStats, setLoadingStats] = useState(true);
   const [sendingReset, setSendingReset] = useState(false);
+
+  // Init fullName from profile or auth metadata
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+    } else if (user?.user_metadata?.full_name) {
+      setFullName(user.user_metadata.full_name);
+    }
+  }, [profile?.full_name, user?.user_metadata?.full_name]);
+
+  const handleUpdateProfile = async () => {
+    if (!fullName.trim()) return;
+    try {
+      await updateFullName(fullName.trim());
+      toast.success(t("settings.profileUpdated"));
+    } catch {
+      toast.error(t("settings.profileError"));
+    }
+  };
 
   const handlePasswordReset = async () => {
     if (!user?.email) return;
@@ -51,20 +72,17 @@ const Settings = () => {
       }
 
       try {
-        // Fetch total messages count
         const { count: totalCount } = await supabase
           .from("agent_messages")
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id);
 
-        // Fetch user messages count
         const { count: userCount } = await supabase
           .from("agent_messages")
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id)
           .eq("role", "user");
 
-        // Fetch last message
         const { data: lastMessage } = await supabase
           .from("agent_messages")
           .select("created_at")
@@ -124,7 +142,7 @@ const Settings = () => {
           </div>
 
           <div className="space-y-4">
-            {/* Perfil de Usuario - Expandido */}
+            {/* Perfil de Usuario */}
             <div className="p-5 rounded-lg border border-border bg-card">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
@@ -138,8 +156,29 @@ const Settings = () => {
 
               {user ? (
                 <div className="space-y-4">
-                  {/* Información básica */}
                   <div className="grid gap-3">
+                    {/* Full Name field */}
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-xs text-muted-foreground mb-1.5">{t("settings.fullName")}</p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder={t("settings.fullNamePlaceholder")}
+                          className="bg-background/50 border-border"
+                        />
+                        <Button
+                          onClick={handleUpdateProfile}
+                          disabled={isUpdatingFullName || !fullName.trim()}
+                          size="sm"
+                          className="shrink-0"
+                        >
+                          <Save size={14} className="mr-1" />
+                          {isUpdatingFullName ? t("common.saving") : t("common.save")}
+                        </Button>
+                      </div>
+                    </div>
+
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                       <Mail className="text-muted-foreground" size={18} />
                       <div>
@@ -154,11 +193,10 @@ const Settings = () => {
                         <p className="text-sm font-medium text-foreground">{getAccountAge()}</p>
                       </div>
                     </div>
-                    {/* Language Selector */}
                     <LanguageSelector />
                   </div>
 
-                  {/* Estadísticas de actividad */}
+                  {/* Activity stats */}
                   <div className="border-t border-border pt-4 mt-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Activity className="text-primary" size={18} />

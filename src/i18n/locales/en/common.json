@@ -47,7 +47,11 @@
     "loginToView": "Sign in to view your profile",
     "loginToChange": "Sign in to change your password",
     "resetSuccess": "We've sent you an email to change your password",
-    "resetError": "Error sending the password reset email"
+    "resetError": "Error sending the password reset email",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "E.g.: John Doe",
+    "profileUpdated": "Profile updated",
+    "profileError": "Error updating profile"
   },
   "auth": {
     "signIn": "Sign in",
@@ -364,7 +368,19 @@
     "planName": "Plan Name",
     "planPrice": "Price",
     "stripeId": "Stripe ID",
-    "mockBadge": "Mock"
+    "mockBadge": "Mock",
+    "subscriptions": "Subscriptions",
+    "generateLink": "Generate Payment Link",
+    "selectCompany": "Select company",
+    "selectPlan": "Select plan",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "linkGenerated": "Link copied to clipboard",
+    "linkMock": "Mock link — no Stripe connection",
+    "revokeAdmin": "Revoke Admin",
+    "revoked": "Admin role revoked",
+    "userName": "Name",
+    "subscriptionStates": "States"
   },
   "onboarding": {
     "title": "Welcome to Disruptivaa",

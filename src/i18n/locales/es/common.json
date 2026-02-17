@@ -47,7 +47,11 @@
     "loginToView": "Inicia sesión para ver tu perfil",
     "loginToChange": "Inicia sesión para cambiar tu contraseña",
     "resetSuccess": "Te hemos enviado un correo para cambiar tu contraseña",
-    "resetError": "Error al enviar el correo de restablecimiento"
+    "resetError": "Error al enviar el correo de restablecimiento",
+    "fullName": "Nombre completo",
+    "fullNamePlaceholder": "Ej: Juan Pérez",
+    "profileUpdated": "Perfil actualizado",
+    "profileError": "Error al actualizar perfil"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -364,7 +368,19 @@
     "planName": "Nombre del Plan",
     "planPrice": "Precio",
     "stripeId": "Stripe ID",
-    "mockBadge": "Simulado"
+    "mockBadge": "Simulado",
+    "subscriptions": "Suscripciones",
+    "generateLink": "Generar Enlace de Pago",
+    "selectCompany": "Seleccionar empresa",
+    "selectPlan": "Seleccionar plan",
+    "monthly": "Mensual",
+    "annual": "Anual",
+    "linkGenerated": "Enlace copiado al portapapeles",
+    "linkMock": "Enlace simulado — sin conexión a Stripe",
+    "revokeAdmin": "Revocar Admin",
+    "revoked": "Rol de admin revocado",
+    "userName": "Nombre",
+    "subscriptionStates": "Estados"
   },
   "onboarding": {
     "title": "Bienvenido a Disruptivaa",
