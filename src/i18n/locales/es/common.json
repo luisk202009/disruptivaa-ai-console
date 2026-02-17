@@ -11,7 +11,10 @@
     "signOut": "Cerrar sesión",
     "projects": "Proyectos",
     "recentConversations": "Recientes",
-    "admin": "Panel Admin"
+    "admin": "Panel Admin",
+    "aiServices": "Servicios de IA",
+    "digitalEcosystem": "Ecosistema Digital",
+    "websites": "Websites"
   },
   "sidebar": {
     "searchConversations": "Buscar conversaciones...",

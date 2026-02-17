@@ -17,7 +17,8 @@ import {
   Search,
   X,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Globe
 } from "lucide-react";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -61,9 +62,9 @@ const NavItem = ({ icon, label, active, collapsed, onClick, variant = "default" 
       !active && variant === "default" && "text-zinc-500 hover:text-zinc-200"
     )}
   >
-    {/* Active indicator - thin gray line */}
+    {/* Active indicator - Electric Blue */}
     {active && variant === "default" && (
-      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-zinc-400 rounded-full" />
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#00A3FF] rounded-full" />
     )}
     <span className={cn(
       "transition-colors",
@@ -190,11 +191,10 @@ const Sidebar = () => {
     }
   };
 
-  // Navigation items - Only main navigation (3 items)
-  const navItems = [
+  // Top navigation items (no group)
+  const topNavItems = [
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
-    { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: t("navigation.agents"), path: "/agents" },
   ];
 
   const getActiveItem = () => {
@@ -203,6 +203,7 @@ const Sidebar = () => {
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/conversations") return "conversations";
     if (location.pathname.startsWith("/project/")) return "project";
+    if (location.pathname === "/websites") return "websites";
     return "dashboard";
   };
 
@@ -283,9 +284,9 @@ const Sidebar = () => {
           onScroll={handleScroll}
           className="h-full overflow-y-auto scrollbar-minimal"
         >
-          {/* Navigation - Main Group */}
+          {/* Top Navigation (Dashboard, Paneles) */}
           <nav className="shrink-0 px-4 py-4 space-y-1">
-            {navItems.map((item) => (
+            {topNavItems.map((item) => (
               <NavItem
                 key={item.id}
                 icon={item.icon}
@@ -297,13 +298,29 @@ const Sidebar = () => {
             ))}
           </nav>
 
-          {/* Projects Section */}
+          {/* ── SERVICIOS DE IA ── */}
+          <div className="px-4 mt-6">
+            {!collapsed && (
+              <p className="text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500 px-3 mb-2">
+                {t("navigation.aiServices")}
+              </p>
+            )}
+            <NavItem
+              icon={<Bot size={18} strokeWidth={1.5} />}
+              label={t("navigation.agents")}
+              active={getActiveItem() === "agents"}
+              collapsed={collapsed}
+              onClick={() => navigate("/agents")}
+            />
+          </div>
+
+          {/* Sub-items: Proyectos */}
           {user && !collapsed && (
-            <div className="shrink-0 px-4 mt-3 mb-3">
-              <div className="flex items-center justify-between py-2">
+            <div className="shrink-0 px-4 pl-6 mt-1 mb-1">
+              <div className="flex items-center justify-between py-1.5">
                 <button
                   onClick={() => setProjectsExpanded(!projectsExpanded)}
-                  className="flex items-center gap-2 text-xs font-medium text-zinc-500 uppercase tracking-widest hover:text-zinc-300 transition-colors"
+                  className="flex items-center gap-2 text-[13px] text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
                   {projectsExpanded ? (
                     <ChevronDown size={14} strokeWidth={1.5} />
@@ -376,12 +393,12 @@ const Sidebar = () => {
             </div>
           )}
 
-          {/* Recent Conversations */}
+          {/* Sub-items: Recent Conversations */}
           {user && !collapsed && (
-            <div className="px-4 pb-6">
-              <div className="flex items-center gap-2 py-2 shrink-0">
-                <MessageSquare size={14} strokeWidth={1.5} className="text-zinc-500" />
-                <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
+            <div className="px-4 pl-6 pb-6">
+              <div className="flex items-center gap-2 py-1.5 shrink-0">
+                <MessageSquare size={13} strokeWidth={1.5} className="text-zinc-500" />
+                <span className="text-[13px] text-zinc-500">
                   {t("navigation.recentConversations")}
                 </span>
               </div>
@@ -439,6 +456,21 @@ const Sidebar = () => {
               )}
             </div>
           )}
+          {/* ── ECOSISTEMA DIGITAL ── */}
+          <div className="px-4 mt-6 mb-6">
+            {!collapsed && (
+              <p className="text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500 px-3 mb-2">
+                {t("navigation.digitalEcosystem")}
+              </p>
+            )}
+            <NavItem
+              icon={<Globe size={18} strokeWidth={1.5} />}
+              label={t("navigation.websites")}
+              active={getActiveItem() === "websites"}
+              collapsed={collapsed}
+              onClick={() => navigate("/websites")}
+            />
+          </div>
         </div>
         
         {/* Gradient fade bottom */}

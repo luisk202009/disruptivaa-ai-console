@@ -16,6 +16,7 @@ import GoogleCallback from "./pages/GoogleCallback";
 import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
 import ProjectDetail from "./pages/ProjectDetail";
+import Websites from "./pages/Websites";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -94,6 +95,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/websites"
+                element={
+                  <ProtectedRoute>
+                    <Websites />
                   </ProtectedRoute>
                 }
               />
