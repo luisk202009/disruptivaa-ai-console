@@ -116,6 +116,65 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          branding_color: string | null
+          created_at: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          branding_color?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          branding_color?: string | null
+          created_at?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      company_websites: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          id: string
+          site_type: string | null
+          url: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          site_type?: string | null
+          url: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          site_type?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_websites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           agent_id: string | null
@@ -199,24 +258,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company_id: string | null
           created_at: string | null
           id: string
           language: string | null
+          role: string | null
           updated_at: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           id: string
           language?: string | null
+          role?: string | null
           updated_at?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           language?: string | null
+          role?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_goals: {
         Row: {

@@ -1,19 +1,1 @@
 project_id = "qtjwzfbinsrmnvlsgvtw"
-
-[functions.validate-meta-connection]
-verify_jwt = false
-
-[functions.disruptivaa-agent]
-verify_jwt = false
-
-[functions.meta-oauth-exchange]
-verify_jwt = false
-
-[functions.fetch-google-ads-metrics]
-verify_jwt = false
-
-[functions.fetch-tiktok-ads-metrics]
-verify_jwt = false
-
-[functions.google-oauth-exchange]
-verify_jwt = false
