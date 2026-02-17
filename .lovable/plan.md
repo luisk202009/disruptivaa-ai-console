@@ -1,94 +1,70 @@
 
-# Sprint 7 - Tarea 6: Reportes PDF Branded
+# Sprint 7 - Tarea 7: Logs de Actividad de Agentes AI
 
 ## Resumen
 
-Transformar el componente `ExportReportDialog` para generar PDFs profesionales con branding dinamico de la empresa, capturando las graficas visibles del dashboard mediante `html2canvas` y construyendo el documento con `jspdf`.
+Agregar una tercera pestana "Actividad" en la pagina de Agentes que muestre una linea de tiempo de los ultimos 50 logs de actividad de los agentes AI, usando la tabla `ai_agent_logs` existente.
 
 ## Cambios
 
-### 1. Nuevas Dependencias
+### 1. Nuevo Componente `AgentActivityTimeline.tsx`
 
-Instalar `jspdf` y `html2canvas` para la generacion de PDFs con capturas de graficas.
+Componente que muestra una linea de tiempo vertical minimalista sobre fondo negro:
 
-### 2. Refactor de `ExportReportDialog.tsx`
+- Consulta las ultimas 50 filas de `ai_agent_logs` ordenadas por `created_at` desc
+- Cada entrada muestra:
+  - Icono segun `result_status` (check para completado, alert para error, activity para en progreso)
+  - Descripcion de `action_taken`
+  - Fecha/hora relativa usando `date-fns` (`formatDistanceToNow`)
+- Los iconos usan el color dinamico de la empresa (`useCompanyBranding`)
+- Estado vacio elegante: "Tus agentes estan listos para trabajar"
 
-Reemplazar la logica actual de exportacion de texto plano con generacion PDF:
+### 2. Modificacion de `Agents.tsx`
 
-**Estructura del PDF**:
-- **Encabezado**: Nombre de la empresa (obtenido de `useCompanyBranding`) + fecha de generacion. Linea decorativa con el `branding_color` de la empresa.
-- **Seccion KPIs**: Tabla con los KPIs principales (Spend, Impressions, Clicks, CTR, Conversions) extraidos de los widgets tipo `kpi`.
-- **Seccion Graficas**: Capturas de pantalla de los widgets tipo chart (`area`, `bar`, `line`, `pie`) mediante `html2canvas`, insertadas como imagenes en el PDF.
-- **Pie de pagina**: "Generado por Disruptivaa AI Console - [Fecha]" en cada pagina.
+- Agregar una tercera `TabsTrigger` con valor "activity" despues de "history"
+- Agregar un `TabsContent` correspondiente que renderice `AgentActivityTimeline`
+- Texto de la pestana: `t("agents.tabActivity")`
 
-**Estilos dinamicos del PDF**:
-- Titulos y bordes usando el `branding_color` de la empresa (convertido de hex a RGB para jsPDF).
-- Tipografia Fira Sans (se usara la fuente helvetica como fallback en jsPDF, ya que embeber fuentes custom requiere conversion base64 que seria excesivo).
+### 3. Traducciones
 
-**UX mejorada**:
-- Boton "Descargar PDF" reemplaza el boton "Descargar .txt".
-- Loading spinner mientras se genera el PDF (captura de graficas puede tomar unos segundos).
-- Toast de exito al completar la descarga.
-- Se mantiene la opcion de copiar el texto markdown al portapapeles.
+Agregar claves en los 3 idiomas (ES/EN/PT):
 
-### 3. Captura de Graficas
-
-Para capturar las graficas del canvas:
-- Seleccionar los elementos DOM de los widgets via `document.querySelectorAll` dentro del canvas del dashboard.
-- Usar `html2canvas` para renderizar cada widget como imagen.
-- Insertar las imagenes en el PDF con dimensiones proporcionales.
-
-### 4. Props Actualizadas
-
-El componente necesita recibir informacion adicional:
-- Se importara `useCompanyBranding` internamente para obtener `companyName` y `companyColor`.
-- No se requiere cambiar las props externas; el componente obtiene el branding via hook.
-
-### 5. Traducciones
-
-Agregar nuevas claves i18n:
-- `exportReport.generatingPdf` - "Generando PDF..." / "Generating PDF..." / "Gerando PDF..."
-- `exportReport.pdfSuccess` - "PDF descargado correctamente" / "PDF downloaded successfully" / "PDF baixado com sucesso"
-- `exportReport.pdfError` - "Error al generar el PDF" / "Error generating PDF" / "Erro ao gerar o PDF"
-- `exportReport.downloadPdf` - "Descargar PDF" / "Download PDF" / "Baixar PDF"
+| Clave | ES | EN | PT |
+|-------|-----|-----|-----|
+| `agents.tabActivity` | Actividad | Activity | Atividade |
+| `agents.noActivity` | Tus agentes estan listos para trabajar | Your agents are ready to work | Seus agentes estao prontos para trabalhar |
+| `agents.activityTitle` | Historial de Actividad | Activity History | Historico de Atividade |
+| `agents.logStatus.completed` | Completado | Completed | Concluido |
+| `agents.logStatus.error` | Error | Error | Erro |
+| `agents.logStatus.working` | En progreso | In progress | Em progresso |
 
 ## Seccion Tecnica
 
-### Flujo de generacion del PDF
+### Consulta de datos
 
-```text
-Usuario click "Descargar PDF"
-  -> setState(generating: true) -> muestra spinner
-  -> html2canvas captura cada widget del canvas
-  -> jsPDF crea documento A4 landscape
-  -> Dibuja encabezado (empresa + color + fecha)
-  -> Inserta tabla KPIs
-  -> Inserta imagenes de graficas (una por pagina si es necesario)
-  -> Dibuja pie de pagina en cada pagina
-  -> doc.save(filename)
-  -> toast.success()
-  -> setState(generating: false)
-```
-
-### Conversion de color hex a RGB para jsPDF
+La tabla `ai_agent_logs` ya existe con RLS de solo lectura para usuarios autenticados. No se requieren cambios de base de datos.
 
 ```typescript
-const hexToRgb = (hex: string) => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16),
-  } : { r: 0, g: 163, b: 255 };
-};
+const { data } = await supabase
+  .from("ai_agent_logs")
+  .select("*")
+  .order("created_at", { ascending: false })
+  .limit(50);
 ```
 
-## Archivos afectados
+### Diseno de la linea de tiempo
+
+Cada entrada se renderiza como una fila con:
+- Una linea vertical continua (border-left) conectando las entradas
+- Un punto/circulo con el color de la empresa en cada nodo
+- Contenido alineado a la derecha del punto
+
+### Archivos afectados
 
 | Archivo | Accion |
 |---------|--------|
-| `package.json` | Agregar `jspdf` y `html2canvas` |
-| `src/components/dashboards/ExportReportDialog.tsx` | Refactorizar con generacion PDF |
-| `src/i18n/locales/es/common.json` | Agregar traducciones PDF |
-| `src/i18n/locales/en/common.json` | Agregar traducciones PDF |
-| `src/i18n/locales/pt/common.json` | Agregar traducciones PDF |
+| `src/components/AgentActivityTimeline.tsx` | Nuevo: componente de linea de tiempo |
+| `src/pages/Agents.tsx` | Agregar tercera pestana "Actividad" |
+| `src/i18n/locales/es/common.json` | Agregar traducciones |
+| `src/i18n/locales/en/common.json` | Agregar traducciones |
+| `src/i18n/locales/pt/common.json` | Agregar traducciones |
