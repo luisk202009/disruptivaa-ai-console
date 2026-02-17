@@ -63,8 +63,11 @@ const AgentCard = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-            <Icon className="w-6 h-6 text-foreground" />
+          <div
+            className="w-12 h-12 rounded-lg flex items-center justify-center transition-colors"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--primary-company, #00A3FF) 15%, transparent)' }}
+          >
+            <Icon className="w-6 h-6" style={{ color: 'var(--primary-company, #00A3FF)' }} />
           </div>
           <div>
             <h3 className="font-semibold text-foreground">{title}</h3>

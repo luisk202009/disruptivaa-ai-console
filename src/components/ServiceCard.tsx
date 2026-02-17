@@ -19,7 +19,7 @@ const ServiceCard = ({ url, siteType, companyColor }: ServiceCardProps) => {
   const { t } = useTranslation();
   const config = typeConfig[siteType || "Website"] || typeConfig.Website;
   const Icon = config.icon;
-  const accentColor = companyColor || "#00A3FF";
+  const accentColor = companyColor || "var(--primary-company, #00A3FF)";
 
   const displayUrl = url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 

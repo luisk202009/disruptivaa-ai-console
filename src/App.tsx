@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useCompanyBranding } from "@/hooks/useCompanyBranding";
 import Index from "./pages/Index";
 import Conversations from "./pages/Conversations";
 import Settings from "./pages/Settings";
@@ -21,79 +22,86 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
+const BrandingProvider = ({ children }: { children: React.ReactNode }) => {
+  useCompanyBranding();
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/agents" element={<Agents />} />
-            <Route
-              path="/conversations"
-              element={
-                <ProtectedRoute>
-                  <Conversations />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id"
-              element={
-                <ProtectedRoute>
-                  <ProjectDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/connections"
-              element={
-                <ProtectedRoute>
-                  <Connections />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/auth/meta/callback" element={<MetaCallback />} />
-            <Route path="/auth/google/callback" element={<GoogleCallback />} />
-            <Route
-              path="/dashboards"
-              element={
-                <ProtectedRoute>
-                  <Dashboards />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboards/:dashboardId"
-              element={
-                <ProtectedRoute>
-                  <DashboardView />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <BrandingProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/agents" element={<Agents />} />
+              <Route
+                path="/conversations"
+                element={
+                  <ProtectedRoute>
+                    <Conversations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/project/:id"
+                element={
+                  <ProtectedRoute>
+                    <ProjectDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/connections"
+                element={
+                  <ProtectedRoute>
+                    <Connections />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/auth/meta/callback" element={<MetaCallback />} />
+              <Route path="/auth/google/callback" element={<GoogleCallback />} />
+              <Route
+                path="/dashboards"
+                element={
+                  <ProtectedRoute>
+                    <Dashboards />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboards/:dashboardId"
+                element={
+                  <ProtectedRoute>
+                    <DashboardView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </BrandingProvider>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
