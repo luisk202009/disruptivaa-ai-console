@@ -195,9 +195,6 @@ const Sidebar = () => {
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
     { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: t("navigation.agents"), path: "/agents" },
-    ...(isAdmin ? [
-      { id: "admin", icon: <ShieldCheck size={18} strokeWidth={1.5} />, label: t("navigation.admin"), path: "/admin" }
-    ] : []),
   ];
 
   const getActiveItem = () => {
@@ -497,6 +494,19 @@ const Sidebar = () => {
                 sideOffset={8}
                 className="w-56 bg-zinc-900/95 backdrop-blur-sm border-zinc-800/80 shadow-lg shadow-black/20"
               >
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => navigate("/admin")}
+                      className="flex items-center gap-2.5 py-2.5 cursor-pointer text-zinc-400 hover:text-zinc-100 focus:text-zinc-100 focus:bg-white/[0.04] transition-colors"
+                    >
+                      <ShieldCheck size={16} strokeWidth={1.5} />
+                      <span className="tracking-wide">{t("navigation.admin")}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-zinc-800/80" />
+                  </>
+                )}
+
                 <DropdownMenuItem
                   onClick={() => navigate("/connections")}
                   className="flex items-center gap-2.5 py-2.5 cursor-pointer text-zinc-400 hover:text-zinc-100 focus:text-zinc-100 focus:bg-white/[0.04] transition-colors"
