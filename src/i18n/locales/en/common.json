@@ -11,7 +11,10 @@
     "signOut": "Sign out",
     "projects": "Projects",
     "recentConversations": "Recent",
-    "admin": "Admin Panel"
+    "admin": "Admin Panel",
+    "aiServices": "AI Services",
+    "digitalEcosystem": "Digital Ecosystem",
+    "websites": "Websites"
   },
   "sidebar": {
     "searchConversations": "Search conversations...",

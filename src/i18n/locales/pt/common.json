@@ -11,7 +11,10 @@
     "signOut": "Sair",
     "projects": "Projetos",
     "recentConversations": "Recentes",
-    "admin": "Painel Admin"
+    "admin": "Painel Admin",
+    "aiServices": "Serviços de IA",
+    "digitalEcosystem": "Ecossistema Digital",
+    "websites": "Websites"
   },
   "sidebar": {
     "searchConversations": "Buscar conversas...",
