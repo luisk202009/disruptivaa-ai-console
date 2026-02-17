@@ -385,7 +385,24 @@
     "revokeAdmin": "Revocar Admin",
     "revoked": "Rol de admin revocado",
     "userName": "Nombre",
-    "subscriptionStates": "Estados"
+    "subscriptionStates": "Estados",
+    "newSubscription": "Nueva Suscripción",
+    "createSubscription": "Crear Suscripción",
+    "billingCycle": "Ciclo de facturación",
+    "price": "Precio",
+    "startDate": "Fecha de inicio",
+    "generateStripeLink": "Generar Enlace Stripe",
+    "status": "Estado",
+    "plan": "Plan",
+    "noSubscriptions": "No hay suscripciones registradas.",
+    "subscriptionCreated": "Suscripción creada correctamente",
+    "statusUpdated": "Estado actualizado"
+  },
+  "subscription": {
+    "title": "Tu suscripción está pendiente",
+    "subtitle": "Contacta con soporte para activar tu cuenta y acceder a la plataforma.",
+    "contactSupport": "Contactar Soporte",
+    "pending": "Pendiente"
   },
   "onboarding": {
     "title": "Bienvenido a Disruptivaa",

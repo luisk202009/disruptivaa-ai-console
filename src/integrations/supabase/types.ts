@@ -362,6 +362,59 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          billing_cycle: string
+          company_id: string
+          created_at: string | null
+          currency: string | null
+          expires_at: string | null
+          id: string
+          plan_name: string
+          price: number
+          starts_at: string
+          status: string
+          stripe_link: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_cycle?: string
+          company_id: string
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string | null
+          id?: string
+          plan_name: string
+          price: number
+          starts_at?: string
+          status?: string
+          stripe_link?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_cycle?: string
+          company_id?: string
+          created_at?: string | null
+          currency?: string | null
+          expires_at?: string | null
+          id?: string
+          plan_name?: string
+          price?: number
+          starts_at?: string
+          status?: string
+          stripe_link?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_integrations: {
         Row: {
           access_token: string | null
