@@ -16,7 +16,6 @@ export interface Integration {
   account_name: string | null;
   accountsCount?: number;
   accountDetails?: MetaAccountDetail[];
-  access_token?: string | null;
 }
 
 export interface ConnectionResult {
@@ -52,7 +51,7 @@ export const useIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('user_integrations')
-        .select('*')
+        .select('id, platform, status, connected_at, account_name, account_ids')
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -63,7 +62,6 @@ export const useIntegrations = () => {
         status: item.status as 'connected' | 'disconnected',
         connected_at: item.connected_at,
         account_name: item.account_name,
-        access_token: (item as any).access_token || null,
       })) || []);
     } catch (error) {
       console.error('Error fetching integrations:', error);
@@ -259,26 +257,8 @@ export const useIntegrations = () => {
     }
   };
 
-  // Get user's Meta token from database
-  const getUserMetaToken = async (): Promise<string | null> => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_integrations')
-        .select('access_token')
-        .eq('user_id', user.id)
-        .eq('platform', 'meta_ads')
-        .eq('status', 'connected')
-        .maybeSingle();
-
-      if (error) throw error;
-      return (data as any)?.access_token || null;
-    } catch (error) {
-      console.error('Error fetching Meta token:', error);
-      return null;
-    }
-  };
+  // Note: Meta tokens are no longer fetched client-side for security.
+  // Edge functions read tokens server-side using the service role key.
 
   const getIntegration = (platform: string) => {
     return integrations.find(i => i.platform === platform);
@@ -400,7 +380,6 @@ export const useIntegrations = () => {
     disconnectPlatform,
     getIntegration,
     getConnectedPlatforms,
-    getUserMetaToken,
     getMetaAccountDetails,
     getAccountDetailsByPlatform,
   };
