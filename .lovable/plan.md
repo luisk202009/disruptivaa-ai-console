@@ -1,73 +1,103 @@
 
-
-# Plan: Vista de Servicios del Cliente Dinamica (Tarea 4, Sprint 6)
+# Plan: Branding Dinamico (White Label) — Tarea 5, Sprint 6
 
 ## Resumen
 
-Modificar el Dashboard principal para mostrar dos secciones: los agentes AI existentes y un nuevo grid de "Ecosistema Digital" con las ServiceCards de los websites asignados a la empresa del usuario. Incluye un nuevo componente `ServiceCard` con animaciones Framer Motion y la iconografia por tipo de sitio.
+Inyectar dinamicamente el color de branding de la empresa del usuario como variable CSS `--primary-company`, y actualizar los componentes clave para usar ese color en lugar de valores hardcodeados. Mostrar el nombre de la empresa en el sidebar.
 
 ---
 
 ## Cambios Detallados
 
-### 1. Instalar `framer-motion`
+### 1. Crear `src/hooks/useCompanyBranding.ts`
 
-Se necesita agregar la dependencia (no esta instalada actualmente).
-
-### 2. Actualizar `src/hooks/useUserProfile.ts`
-
-El tipo `UserProfile` aun no incluye `role` ni `company_id`. Se actualizara:
+Hook dedicado que:
+- Usa `useUserProfile` para obtener `company_id`
+- Consulta la tabla `companies` para obtener `name` y `branding_color`
+- Inyecta un tag `<style>` en el `<head>` con la variable CSS `--primary-company`
+- Default: `#00A3FF` si no hay color definido
+- Retorna `{ companyName, companyColor, isLoading }`
 
 ```typescript
-export interface UserProfile {
-  id: string;
-  language: SupportedLanguage;
-  role: string | null;
-  company_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// Inyeccion del style tag
+useEffect(() => {
+  const color = company?.branding_color || '#00A3FF';
+  const style = document.getElementById('company-branding') || document.createElement('style');
+  style.id = 'company-branding';
+  style.textContent = `:root { --primary-company: ${color}; }`;
+  document.head.appendChild(style);
+  return () => { style.remove(); };
+}, [company?.branding_color]);
 ```
 
-### 3. Crear `src/components/ServiceCard.tsx`
+### 2. Integrar en `src/App.tsx`
 
-Componente reutilizable con:
-- Props: `url`, `siteType` ('Landing' | 'Website' | 'Ecommerce'), `companyColor` (opcional)
-- Iconografia segun tipo:
-  - `Ecommerce` -> `ShoppingBag`
-  - `Website` -> `Globe`
-  - `Landing` -> `Layout`
-- Fondo negro con borde sutil (`border-white/10`)
-- Tipografia Fira Sans
-- Al hacer clic: `window.open(url, '_blank')`
-- Animacion Framer Motion: `whileHover={{ scale: 1.03 }}` con transicion suave
-- Badge con el tipo de sitio
-- Boton/link "Ver Sitio" con acento Electric Blue (#00A3FF)
+- Crear un componente wrapper `BrandingProvider` dentro de App que invoque `useCompanyBranding()` una sola vez (debe estar dentro de `AuthProvider` y `QueryClientProvider`)
+- Envolver las rutas con este provider
 
-### 4. Modificar `src/components/Dashboard.tsx`
+### 3. Actualizar `src/components/ServiceCard.tsx`
 
-Cambios principales:
-- Importar `useUserProfile` para obtener `company_id`
-- Importar `useQuery` para consultar `company_websites` filtrado por `company_id`
-- Importar `ServiceCard` y los agentes de `agentDefinitions`
-- Reestructurar el layout del `main` en dos secciones:
-  - **Seccion superior**: "Mis Agentes de IA" — grid con los agentes existentes (`DISRUPTIVAA_AGENTS`) usando `AgentCard`
-  - **Seccion inferior**: "Ecosistema Digital" — grid de `ServiceCard` con los websites de la empresa
-- Mantener los widgets existentes (OmnichannelPerformance, SmartAlerts, etc.) debajo
-- Si no hay `company_id` o no hay websites, mostrar un mensaje vacio elegante
-- Usar `useAgents` hook para obtener el estado de los agentes
+- Reemplazar el color hardcodeado `accentColor` por `var(--primary-company)` via estilos inline
+- Los hovers y sombras usaran el mismo color con transparencia
 
-### 5. Traducciones (i18n)
+Cambios especificos:
+```typescript
+const accentColor = companyColor || "var(--primary-company, #00A3FF)";
+```
 
-Agregar claves en `dashboard` namespace:
+### 4. Actualizar `src/components/AgentCard.tsx`
 
-| Clave | ES | EN | PT |
-|-------|----|----|-----|
-| `dashboard.myAgents` | Mis Agentes de IA | My AI Agents | Meus Agentes de IA |
-| `dashboard.digitalEcosystem` | Ecosistema Digital | Digital Ecosystem | Ecossistema Digital |
-| `dashboard.viewSite` | Ver Sitio | View Site | Ver Site |
-| `dashboard.contractedServices` | Servicios Contratados | Contracted Services | Servicos Contratados |
-| `dashboard.noWebsites` | No hay sitios asignados a tu empresa. | No websites assigned to your company. | Nenhum site atribuido a sua empresa. |
+- Cambiar el icono container de `bg-muted` a usar `var(--primary-company)` con transparencia (`20`)
+- Hover state con color dinamico
+
+Cambio en linea 66:
+```typescript
+<div className="w-12 h-12 rounded-lg flex items-center justify-center"
+  style={{ backgroundColor: `color-mix(in srgb, var(--primary-company, #00A3FF) 15%, transparent)` }}>
+  <Icon className="w-6 h-6" style={{ color: 'var(--primary-company, #00A3FF)' }} />
+</div>
+```
+
+### 5. Actualizar `src/components/Dashboard.tsx`
+
+- Importar `useCompanyBranding` para pasar `companyColor` a cada `ServiceCard`
+- El icono `Globe2` usara el color dinamico
+
+Cambios:
+```typescript
+const { companyColor } = useCompanyBranding();
+
+// En ServiceCard
+<ServiceCard ... companyColor={companyColor} />
+
+// En Globe2 icon
+<Globe2 size={18} style={{ color: 'var(--primary-company, #00A3FF)' }} />
+```
+
+### 6. Personalizar `src/components/Sidebar.tsx`
+
+- Importar `useCompanyBranding`
+- Mostrar `companyName` encima del nombre del usuario en el footer
+- Usar el color de empresa para el avatar ring
+
+Cambio en el footer (lineas 467-481):
+```typescript
+const { companyName } = useCompanyBranding();
+
+// Encima del nombre del usuario
+{companyName && !collapsed && (
+  <p className="text-[10px] uppercase tracking-widest text-zinc-500 truncate">
+    {companyName}
+  </p>
+)}
+<p className="text-sm font-medium text-zinc-200 truncate tracking-wide">
+  {getUserDisplayName()}
+</p>
+```
+
+### 7. Traducciones (i18n)
+
+No se necesitan nuevas claves para esta tarea (el nombre de empresa viene de la DB).
 
 ---
 
@@ -75,24 +105,23 @@ Agregar claves en `dashboard` namespace:
 
 | Archivo | Accion | Descripcion |
 |---------|--------|-------------|
-| `src/components/ServiceCard.tsx` | **Crear** | Card con icono, tipo, URL y animacion hover |
-| `src/components/Dashboard.tsx` | **Modificar** | Layout de 2 secciones: agentes + ecosistema digital |
-| `src/hooks/useUserProfile.ts` | **Modificar** | Agregar role y company_id al tipo |
-| `src/i18n/locales/es/common.json` | **Modificar** | Claves dashboard.myAgents, digitalEcosystem, etc. |
-| `src/i18n/locales/en/common.json` | **Modificar** | Mismas claves en ingles |
-| `src/i18n/locales/pt/common.json` | **Modificar** | Mismas claves en portugues |
-| `package.json` | **Modificar** | Agregar framer-motion |
+| `src/hooks/useCompanyBranding.ts` | **Crear** | Hook que inyecta CSS variable y retorna datos de empresa |
+| `src/App.tsx` | **Modificar** | Agregar BrandingProvider wrapper |
+| `src/components/ServiceCard.tsx` | **Modificar** | Usar var(--primary-company) para acentos |
+| `src/components/AgentCard.tsx` | **Modificar** | Color dinamico en icono y hover |
+| `src/components/Dashboard.tsx` | **Modificar** | Pasar companyColor a ServiceCards |
+| `src/components/Sidebar.tsx` | **Modificar** | Mostrar nombre de empresa en footer |
 
 ## Seguridad
 
-- La consulta a `company_websites` ya esta protegida por RLS: los usuarios solo pueden ver websites de su propia empresa (politica "Users can view assigned websites")
-- No se requiere migracion de base de datos
+- La consulta a `companies` ya esta protegida por RLS (usuarios solo ven su propia empresa)
+- No se requieren migraciones de base de datos
+- El color se sanitiza implicitamente al usarse como valor CSS via style tag (no se ejecuta JS)
 
-## Secuencia de Implementacion
+## Verificacion Post-Implementacion
 
-1. Instalar framer-motion
-2. Actualizar useUserProfile con role/company_id
-3. Crear ServiceCard.tsx
-4. Modificar Dashboard.tsx con el nuevo layout
-5. Agregar traducciones en los 3 idiomas
-
+- [ ] El color de branding de la empresa se aplica en ServiceCards, AgentCards y iconos
+- [ ] Si no hay empresa asignada, se usa Electric Blue (#00A3FF) por defecto
+- [ ] El nombre de la empresa aparece en el sidebar encima del nombre del usuario
+- [ ] Los hovers y efectos visuales usan el color dinamico con transparencia
+- [ ] Al cambiar de empresa (admin), el color se actualiza automaticamente
