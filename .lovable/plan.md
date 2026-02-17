@@ -1,86 +1,69 @@
 
-
-# Plan: Sidebar Modular con Grupos "Servicios de IA" y "Ecosistema Digital"
+# Reestructurar Sidebar + Modulo de Agentes con Tabs
 
 ## Resumen
 
-Reestructurar el sidebar para agrupar la navegacion en secciones modulares con titulos en Fira Sans Bold, mejor espaciado, y un nuevo modulo "Ecosistema Digital". Las conversaciones recientes y proyectos se mantienen como sub-items dentro de la seccion de Agentes AI.
+Limpiar el sidebar eliminando proyectos y conversaciones recientes, dejando solo items de navegacion principal. Mover el historial de conversaciones y proyectos a la pagina de Agentes usando Tabs de Shadcn/ui.
 
-## Cambios Detallados
+## Cambios
 
-### 1. `src/components/Sidebar.tsx` - Reestructuracion del menu
+### 1. Sidebar Cleanup (`src/components/Sidebar.tsx`)
 
-**Estructura nueva del area scrollable:**
+- **Eliminar** toda la seccion de "Sub-items: Proyectos" (lineas 317-394): el bloque collapsible con proyectos, boton crear proyecto, y lista de carpetas.
+- **Eliminar** toda la seccion de "Sub-items: Recent Conversations" (lineas 396-458): lista de conversaciones, infinite scroll, indicadores de carga.
+- **Eliminar** imports y hooks que ya no se necesitan: `useConversations`, `useProjects`, `CreateProjectDialog`, `ProjectItemMenu`, `ConversationItemMenu`, `MoveConversationDialog`, estados como `projectsExpanded`, `selectedProjectId`, `searchQuery`, `scrollRef`, y funciones relacionadas (`handleLoadConversation`, `handleCreateProject`, etc.).
+- **Eliminar** el buscador del header (lineas 246-273) ya que solo filtraba conversaciones/proyectos.
+- **Agregar** "Conexiones" como item de navegacion principal debajo de "Ecosistema Digital", con icono `Link2`.
+- **Resultado final del sidebar**:
 
 ```text
-+---------------------------------+
-| Logo                            |
-| [Buscador]                      |
-+---------------------------------+
-| Dashboard                       |
-| Paneles                         |
-+---------------------------------+
-| SERVICIOS DE IA          (bold) |
-|   Agentes AI                    |
-|     > Proyectos (collapsible)   |
-|     > Recientes (collapsible)   |
-+---------------------------------+
-| ECOSISTEMA DIGITAL       (bold) |
-|   Websites                      |
-+---------------------------------+
-| [Footer: perfil + collapse]     |
-+---------------------------------+
++---------------------------+
+| Logo                      |
++---------------------------+
+| Dashboard                 |
+| Paneles                   |
++---------------------------+
+| SERVICIOS DE IA           |
+|   Agentes AI              |
++---------------------------+
+| ECOSISTEMA DIGITAL        |
+|   Websites                |
+|   Conexiones              |
++---------------------------+
+| [Footer: perfil + toggle] |
++---------------------------+
 ```
 
-Cambios especificos:
-- Separar "Dashboard" y "Paneles" como items sueltos en la parte superior (sin grupo)
-- Crear seccion **"SERVICIOS DE IA"** con titulo en `font-['Fira_Sans'] font-bold` que contiene "Agentes AI"
-- Mover Proyectos y Conversaciones Recientes como sub-secciones indentadas debajo de "Agentes AI" (con `pl-6`, `text-xs` para sub-items)
-- Crear seccion **"ECOSISTEMA DIGITAL"** con icono `Globe` apuntando a una nueva ruta `/websites` (o reutilizar la seccion de websites del Dashboard)
-- Aumentar `py-6` entre grupos de menu (actualmente `py-4`)
-- Estado activo: mantener indicador lateral `bg-[#00A3FF]` en vez de `bg-zinc-400` para el modulo activo
-- Importar `Globe` de lucide-react
+### 2. Refactor Pagina de Agentes (`src/pages/Agents.tsx`)
 
-### 2. `src/index.css` - Asegurar Fira Sans
+- Importar `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` de `@/components/ui/tabs`.
+- Importar `useProjects`, `useConversations` y los componentes necesarios (`CreateProjectDialog`, `ProjectItemMenu`, `ConversationItemMenu`).
+- Cuando NO hay chat activo (`!isChatActive`), envolver el contenido en un componente `Tabs` con `defaultValue="gallery"`:
+  - **Tab "Galeria"**: Contiene el grid de AgentCards (botones de agentes) y la consola de comandos, tal como esta ahora.
+  - **Tab "Historial"**: Contiene la lista de conversaciones recientes y proyectos (movidos desde el sidebar), con buscador integrado, agrupacion por proyecto, y carga infinita.
+- Usar `max-w-6xl` (en vez de `max-w-4xl`) para aprovechar el ancho disponible.
+- Estilo de las tabs: fondo transparente, tab activa con borde inferior usando `var(--primary-company)` como color dinamico.
 
-Verificar que la fuente Fira Sans este cargada (ya se usa segun el branding). Agregar utilidad si es necesario:
-```css
-.font-fira { font-family: 'Fira Sans', sans-serif; }
+### 3. Estilos de las Tabs
+
+```text
+TabsList: bg-transparent, border-b border-white/[0.06]
+TabsTrigger activa: border-b-2 con color var(--primary-company), text-foreground
+TabsTrigger inactiva: text-zinc-500, hover:text-zinc-300
 ```
 
-### 3. `src/i18n/locales/es/common.json` - Nuevas claves
+### 4. Traducciones
 
-```json
-"navigation": {
-  ...
-  "aiServices": "Servicios de IA",
-  "digitalEcosystem": "Ecosistema Digital",
-  "websites": "Websites"
-}
-```
-
-### 4. `src/i18n/locales/en/common.json` y `pt/common.json` - Mismas claves traducidas
-
-### 5. `src/App.tsx` - Ruta `/websites`
-
-Agregar ruta para la pagina de Websites (puede ser un placeholder inicial o redirigir a una seccion existente).
-
-## Detalles de Estilo
-
-- Titulos de seccion: `text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500`
-- Sub-items (proyectos/conversaciones): `pl-6 text-[13px]` con indentacion sutil
-- Separacion entre grupos: `mt-6` en lugar de `mt-3`
-- Estado activo del indicador lateral: cambiar `bg-zinc-400` a `bg-[#00A3FF]`
-- Panel Admin: permanece en el dropdown del footer, sin cambios
+Agregar claves en `es/common.json`, `en/common.json`, `pt/common.json`:
+- `agents.tabGallery`: "Galeria" / "Gallery" / "Galeria"
+- `agents.tabHistory`: "Historial" / "History" / "Historico"
 
 ## Archivos Afectados
 
 | Archivo | Accion |
 |---------|--------|
-| `src/components/Sidebar.tsx` | Reestructurar nav en grupos modulares |
-| `src/index.css` | Verificar/agregar Fira Sans |
-| `src/i18n/locales/es/common.json` | Agregar claves de traduccion |
-| `src/i18n/locales/en/common.json` | Agregar claves de traduccion |
-| `src/i18n/locales/pt/common.json` | Agregar claves de traduccion |
-| `src/App.tsx` | Agregar ruta `/websites` |
-
+| `src/components/Sidebar.tsx` | Eliminar proyectos, conversaciones, buscador; agregar Conexiones |
+| `src/pages/Agents.tsx` | Agregar Tabs con Galeria e Historial |
+| `src/i18n/locales/es/common.json` | Nuevas claves de tabs |
+| `src/i18n/locales/en/common.json` | Nuevas claves de tabs |
+| `src/i18n/locales/pt/common.json` | Nuevas claves de tabs |
