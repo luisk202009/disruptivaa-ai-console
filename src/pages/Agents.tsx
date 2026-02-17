@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2, LogOut, Search, X, MessageSquare, Folder, FolderOpen, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { DISRUPTIVAA_AGENTS, DisruptivaaAgent } from "@/components/agentDefinitions";
 import CommandConsole from "@/components/CommandConsole";
+import AgentActivityTimeline from "@/components/AgentActivityTimeline";
 import AuthModal from "@/components/AuthModal";
 import Sidebar from "@/components/Sidebar";
 import { toast } from "@/hooks/use-toast";
@@ -257,6 +258,12 @@ const Agents = () => {
                     >
                       {t("agents.tabHistory")}
                     </TabsTrigger>
+                    <TabsTrigger
+                      value="activity"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--primary-company,#00A3FF)] data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none text-zinc-500 hover:text-zinc-300 px-4 py-3 text-sm font-medium transition-colors"
+                    >
+                      {t("agents.tabActivity")}
+                    </TabsTrigger>
                   </TabsList>
 
                   {/* Gallery Tab */}
@@ -450,6 +457,11 @@ const Agents = () => {
                         </div>
                       )}
                     </div>
+                  </TabsContent>
+
+                  {/* Activity Tab */}
+                  <TabsContent value="activity" className="mt-0">
+                    <AgentActivityTimeline />
                   </TabsContent>
                 </Tabs>
               </div>
