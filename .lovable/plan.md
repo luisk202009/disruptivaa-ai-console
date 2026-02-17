@@ -1,38 +1,86 @@
 
-# Plan: Fix RLS "companies" INSERT Error
+# Plan: Reparacion Definitiva del Onboarding
 
-## Problema
+## Diagnostico
 
-La politica INSERT en `companies` existe en la base de datos pero PostgREST no la ha detectado. El INSERT desde el onboarding devuelve 403 (codigo 42501) a pesar de que la politica `"Authenticated users can create companies"` esta configurada correctamente como PERMISSIVE para el rol `authenticated` con `WITH CHECK (true)`.
+La politica INSERT en `companies` existe y es PERMISSIVE, pero el INSERT sigue fallando con error 42501. Multiples intentos de recrear la politica no han resuelto el problema.
 
-## Solucion
+## Solucion: Funcion SECURITY DEFINER transaccional
 
-Ejecutar una migracion SQL minima que:
-1. Elimine y recree la politica INSERT (para forzar la invalidacion de cache de PostgREST)
-2. Ejecute `NOTIFY pgrst, 'reload schema'` para garantizar que PostgREST recargue las politicas
+En lugar de depender de politicas RLS para el INSERT del onboarding, crearemos una funcion de base de datos con `SECURITY DEFINER` que ejecuta ambas operaciones (crear empresa + asignar al perfil) en una sola transaccion atomica. Esto resuelve:
+
+1. **El error RLS**: La funcion SECURITY DEFINER se ejecuta con privilegios del owner (postgres), sin pasar por RLS
+2. **Transaccionalidad**: Si falla el UPDATE de profiles, el INSERT en companies se revierte automaticamente
+3. **Seguridad**: La funcion valida que el usuario este autenticado y solo modifica su propio perfil
+
+---
+
+## Cambios
+
+### 1. Migracion SQL: Crear funcion `create_company_for_user`
 
 ```sql
--- Force PostgREST to reload by dropping and recreating the policy
-DROP POLICY IF EXISTS "Authenticated users can create companies" ON public.companies;
+CREATE OR REPLACE FUNCTION public.create_company_for_user(
+  _company_name text,
+  _branding_color text DEFAULT '#00A3FF'
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _user_id uuid;
+  _company_id uuid;
+BEGIN
+  -- Get authenticated user
+  _user_id := auth.uid();
+  IF _user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
 
-CREATE POLICY "Authenticated users can create companies"
-ON public.companies
-FOR INSERT
-TO authenticated
-WITH CHECK (true);
+  -- Check user doesn't already have a company
+  IF EXISTS (SELECT 1 FROM profiles WHERE id = _user_id AND company_id IS NOT NULL) THEN
+    RAISE EXCEPTION 'User already has a company assigned';
+  END IF;
 
--- Notify PostgREST to reload schema cache
-NOTIFY pgrst, 'reload schema';
+  -- Create company
+  INSERT INTO companies (name, branding_color)
+  VALUES (_company_name, _branding_color)
+  RETURNING id INTO _company_id;
+
+  -- Assign to user profile
+  UPDATE profiles
+  SET company_id = _company_id, updated_at = now()
+  WHERE id = _user_id;
+
+  RETURN _company_id;
+END;
+$$;
 ```
 
-## Archivos Afectados
+### 2. `src/components/CompanyOnboarding.tsx` — Usar RPC en vez de INSERT directo
 
-| Archivo | Accion |
+Reemplazar las dos queries separadas (INSERT companies + UPDATE profiles) por una sola llamada RPC:
+
+```typescript
+const { data, error } = await supabase.rpc('create_company_for_user', {
+  _company_name: companyName,
+  _branding_color: brandColor,
+});
+```
+
+Ademas, mejorar el manejo de errores mostrando el mensaje especifico del error en el toast.
+
+---
+
+## Archivos afectados
+
+| Archivo | Cambio |
 |---------|--------|
-| Migracion SQL | Crear - recrear politica + NOTIFY pgrst |
+| Migracion SQL | Crear funcion `create_company_for_user` |
+| `src/components/CompanyOnboarding.tsx` | Reemplazar INSERT+UPDATE por `supabase.rpc()` |
 
-No se requieren cambios en el codigo frontend. El componente `CompanyOnboarding.tsx` ya esta correcto.
+## Resultado esperado
 
-## Resultado Esperado
-
-Despues de la migracion, el usuario `luisk20@gmail.com` podra crear su empresa desde el onboarding sin error 403.
+El onboarding funcionara de forma atomica y sin depender de politicas RLS para el INSERT en companies.
