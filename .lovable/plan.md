@@ -1,86 +1,86 @@
 
-# Plan: Reparacion Definitiva del Onboarding
 
-## Diagnostico
+# Plan: Sidebar Modular con Grupos "Servicios de IA" y "Ecosistema Digital"
 
-La politica INSERT en `companies` existe y es PERMISSIVE, pero el INSERT sigue fallando con error 42501. Multiples intentos de recrear la politica no han resuelto el problema.
+## Resumen
 
-## Solucion: Funcion SECURITY DEFINER transaccional
+Reestructurar el sidebar para agrupar la navegacion en secciones modulares con titulos en Fira Sans Bold, mejor espaciado, y un nuevo modulo "Ecosistema Digital". Las conversaciones recientes y proyectos se mantienen como sub-items dentro de la seccion de Agentes AI.
 
-En lugar de depender de politicas RLS para el INSERT del onboarding, crearemos una funcion de base de datos con `SECURITY DEFINER` que ejecuta ambas operaciones (crear empresa + asignar al perfil) en una sola transaccion atomica. Esto resuelve:
+## Cambios Detallados
 
-1. **El error RLS**: La funcion SECURITY DEFINER se ejecuta con privilegios del owner (postgres), sin pasar por RLS
-2. **Transaccionalidad**: Si falla el UPDATE de profiles, el INSERT en companies se revierte automaticamente
-3. **Seguridad**: La funcion valida que el usuario este autenticado y solo modifica su propio perfil
+### 1. `src/components/Sidebar.tsx` - Reestructuracion del menu
 
----
+**Estructura nueva del area scrollable:**
 
-## Cambios
-
-### 1. Migracion SQL: Crear funcion `create_company_for_user`
-
-```sql
-CREATE OR REPLACE FUNCTION public.create_company_for_user(
-  _company_name text,
-  _branding_color text DEFAULT '#00A3FF'
-)
-RETURNS uuid
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  _user_id uuid;
-  _company_id uuid;
-BEGIN
-  -- Get authenticated user
-  _user_id := auth.uid();
-  IF _user_id IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated';
-  END IF;
-
-  -- Check user doesn't already have a company
-  IF EXISTS (SELECT 1 FROM profiles WHERE id = _user_id AND company_id IS NOT NULL) THEN
-    RAISE EXCEPTION 'User already has a company assigned';
-  END IF;
-
-  -- Create company
-  INSERT INTO companies (name, branding_color)
-  VALUES (_company_name, _branding_color)
-  RETURNING id INTO _company_id;
-
-  -- Assign to user profile
-  UPDATE profiles
-  SET company_id = _company_id, updated_at = now()
-  WHERE id = _user_id;
-
-  RETURN _company_id;
-END;
-$$;
+```text
++---------------------------------+
+| Logo                            |
+| [Buscador]                      |
++---------------------------------+
+| Dashboard                       |
+| Paneles                         |
++---------------------------------+
+| SERVICIOS DE IA          (bold) |
+|   Agentes AI                    |
+|     > Proyectos (collapsible)   |
+|     > Recientes (collapsible)   |
++---------------------------------+
+| ECOSISTEMA DIGITAL       (bold) |
+|   Websites                      |
++---------------------------------+
+| [Footer: perfil + collapse]     |
++---------------------------------+
 ```
 
-### 2. `src/components/CompanyOnboarding.tsx` — Usar RPC en vez de INSERT directo
+Cambios especificos:
+- Separar "Dashboard" y "Paneles" como items sueltos en la parte superior (sin grupo)
+- Crear seccion **"SERVICIOS DE IA"** con titulo en `font-['Fira_Sans'] font-bold` que contiene "Agentes AI"
+- Mover Proyectos y Conversaciones Recientes como sub-secciones indentadas debajo de "Agentes AI" (con `pl-6`, `text-xs` para sub-items)
+- Crear seccion **"ECOSISTEMA DIGITAL"** con icono `Globe` apuntando a una nueva ruta `/websites` (o reutilizar la seccion de websites del Dashboard)
+- Aumentar `py-6` entre grupos de menu (actualmente `py-4`)
+- Estado activo: mantener indicador lateral `bg-[#00A3FF]` en vez de `bg-zinc-400` para el modulo activo
+- Importar `Globe` de lucide-react
 
-Reemplazar las dos queries separadas (INSERT companies + UPDATE profiles) por una sola llamada RPC:
+### 2. `src/index.css` - Asegurar Fira Sans
 
-```typescript
-const { data, error } = await supabase.rpc('create_company_for_user', {
-  _company_name: companyName,
-  _branding_color: brandColor,
-});
+Verificar que la fuente Fira Sans este cargada (ya se usa segun el branding). Agregar utilidad si es necesario:
+```css
+.font-fira { font-family: 'Fira Sans', sans-serif; }
 ```
 
-Ademas, mejorar el manejo de errores mostrando el mensaje especifico del error en el toast.
+### 3. `src/i18n/locales/es/common.json` - Nuevas claves
 
----
+```json
+"navigation": {
+  ...
+  "aiServices": "Servicios de IA",
+  "digitalEcosystem": "Ecosistema Digital",
+  "websites": "Websites"
+}
+```
 
-## Archivos afectados
+### 4. `src/i18n/locales/en/common.json` y `pt/common.json` - Mismas claves traducidas
 
-| Archivo | Cambio |
+### 5. `src/App.tsx` - Ruta `/websites`
+
+Agregar ruta para la pagina de Websites (puede ser un placeholder inicial o redirigir a una seccion existente).
+
+## Detalles de Estilo
+
+- Titulos de seccion: `text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500`
+- Sub-items (proyectos/conversaciones): `pl-6 text-[13px]` con indentacion sutil
+- Separacion entre grupos: `mt-6` en lugar de `mt-3`
+- Estado activo del indicador lateral: cambiar `bg-zinc-400` a `bg-[#00A3FF]`
+- Panel Admin: permanece en el dropdown del footer, sin cambios
+
+## Archivos Afectados
+
+| Archivo | Accion |
 |---------|--------|
-| Migracion SQL | Crear funcion `create_company_for_user` |
-| `src/components/CompanyOnboarding.tsx` | Reemplazar INSERT+UPDATE por `supabase.rpc()` |
+| `src/components/Sidebar.tsx` | Reestructurar nav en grupos modulares |
+| `src/index.css` | Verificar/agregar Fira Sans |
+| `src/i18n/locales/es/common.json` | Agregar claves de traduccion |
+| `src/i18n/locales/en/common.json` | Agregar claves de traduccion |
+| `src/i18n/locales/pt/common.json` | Agregar claves de traduccion |
+| `src/App.tsx` | Agregar ruta `/websites` |
 
-## Resultado esperado
-
-El onboarding funcionara de forma atomica y sin depender de politicas RLS para el INSERT en companies.
