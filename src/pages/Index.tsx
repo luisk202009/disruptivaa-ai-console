@@ -14,11 +14,11 @@ const Index = () => {
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useUserProfile();
   const { isAdmin, isLoading: rolesLoading } = useUserRoles();
-  const { isActive: hasActiveSubscription, isLoading: subLoading } = useSubscription();
+  const { isActive: hasActiveSubscription, isBlocked, isLoading: subLoading } = useSubscription();
 
   const dataReady = !profileLoading && !rolesLoading && !subLoading;
   const needsOnboarding = dataReady && user && !isAdmin && !profile?.company_id;
-  const needsSubscription = dataReady && user && !isAdmin && !!profile?.company_id && !hasActiveSubscription;
+  const needsSubscription = dataReady && user && !isAdmin && !!profile?.company_id && isBlocked;
 
   // Keep loading screen active until both animation finishes AND data is ready
   const showLoading = isLoading || (user && !dataReady);
