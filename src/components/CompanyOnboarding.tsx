@@ -23,22 +23,12 @@ const CompanyOnboarding = () => {
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
 
-      // Create company
-      const { data: company, error: companyError } = await supabase
-        .from("companies")
-        .insert({ name: companyName, branding_color: brandColor })
-        .select("id")
-        .single();
+      const { error } = await supabase.rpc('create_company_for_user', {
+        _company_name: companyName,
+        _branding_color: brandColor,
+      });
 
-      if (companyError) throw companyError;
-
-      // Update profile with company_id
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ company_id: company.id })
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success(t("onboarding.success"));
