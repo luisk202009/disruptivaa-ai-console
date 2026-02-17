@@ -7,6 +7,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,7 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, Trash2, Plus, Globe, ShieldCheck, CreditCard } from "lucide-react";
+import { Loader2, ExternalLink, Trash2, Plus, Globe, CreditCard, Link2, Copy } from "lucide-react";
 
 interface Company {
   id: string;
@@ -40,16 +41,19 @@ interface AdminProfile {
   role: string | null;
   company_id: string | null;
   language: string | null;
+  full_name: string | null;
   created_at: string | null;
 }
 
 const SITE_TYPES = ["Landing", "Website", "Ecommerce"] as const;
 
 const MOCK_PLANS = [
-  { name: "Starter", price: "$49/mo", stripe_id: "price_starter_mock" },
-  { name: "Growth", price: "$149/mo", stripe_id: "price_growth_mock" },
-  { name: "Enterprise", price: "$499/mo", stripe_id: "price_enterprise_mock" },
+  { name: "Starter", priceMonthly: "$49/mo", priceAnnual: "$470/yr", stripe_id: "price_starter_mock" },
+  { name: "Growth", priceMonthly: "$149/mo", priceAnnual: "$1,430/yr", stripe_id: "price_growth_mock" },
+  { name: "Enterprise", priceMonthly: "$499/mo", priceAnnual: "$4,790/yr", stripe_id: "price_enterprise_mock" },
 ];
+
+const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -59,6 +63,11 @@ const AdminDashboard = () => {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [newUrl, setNewUrl] = useState("");
   const [newType, setNewType] = useState<string>("");
+
+  // Checkout link generator state
+  const [checkoutCompany, setCheckoutCompany] = useState("");
+  const [checkoutPlan, setCheckoutPlan] = useState("");
+  const [checkoutBilling, setCheckoutBilling] = useState("");
 
   // Fetch companies
   const { data: companies, isLoading: companiesLoading } = useQuery({
@@ -74,13 +83,13 @@ const AdminDashboard = () => {
     enabled: isAdmin,
   });
 
-  // Fetch ALL profiles (requires admin RLS policy)
+  // Fetch ALL profiles
   const { data: allProfiles, isLoading: profilesLoading } = useQuery({
     queryKey: ["admin_profiles"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, company_id, language, created_at")
+        .select("id, role, company_id, language, full_name, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as AdminProfile[];
@@ -88,7 +97,7 @@ const AdminDashboard = () => {
     enabled: isAdmin,
   });
 
-  // Fetch all user_roles to know who is already admin
+  // Fetch all user_roles
   const { data: allRoles } = useQuery({
     queryKey: ["admin_user_roles"],
     queryFn: async () => {
@@ -164,11 +173,42 @@ const AdminDashboard = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_user_roles"] });
-      queryClient.invalidateQueries({ queryKey: ["admin_profiles"] });
       toast.success(t("admin.promoted"));
     },
     onError: () => toast.error(t("admin.websiteError")),
   });
+
+  // Revoke admin
+  const revokeAdmin = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin_user_roles"] });
+      toast.success(t("admin.revoked"));
+    },
+    onError: () => toast.error(t("admin.websiteError")),
+  });
+
+  const handleToggleAdmin = (userId: string, currentlyAdmin: boolean) => {
+    if (currentlyAdmin) {
+      revokeAdmin.mutate(userId);
+    } else {
+      promoteToAdmin.mutate(userId);
+    }
+  };
+
+  const handleGenerateLink = () => {
+    if (!checkoutCompany || !checkoutPlan || !checkoutBilling) return;
+    const mockLink = `https://checkout.stripe.com/mock/${checkoutPlan}_${checkoutBilling}_${Date.now()}`;
+    navigator.clipboard.writeText(mockLink);
+    toast.success(t("admin.linkGenerated"));
+  };
 
   // Map company_id to company name
   const companyMap = new Map(companies?.map(c => [c.id, c.name]) ?? []);
@@ -203,8 +243,8 @@ const AdminDashboard = () => {
               <TabsTrigger value="users" className="data-[state=active]:bg-white/[0.08]">
                 {t("admin.users")}
               </TabsTrigger>
-              <TabsTrigger value="plans" className="data-[state=active]:bg-white/[0.08]">
-                {t("admin.plans")}
+              <TabsTrigger value="subscriptions" className="data-[state=active]:bg-white/[0.08]">
+                {t("admin.subscriptions")}
               </TabsTrigger>
             </TabsList>
 
@@ -254,7 +294,7 @@ const AdminDashboard = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedCompany(company)}
-                              className="border-[#00A3FF]/30 text-[#00A3FF] hover:bg-[#00A3FF]/10 hover:text-[#00A3FF]"
+                              className="border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
                             >
                               <Globe size={14} className="mr-1.5" />
                               {t("admin.manageSites")}
@@ -282,7 +322,7 @@ const AdminDashboard = () => {
                     <TableHeader>
                       <TableRow className="border-white/[0.06] hover:bg-transparent">
                         <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                          ID
+                          {t("admin.userName")}
                         </TableHead>
                         <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
                           {t("admin.role")}
@@ -291,7 +331,7 @@ const AdminDashboard = () => {
                           {t("admin.company")}
                         </TableHead>
                         <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-right">
-                          {t("admin.actions")}
+                          Admin
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -300,37 +340,23 @@ const AdminDashboard = () => {
                         const isAlreadyAdmin = adminUserIds.has(profile.id);
                         return (
                           <TableRow key={profile.id} className="border-white/[0.06]">
-                            <TableCell className="text-foreground font-mono text-xs">
-                              {profile.id.slice(0, 8)}…
+                            <TableCell className="text-foreground font-medium">
+                              {profile.full_name || profile.id.slice(0, 8) + "…"}
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs border-white/10">
                                 {profile.role || "client"}
                               </Badge>
-                              {isAlreadyAdmin && (
-                                <Badge className="ml-2 bg-[#00A3FF]/20 text-[#00A3FF] text-xs">
-                                  Admin
-                                </Badge>
-                              )}
                             </TableCell>
                             <TableCell className="text-muted-foreground text-sm">
                               {profile.company_id ? (companyMap.get(profile.company_id) || profile.company_id.slice(0, 8)) : "—"}
                             </TableCell>
                             <TableCell className="text-right">
-                              {isAlreadyAdmin ? (
-                                <span className="text-xs text-zinc-500">{t("admin.alreadyAdmin")}</span>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => promoteToAdmin.mutate(profile.id)}
-                                  disabled={promoteToAdmin.isPending}
-                                  className="border-[#00A3FF]/30 text-[#00A3FF] hover:bg-[#00A3FF]/10 hover:text-[#00A3FF]"
-                                >
-                                  <ShieldCheck size={14} className="mr-1.5" />
-                                  {t("admin.promote")}
-                                </Button>
-                              )}
+                              <Switch
+                                checked={isAlreadyAdmin}
+                                onCheckedChange={() => handleToggleAdmin(profile.id, isAlreadyAdmin)}
+                                disabled={promoteToAdmin.isPending || revokeAdmin.isPending}
+                              />
                             </TableCell>
                           </TableRow>
                         );
@@ -341,42 +367,115 @@ const AdminDashboard = () => {
               )}
             </TabsContent>
 
-            {/* ===== PLANS TAB ===== */}
-            <TabsContent value="plans">
-              <div className="flex items-center gap-2 mb-4">
-                <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-xs">
-                  {t("admin.mockBadge")}
-                </Badge>
-                <span className="text-xs text-zinc-500">Datos simulados — sin conexión a Stripe aún</span>
-              </div>
-              <div className="border border-white/[0.06] rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/[0.06] hover:bg-transparent">
-                      <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                        {t("admin.planName")}
-                      </TableHead>
-                      <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                        {t("admin.planPrice")}
-                      </TableHead>
-                      <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
-                        {t("admin.stripeId")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MOCK_PLANS.map((plan) => (
-                      <TableRow key={plan.stripe_id} className="border-white/[0.06]">
-                        <TableCell className="text-foreground font-medium flex items-center gap-2">
-                          <CreditCard size={14} className="text-zinc-500" />
-                          {plan.name}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{plan.price}</TableCell>
-                        <TableCell className="text-muted-foreground font-mono text-xs">{plan.stripe_id}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            {/* ===== SUBSCRIPTIONS TAB ===== */}
+            <TabsContent value="subscriptions">
+              <div className="space-y-6">
+                {/* Plans table */}
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-xs">
+                      {t("admin.mockBadge")}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{t("admin.linkMock")}</span>
+                  </div>
+                  <div className="border border-white/[0.06] rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/[0.06] hover:bg-transparent">
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
+                            {t("admin.planName")}
+                          </TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
+                            {t("admin.monthly")}
+                          </TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
+                            {t("admin.annual")}
+                          </TableHead>
+                          <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">
+                            {t("admin.stripeId")}
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {MOCK_PLANS.map((plan) => (
+                          <TableRow key={plan.stripe_id} className="border-white/[0.06]">
+                            <TableCell className="text-foreground font-medium flex items-center gap-2">
+                              <CreditCard size={14} className="text-muted-foreground" />
+                              {plan.name}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{plan.priceMonthly}</TableCell>
+                            <TableCell className="text-muted-foreground">{plan.priceAnnual}</TableCell>
+                            <TableCell className="text-muted-foreground font-mono text-xs">{plan.stripe_id}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+
+                {/* Subscription States */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-muted-foreground">{t("admin.subscriptionStates")}:</span>
+                  {SUBSCRIPTION_STATES.map((state) => (
+                    <Badge key={state} variant="outline" className="text-xs border-white/10 capitalize">
+                      {state}
+                    </Badge>
+                  ))}
+                </div>
+
+                {/* Generate Payment Link */}
+                <div className="p-5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Link2 size={18} className="text-primary" />
+                    <h3 className="font-medium text-foreground">{t("admin.generateLink")}</h3>
+                    <Badge variant="outline" className="border-amber-500/30 text-amber-400 text-xs ml-auto">
+                      {t("admin.mockBadge")}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                    <Select value={checkoutCompany} onValueChange={setCheckoutCompany}>
+                      <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
+                        <SelectValue placeholder={t("admin.selectCompany")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companies?.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={checkoutPlan} onValueChange={setCheckoutPlan}>
+                      <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
+                        <SelectValue placeholder={t("admin.selectPlan")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MOCK_PLANS.map((p) => (
+                          <SelectItem key={p.stripe_id} value={p.stripe_id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={checkoutBilling} onValueChange={setCheckoutBilling}>
+                      <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
+                        <SelectValue placeholder={t("admin.selectPlan")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">{t("admin.monthly")}</SelectItem>
+                        <SelectItem value="annual">{t("admin.annual")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button
+                    onClick={handleGenerateLink}
+                    disabled={!checkoutCompany || !checkoutPlan || !checkoutBilling}
+                    className="w-full"
+                  >
+                    <Copy size={14} className="mr-2" />
+                    {t("admin.generateLink")}
+                  </Button>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -414,7 +513,7 @@ const AdminDashboard = () => {
                         href={site.url.startsWith("http") ? site.url : `https://${site.url}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-[#00A3FF] hover:underline truncate"
+                        className="text-sm text-primary hover:underline truncate"
                       >
                         {site.url}
                       </a>
@@ -456,7 +555,7 @@ const AdminDashboard = () => {
               <Button
                 onClick={() => addWebsite.mutate()}
                 disabled={!newUrl || !newType || addWebsite.isPending}
-                className="mt-3 w-full bg-[#00A3FF] hover:bg-[#00A3FF]/90 text-white"
+                className="mt-3 w-full"
               >
                 {addWebsite.isPending ? (
                   <Loader2 size={14} className="animate-spin mr-2" />
