@@ -16,6 +16,7 @@ import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
 import ProjectDetail from "./pages/ProjectDetail";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <DashboardView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />

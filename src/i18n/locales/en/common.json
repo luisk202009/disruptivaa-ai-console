@@ -10,7 +10,8 @@
     "help": "Help",
     "signOut": "Sign out",
     "projects": "Projects",
-    "recentConversations": "Recent"
+    "recentConversations": "Recent",
+    "admin": "Admin Panel"
   },
   "sidebar": {
     "searchConversations": "Search conversations...",
@@ -329,5 +330,22 @@
     "below": "{{metric}} on {{platform}}: Current value ({{current}}) is {{percent}}% below target ({{target}}).",
     "demoNote": "Demo",
     "noGoals": "Define goals in a project to activate smart alerts."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Manage companies and their websites",
+    "companyName": "Company",
+    "color": "Color",
+    "actions": "Actions",
+    "manageSites": "Manage Sites",
+    "sites": "Websites",
+    "noCompanies": "No companies registered.",
+    "noWebsites": "No websites registered.",
+    "addWebsite": "Add website",
+    "addSite": "Add Site",
+    "type": "Type",
+    "websiteAdded": "Website added successfully",
+    "websiteDeleted": "Website deleted",
+    "websiteError": "Error processing the request"
   }
 }

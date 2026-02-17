@@ -16,13 +16,15 @@ import {
   LayoutGrid,
   Search,
   X,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from "lucide-react";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRoles } from "@/hooks/useUserRoles";
 import { useProjects } from "@/hooks/useProjects";
 import { useConversations } from "@/hooks/useConversations";
 import { CreateProjectDialog } from "./CreateProjectDialog";
@@ -95,6 +97,7 @@ const Sidebar = () => {
   const location = useLocation();
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRoles();
   
   const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects();
   const { 
@@ -191,9 +194,13 @@ const Sidebar = () => {
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
     { id: "agents", icon: <Bot size={18} strokeWidth={1.5} />, label: t("navigation.agents"), path: "/agents" },
+    ...(isAdmin ? [
+      { id: "admin", icon: <ShieldCheck size={18} strokeWidth={1.5} />, label: t("navigation.admin"), path: "/admin" }
+    ] : []),
   ];
 
   const getActiveItem = () => {
+    if (location.pathname === "/admin") return "admin";
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/conversations") return "conversations";
