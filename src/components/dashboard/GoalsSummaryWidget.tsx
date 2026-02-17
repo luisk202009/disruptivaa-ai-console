@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Target, ArrowRight } from "lucide-react";
+import { Target, ArrowRight, Plus } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { useProjectGoals } from "@/hooks/useProjectGoals";
 import { formatGoalValue } from "@/hooks/useProjectGoals";
@@ -31,7 +31,14 @@ const GoalsSummaryWidget = () => {
           <Target size={16} className="text-muted-foreground" />
           <h3 className="text-sm font-medium text-foreground">{t("dashboardWidgets.goalsTitle")}</h3>
         </div>
-        <p className="text-sm text-muted-foreground">{t("dashboardWidgets.goalsEmpty")}</p>
+        <p className="text-sm text-muted-foreground mb-3">{t("dashboardWidgets.goalsEmpty")}</p>
+        <button
+          onClick={() => navigate("/agents", { state: { openCreateProject: true } })}
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+        >
+          <Plus size={12} />
+          {t("projects.createFirst", "Crear primer proyecto")}
+        </button>
       </div>
     );
   }
@@ -55,7 +62,16 @@ const GoalsSummaryWidget = () => {
       <p className="text-xs text-muted-foreground mb-3">{firstProject.name}</p>
 
       {goals.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("dashboardWidgets.goalsEmpty")}</p>
+        <div>
+          <p className="text-sm text-muted-foreground mb-3">{t("dashboardWidgets.goalsEmpty")}</p>
+          <button
+            onClick={() => navigate(`/project/${firstProject.id}`)}
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+          >
+            <Plus size={12} />
+            {t("projects.defineGoals", "Definir metas")}
+          </button>
+        </div>
       ) : (
         <div className="space-y-2">
           {goals.slice(0, 4).map((goal) => (
