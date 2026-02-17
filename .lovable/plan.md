@@ -1,207 +1,124 @@
 
 
-# Plan: Estabilizacion Sprint 6 — Correcciones Criticas
+# Plan: Estabilizacion Masiva Sprint 6
 
 ## Resumen
 
-Cinco correcciones que incluyen: reorganizar el Sidebar, crear el flujo de onboarding obligatorio, habilitar al admin para ver todos los perfiles/empresas (requiere migracion RLS), funcion "Promover a Admin", y una pestana de Planes simulada en el AdminDashboard.
+Seis correcciones criticas: fix de visibilidad admin, onboarding robusto, motor de suscripciones, edicion de perfil con nombre completo, sidebar admin, y toggle de promocion/demotion de admin.
 
 ---
 
-## 1. Sidebar Re-layout
+## Migraciones de Base de Datos (2 migraciones)
 
-**Archivo**: `src/components/Sidebar.tsx`
-
-Mover el item "Panel Admin" de la lista principal de navegacion (`navItems`) y colocarlo como un item separado justo antes de "Conexiones" y "Ajustes" en el dropdown menu del footer.
-
-**Cambio**: Eliminar el bloque condicional `...(isAdmin ? [...])` de `navItems` (lineas 198-200). En su lugar, agregar un `DropdownMenuItem` con icono `ShieldCheck` antes del item de "Conexiones" en el `DropdownMenuContent` del footer (linea 500), condicionado a `isAdmin`.
-
-```typescript
-// En el DropdownMenuContent, antes de Conexiones:
-{isAdmin && (
-  <>
-    <DropdownMenuItem onClick={() => navigate("/admin")} ...>
-      <ShieldCheck size={16} />
-      <span>{t("navigation.admin")}</span>
-    </DropdownMenuItem>
-    <DropdownMenuSeparator />
-  </>
-)}
-```
-
----
-
-## 2. Onboarding Obligatorio en Index.tsx
-
-**Archivo**: `src/pages/Index.tsx`
-
-**Archivo nuevo**: `src/components/CompanyOnboarding.tsx`
-
-El componente `CompanyOnboarding` nunca fue creado. Se creara ahora con:
-- Fondo full-screen negro, logo Disruptivaa centrado
-- Input "Nombre de la empresa" + ColorPicker (reutilizado)
-- Boton "Crear Empresa" en Electric Blue
-- Al enviar: inserta en `companies`, actualiza `profiles.company_id`, invalida queries
-
-**Index.tsx** se modifica para:
-- Importar `useUserProfile`, `useUserRoles`, `CompanyOnboarding`
-- Loading robusto: mientras `profile` o `roles` estan cargando, mantener `LoadingScreen` activo (sin parpadeo del dashboard)
-- Si `!isAdmin && !profile?.company_id` -> renderizar `CompanyOnboarding` en lugar del dashboard
-- Si `isAdmin || profile?.company_id` -> renderizar dashboard normal
-
-```typescript
-const { profile, isLoading: profileLoading } = useUserProfile();
-const { isAdmin, isLoading: rolesLoading } = useUserRoles();
-const dataReady = !profileLoading && !rolesLoading;
-const needsOnboarding = dataReady && !isAdmin && user && !profile?.company_id;
-```
-
----
-
-## 3. AdminDashboard — Fetch ALL Profiles & Companies
-
-**Archivo**: `src/pages/AdminDashboard.tsx`
-
-**Migracion RLS requerida**: Actualmente `profiles` solo tiene politicas para que cada usuario vea su propio perfil. Se necesita una nueva politica SELECT para admins:
+### Migracion 1: Agregar `full_name` a `profiles`
 
 ```sql
-CREATE POLICY "Admins can view all profiles"
-ON public.profiles
-FOR SELECT
+ALTER TABLE public.profiles ADD COLUMN full_name text;
+```
+
+Esto permite mostrar nombres en la tabla de usuarios del admin y editarlos en Settings.
+
+### Migracion 2: Politica INSERT en `companies` para usuarios autenticados
+
+Actualmente, solo admins pueden insertar empresas. El flujo de onboarding (usuarios no-admin creando su empresa) falla silenciosamente por RLS. Se necesita:
+
+```sql
+CREATE POLICY "Authenticated users can create companies"
+ON public.companies
+FOR INSERT
 TO authenticated
-USING (public.has_role(auth.uid(), 'admin'));
+WITH CHECK (true);
 ```
 
-Con esta politica, el AdminDashboard podra hacer:
-```typescript
-const { data: allProfiles } = useQuery({
-  queryKey: ["admin_profiles"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, role, company_id, language, created_at");
-    if (error) throw error;
-    return data;
-  },
-  enabled: isAdmin,
-});
-```
-
-Se agrega una pestana "Usuarios" al AdminDashboard con tabla que muestra todos los perfiles.
+Sin esta politica, el `CompanyOnboarding` da error al intentar crear la empresa.
 
 ---
 
-## 4. Funcion "Promover a Admin"
+## Cambios por Archivo
 
-**Archivo**: `src/pages/AdminDashboard.tsx`
+### 1. `src/pages/AdminDashboard.tsx` — Reestructuracion completa
 
-En la tabla de usuarios, agregar un boton "Promover a Admin" por cada fila. Al hacer clic:
+**Usuarios tab:**
+- Cambiar columna "ID" por "Nombre" mostrando `profile.full_name` (o email truncado como fallback)
+- Necesita hacer join con `auth.users` para obtener email — como no podemos consultar `auth.users` desde el cliente, usaremos `full_name` del perfil y el ID truncado como fallback
+- Agregar toggle Switch (en vez de solo boton) para promover/revocar admin: al activar inserta en `user_roles`, al desactivar elimina de `user_roles`
 
+**Suscripciones tab (nuevo — reemplaza "Planes"):**
+- Renombrar tab "Planes" a "Suscripciones"
+- Mantener la tabla de planes mock existente
+- Agregar seccion "Generar Enlace de Pago" debajo:
+  - Select de Empresa (del listado de `companies`)
+  - Select de Plan (Mensual/Anual con precios mock)
+  - Boton "Generar Enlace" que genera un link simulado (`https://checkout.stripe.com/mock/...`) y lo copia al clipboard
+  - Badge "Simulado" indicando que Stripe no esta conectado aun
+- Definir estados de suscripcion como constantes: `pending`, `active`, `expired`, `canceled`
+
+### 2. `src/pages/Settings.tsx` — Campo "Nombre Completo"
+
+- Agregar un campo Input editable "Nombre Completo" debajo del email
+- Estado local `fullName` inicializado con `profile?.full_name` o `user.user_metadata?.full_name`
+- Boton "Guardar" que ejecuta `handleUpdateProfile`:
+  1. `supabase.auth.updateUser({ data: { full_name: value } })` — actualiza metadata de Auth
+  2. `supabase.from('profiles').update({ full_name: value }).eq('id', user.id)` — actualiza tabla profiles
+  3. Invalida query `['profile']`
+  4. Toast de confirmacion
+
+### 3. `src/pages/Index.tsx` — Onboarding obligatorio (ya implementado, verificar)
+
+El codigo actual ya bloquea correctamente:
 ```typescript
-const promoteToAdmin = useMutation({
-  mutationFn: async (userId: string) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .insert({ user_id: userId, role: "admin" });
-    if (error) throw error;
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["admin_profiles"] });
-    toast.success(t("admin.promoted"));
-  },
-});
+const needsOnboarding = dataReady && user && !isAdmin && !profile?.company_id;
+if (needsOnboarding && !showLoading) return <CompanyOnboarding />;
 ```
+Solo necesita confirmar que el loading state evita el flash del dashboard. **Sin cambios necesarios.**
 
-**Nota**: La tabla `user_roles` ya tiene politica "Admins can manage all roles" (ALL), asi que el admin puede insertar sin problema.
+### 4. `src/components/Sidebar.tsx` — Admin en dropdown (ya implementado)
 
-Se necesita tambien hacer un `LEFT JOIN` o query separada a `user_roles` para saber que usuarios ya son admin y deshabilitar el boton.
+El Panel Admin ya esta en el dropdown del footer, condicionado a `isAdmin`, encima de "Conexiones". **Sin cambios necesarios.**
 
----
+### 5. `src/hooks/useUserProfile.ts` — Agregar `full_name` al tipo
 
-## 5. Pestana "Planes" (Simulada)
+- Agregar `full_name: string | null` a la interfaz `UserProfile`
+- Agregar mutacion `updateFullName` que actualice tanto auth metadata como profiles
 
-**Archivo**: `src/pages/AdminDashboard.tsx`
+### 6. Traducciones (es, en, pt)
 
-Se agrega una tercera pestana al AdminDashboard usando `Tabs` de Radix:
-- Tab 1: "Empresas" (la vista actual)
-- Tab 2: "Usuarios" (nuevo de punto 3-4)
-- Tab 3: "Planes"
-
-La pestana "Planes" muestra una tabla con datos hardcodeados (mock) de planes:
-
-```typescript
-const MOCK_PLANS = [
-  { name: "Starter", price: "$49/mo", stripe_id: "price_starter_mock" },
-  { name: "Growth", price: "$149/mo", stripe_id: "price_growth_mock" },
-  { name: "Enterprise", price: "$499/mo", stripe_id: "price_enterprise_mock" },
-];
-```
-
-Se mostraran en una tabla con columnas: Nombre, Precio, Stripe ID. Un badge "Simulado" indica que no estan conectados a una tabla real aun.
-
----
-
-## Traducciones Nuevas
-
+Nuevas claves:
 | Clave | ES | EN |
 |-------|----|----|
-| `admin.users` | Usuarios | Users |
-| `admin.plans` | Planes | Plans |
-| `admin.companies` | Empresas | Companies |
-| `admin.promote` | Promover a Admin | Promote to Admin |
-| `admin.promoted` | Usuario promovido a Admin | User promoted to Admin |
-| `admin.alreadyAdmin` | Ya es Admin | Already Admin |
-| `admin.email` | Email | Email |
-| `admin.role` | Rol | Role |
-| `admin.company` | Empresa | Company |
-| `admin.planName` | Nombre del Plan | Plan Name |
-| `admin.planPrice` | Precio | Price |
-| `admin.stripeId` | Stripe ID | Stripe ID |
-| `admin.mockBadge` | Simulado | Mock |
-| `onboarding.title` | Bienvenido a Disruptivaa | Welcome to Disruptivaa |
-| `onboarding.subtitle` | Configura tu empresa para comenzar | Set up your company to get started |
-| `onboarding.companyName` | Nombre de la empresa | Company name |
-| `onboarding.companyPlaceholder` | Ej: Mi Agencia Digital | E.g.: My Digital Agency |
-| `onboarding.brandColor` | Color de marca | Brand color |
-| `onboarding.createCompany` | Crear Empresa | Create Company |
-| `onboarding.creating` | Creando... | Creating... |
-| `onboarding.success` | Empresa creada exitosamente | Company created successfully |
-| `onboarding.error` | Error al crear la empresa | Error creating company |
+| `settings.fullName` | Nombre completo | Full name |
+| `settings.fullNamePlaceholder` | Ej: Juan Perez | E.g.: John Doe |
+| `settings.profileUpdated` | Perfil actualizado | Profile updated |
+| `settings.profileError` | Error al actualizar perfil | Error updating profile |
+| `admin.subscriptions` | Suscripciones | Subscriptions |
+| `admin.generateLink` | Generar Enlace de Pago | Generate Payment Link |
+| `admin.selectCompany` | Seleccionar empresa | Select company |
+| `admin.selectPlan` | Seleccionar plan | Select plan |
+| `admin.monthly` | Mensual | Monthly |
+| `admin.annual` | Anual | Annual |
+| `admin.linkGenerated` | Enlace copiado al portapapeles | Link copied to clipboard |
+| `admin.linkMock` | Enlace simulado — sin conexion a Stripe | Mock link — no Stripe connection |
+| `admin.revokeAdmin` | Revocar Admin | Revoke Admin |
+| `admin.revoked` | Rol de admin revocado | Admin role revoked |
+| `admin.userName` | Nombre | Name |
+| `admin.subscriptionStates` | Estados: pending, active, expired, canceled | States: pending, active, expired, canceled |
 
 ---
-
-## Migracion de Base de Datos Requerida
-
-```sql
--- Permitir a admins ver todos los perfiles
-CREATE POLICY "Admins can view all profiles"
-ON public.profiles
-FOR SELECT
-TO authenticated
-USING (public.has_role(auth.uid(), 'admin'));
-```
-
----
-
-## Resumen de Archivos
-
-| Archivo | Accion |
-|---------|--------|
-| `src/components/Sidebar.tsx` | Modificar — mover Admin link al dropdown |
-| `src/components/CompanyOnboarding.tsx` | Crear — formulario de onboarding |
-| `src/pages/Index.tsx` | Modificar — logica condicional onboarding vs dashboard |
-| `src/pages/AdminDashboard.tsx` | Modificar — tabs con Usuarios, Planes, Promover Admin |
-| `src/i18n/locales/es/common.json` | Modificar — nuevas claves |
-| `src/i18n/locales/en/common.json` | Modificar — nuevas claves |
-| `src/i18n/locales/pt/common.json` | Modificar — nuevas claves |
-| Migracion SQL | Crear — RLS policy para admins en profiles |
 
 ## Secuencia de Implementacion
 
-1. Migracion RLS (admins can view all profiles)
-2. Crear CompanyOnboarding.tsx
-3. Modificar Index.tsx con logica de onboarding
-4. Modificar Sidebar.tsx (mover admin link)
-5. Reestructurar AdminDashboard.tsx con tabs + usuarios + planes + promover
-6. Agregar traducciones
+1. Migracion SQL: agregar `full_name` a profiles + INSERT policy en companies
+2. Actualizar `useUserProfile.ts` (tipo + mutacion)
+3. Actualizar `Settings.tsx` (campo nombre completo)
+4. Reestructurar `AdminDashboard.tsx` (nombre en usuarios, switch admin, tab suscripciones)
+5. Agregar traducciones (es, en, pt)
+
+---
+
+## Notas Tecnicas
+
+- **RLS critico**: Sin la politica INSERT en `companies`, el onboarding falla para usuarios no-admin. Esta es la correccion mas urgente.
+- **Toggle admin**: El switch usa INSERT para promover y DELETE para revocar en `user_roles`. La politica "Admins can manage all roles" (ALL) ya cubre ambas operaciones.
+- **`full_name` dual**: Se almacena tanto en `auth.users.user_metadata` (para que `getUserDisplayName()` del Sidebar lo muestre inmediatamente) como en `profiles.full_name` (para que el admin pueda verlo en la tabla de usuarios).
+- **Stripe mock**: El enlace generado es puramente visual. Cuando se habilite Stripe, se reemplazara por una llamada real a `create-checkout-session`.
 
