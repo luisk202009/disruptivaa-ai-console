@@ -73,6 +73,14 @@
     "analyzing": "Analyzing...",
     "tabGallery": "Gallery",
     "tabHistory": "History",
+    "tabActivity": "Activity",
+    "noActivity": "Your agents are ready to work",
+    "activityTitle": "Activity History",
+    "logStatus": {
+      "completed": "Completed",
+      "error": "Error",
+      "working": "In progress"
+    },
     "writeOrAttach": "Type or attach files for analysis...",
     "selectToStart": "Select an agent to get started...",
     "loadingMessages": "Loading messages...",
