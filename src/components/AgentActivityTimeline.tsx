@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle2, AlertCircle, Activity, Bot } from "lucide-react";
+import { CheckCircle2, AlertCircle, Activity } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es, enUS, pt } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,21 @@ const AgentActivityTimeline = () => {
       setLoading(false);
     };
     fetchLogs();
+
+    const channel = supabase
+      .channel('agent-logs-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'ai_agent_logs' },
+        (payload) => {
+          setLogs(prev => [payload.new as AgentLog, ...prev].slice(0, 50));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const locale = dateLocales[i18n.language] || enUS;
@@ -56,10 +71,10 @@ const AgentActivityTimeline = () => {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <div
-          className="w-14 h-14 rounded-full flex items-center justify-center"
+          className="w-14 h-14 rounded-full flex items-center justify-center opacity-40"
           style={{ backgroundColor: `${companyColor}20` }}
         >
-          <Bot className="w-7 h-7" style={{ color: companyColor }} />
+          <Activity className="w-7 h-7" style={{ color: companyColor }} />
         </div>
         <p className="text-muted-foreground text-sm">
           {t("agents.noActivity")}
