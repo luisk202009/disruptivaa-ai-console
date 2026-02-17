@@ -9,6 +9,8 @@ export type SupportedLanguage = 'es' | 'en' | 'pt';
 export interface UserProfile {
   id: string;
   language: SupportedLanguage;
+  role: string | null;
+  company_id: string | null;
   created_at: string;
   updated_at: string;
 }

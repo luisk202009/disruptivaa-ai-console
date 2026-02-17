@@ -236,7 +236,12 @@
     "agentSelectedDesc": "Now talking to {{name}}",
     "agentDetected": "{{name}} detected",
     "consulting": "Consulting {{name}}",
-    "isConsulting": "{{name}} is consulting..."
+    "isConsulting": "{{name}} is consulting...",
+    "myAgents": "My AI Agents",
+    "digitalEcosystem": "Digital Ecosystem",
+    "viewSite": "View Site",
+    "contractedServices": "Contracted Services",
+    "noWebsites": "No websites assigned to your company."
   },
   "omnichannel": {
     "title": "Omnichannel Performance",

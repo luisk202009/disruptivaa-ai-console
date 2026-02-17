@@ -236,7 +236,12 @@
     "agentSelectedDesc": "Ahora estás hablando con {{name}}",
     "agentDetected": "{{name}} detectado",
     "consulting": "Consultando a {{name}}",
-    "isConsulting": "{{name}} está consultando..."
+    "isConsulting": "{{name}} está consultando...",
+    "myAgents": "Mis Agentes de IA",
+    "digitalEcosystem": "Ecosistema Digital",
+    "viewSite": "Ver Sitio",
+    "contractedServices": "Servicios Contratados",
+    "noWebsites": "No hay sitios asignados a tu empresa."
   },
   "omnichannel": {
     "title": "Rendimiento Omnicanal",
