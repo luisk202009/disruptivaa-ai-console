@@ -87,6 +87,9 @@ const Dashboard = () => {
         <div className="max-w-5xl mx-auto space-y-6">
           <p className="text-sm text-muted-foreground">{t("dashboardWidgets.welcomeSubtitle")}</p>
 
+          {/* Omnichannel Performance */}
+          {user && <OmnichannelPerformance />}
+
           {/* AI Agents Section */}
           {user && (
             <section>
@@ -133,8 +136,7 @@ const Dashboard = () => {
             </section>
           )}
 
-          {/* Omnichannel Performance */}
-          {user && <OmnichannelPerformance />}
+          {/* Smart Alerts */}
 
           {/* Smart Alerts */}
           {user && <SmartAlerts />}
