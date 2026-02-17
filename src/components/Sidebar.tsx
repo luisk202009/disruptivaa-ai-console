@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useProjects } from "@/hooks/useProjects";
 import { useConversations } from "@/hooks/useConversations";
+import { useCompanyBranding } from "@/hooks/useCompanyBranding";
 import { CreateProjectDialog } from "./CreateProjectDialog";
 import { ProjectItemMenu } from "./ProjectItemMenu";
 import { ConversationItemMenu } from "./ConversationItemMenu";
@@ -98,7 +99,7 @@ const Sidebar = () => {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRoles();
-  
+  const { companyName } = useCompanyBranding();
   const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects();
   const { 
     conversations, 
@@ -465,13 +466,18 @@ const Sidebar = () => {
                   )}
                 >
                   {/* Avatar with gradient */}
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-sm font-medium text-zinc-200 ring-1 ring-white/[0.06] shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-sm font-medium text-zinc-200 shrink-0" style={{ boxShadow: '0 0 0 1px var(--primary-company, #00A3FF)' }}>
                     {getUserDisplayName()?.charAt(0).toUpperCase()}
                   </div>
 
                   {!collapsed && (
                     <>
                       <div className="flex-1 min-w-0 text-left">
+                        {companyName && (
+                          <p className="text-[10px] uppercase tracking-widest text-zinc-500 truncate">
+                            {companyName}
+                          </p>
+                        )}
                         <p className="text-sm font-medium text-zinc-200 truncate tracking-wide">
                           {getUserDisplayName()}
                         </p>

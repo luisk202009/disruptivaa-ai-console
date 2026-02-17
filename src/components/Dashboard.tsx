@@ -14,6 +14,7 @@ import { DISRUPTIVAA_AGENTS } from "./agentDefinitions";
 import { useAgents } from "@/hooks/useAgents";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompanyBranding } from "@/hooks/useCompanyBranding";
 
 // Keep exports for other consumers
 export { DISRUPTIVAA_AGENTS } from "./agentDefinitions";
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { agents } = useAgents();
   const { profile } = useUserProfile();
+  const { companyColor } = useCompanyBranding();
 
   const { data: websites = [] } = useQuery({
     queryKey: ["company_websites", profile?.company_id],
@@ -108,7 +110,7 @@ const Dashboard = () => {
           {user && (
             <section>
               <div className="flex items-center gap-2 mb-4">
-                <Globe2 size={18} className="text-primary" />
+                <Globe2 size={18} style={{ color: 'var(--primary-company, #00A3FF)' }} />
                 <h2 className="text-base font-semibold text-foreground">{t("dashboard.digitalEcosystem")}</h2>
               </div>
               {websites.length > 0 ? (
@@ -118,6 +120,7 @@ const Dashboard = () => {
                       key={site.id}
                       url={site.url}
                       siteType={site.site_type}
+                      companyColor={companyColor}
                     />
                   ))}
                 </div>
