@@ -216,7 +216,12 @@
   "exportReport": {
     "copied": "Informe copiado al portapapeles",
     "copyError": "Error al copiar el informe",
-    "downloaded": "Informe descargado"
+    "downloaded": "Informe descargado",
+    "generatingPdf": "Generando PDF...",
+    "pdfSuccess": "PDF descargado correctamente",
+    "pdfError": "Error al generar el PDF",
+    "downloadPdf": "Descargar PDF",
+    "copyClipboard": "Copiar al Portapapeles"
   },
   "projectExport": {
     "title": "Generar Informe",
