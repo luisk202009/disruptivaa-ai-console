@@ -1,67 +1,121 @@
 
-# Sprint 7 - Tarea 3: Activacion de Datos Reales
+# Sprint 7 - Tarea 4: Motor de Suscripciones y Facturacion
 
-## Problema critico detectado
+## Resumen
 
-`useMetaMetrics.fetchMetric()` siempre invoca `fetch-meta-metrics` (linea 80) sin importar el `data_source` del widget. Esto significa que los widgets de Google Ads y TikTok Ads tambien llaman al endpoint de Meta, lo cual es incorrecto. Este es el fix principal de esta tarea.
+Crear una tabla `subscriptions` en Supabase, refactorizar la pestana de suscripciones del Admin Dashboard para gestionar suscripciones reales (CRUD), e implementar un paywall en `Index.tsx` que bloquee el acceso a usuarios sin suscripcion activa.
 
 ## Cambios
 
-### 1. Refactor de `useMetaMetrics.ts` - Routing dinamico por plataforma
+### 1. Migracion de Base de Datos: Tabla `subscriptions`
 
-Renombrar conceptualmente el hook a un router multi-plataforma. En `fetchMetric`, usar `widget.data_source` (pasado via `MetricConfig`) para determinar que edge function invocar:
+Crear la tabla con los siguientes campos:
 
-| data_source | Edge Function |
-|-------------|---------------|
-| `meta_ads` | `fetch-meta-metrics` |
-| `google_ads` | `fetch-google-ads-metrics` |
-| `tiktok_ads` | `fetch-tiktok-ads-metrics` |
+| Columna | Tipo | Default | Nullable |
+|---------|------|---------|----------|
+| id | uuid | gen_random_uuid() | No |
+| company_id | uuid (FK companies) | - | No |
+| plan_name | text | - | No |
+| billing_cycle | text | 'monthly' | No |
+| price | numeric | - | No |
+| currency | text | 'USD' | Yes |
+| status | text | 'pending' | No |
+| starts_at | timestamptz | now() | No |
+| expires_at | timestamptz | - | Yes |
+| stripe_link | text | - | Yes |
+| created_at | timestamptz | now() | Yes |
+| updated_at | timestamptz | now() | Yes |
 
-Cambios especificos:
-- Agregar `data_source?: DataSource` a la interfaz `MetricConfig`
-- En `fetchMetric`, reemplazar el hardcoded `"fetch-meta-metrics"` por un mapeo basado en `config.data_source`
-- Fallback a `fetch-meta-metrics` si no se especifica
+Politicas RLS:
+- Admins: ALL (usando `has_role()`)
+- Users: SELECT en suscripciones de su propia empresa (via `profiles.company_id`)
 
-### 2. `DashboardWidget.tsx` - Pasar `data_source` al config
+Trigger `update_updated_at_column` en la tabla.
 
-Cuando `DashboardWidget` llama a `fetchMetric(config)`, incluir `data_source: widget.data_source` en el config para que el hook sepa que edge function invocar.
+### 2. Hook `useSubscription.ts`
 
-### 3. Refactor de `OmnichannelPerformance.tsx` - Usar el hook
+Nuevo hook que:
+- Consulta la suscripcion activa de la empresa del usuario actual
+- Devuelve `{ subscription, isActive, isLoading }`
+- `isActive = subscription?.status === 'active'`
+- Usado tanto por el paywall como por otros componentes
 
-Actualmente este componente duplica toda la logica de fetching (lineas 37-108). Refactorizar para:
-- Importar y usar `useOmnichannelMetrics` en vez de logica duplicada
-- Consumir `data.loading` para el estado de carga
-- Agregar estado `error` con mensaje amigable
+### 3. Refactor del Admin Dashboard - Pestana Suscripciones
 
-### 4. Agregar `error` a `useOmnichannelMetrics.ts`
+Reemplazar el contenido mock actual (lineas 370-480) con:
 
-- Agregar campo `error: string | null` a `OmnichannelData`
-- Capturar errores de cada plataforma y reportar un error consolidado si todas fallan
-- Solo mostrar error si NINGUNA plataforma retorno datos
+**Tabla de suscripciones existentes**: Lista todas las suscripciones desde la tabla `subscriptions`, mostrando empresa, plan, ciclo, precio, estado y fecha de inicio.
 
-### 5. Skeletons en estados de carga
+**Badges de estado con colores**:
+- `active` -> verde (border-green-500/30, text-green-400)
+- `pending` -> amarillo (border-amber-500/30, text-amber-400)
+- `expired` -> rojo (border-red-500/30, text-red-400)
+- `canceled` -> gris (border-zinc-500/30, text-zinc-400)
 
-**`OmnichannelPerformance.tsx`**: Reemplazar el spinner basico (lineas 144-152) por Skeleton components que repliquen la estructura de los 3 KPI cards + bar chart:
-- 3 skeleton rectangulos de la misma altura que los KPICards
-- 1 skeleton rectangulo para el area del bar chart
+**Formulario "Nueva Suscripcion"** (en un card debajo de la tabla):
+- Select: Empresa (desde `companies`)
+- Select: Plan (Starter / Growth / Enterprise)
+- Select: Ciclo (Mensual / Anual)
+- Input: Precio
+- Input: Fecha de inicio (date picker o input type date)
+- Boton "Crear Suscripcion": Inserta el registro en `subscriptions` con status `pending`
+- Boton "Generar Enlace de Pago": Genera un link placeholder de Stripe y lo guarda en `stripe_link`
 
-**`DashboardCanvas.tsx`**: Mejorar los skeletons de carga (lineas 65-76) usando el componente `Skeleton` importado de `@/components/ui/skeleton` en vez de divs con `animate-pulse`.
+**Acciones por fila**:
+- Boton para cambiar estado (dropdown: active, pending, expired, canceled)
+- Boton para copiar el enlace de pago
 
-### 6. Filtrar plataformas por integraciones conectadas
+### 4. Paywall en `Index.tsx`
 
-En `useOmnichannelMetrics`, antes de hacer fetch, consultar `user_integrations` para determinar que plataformas tiene conectadas el usuario. Solo invocar edge functions de plataformas con `status = 'connected'`.
+Modificar la logica existente para agregar una tercera condicion de intercepcion:
+
+```text
+Flujo actual:
+1. Loading -> LoadingScreen
+2. needsOnboarding -> CompanyOnboarding
+3. Default -> Sidebar + Dashboard
+
+Nuevo flujo:
+1. Loading -> LoadingScreen
+2. needsOnboarding -> CompanyOnboarding
+3. needsSubscription -> SubscriptionPendingView (NUEVO)
+4. Default -> Sidebar + Dashboard
+```
+
+`needsSubscription` = usuario autenticado, NO admin, tiene company_id, pero NO tiene suscripcion activa.
+
+### 5. Componente `SubscriptionPending.tsx`
+
+Vista simplificada de pantalla completa con:
+- Logo de la empresa (si existe)
+- Titulo: "Tu suscripcion esta pendiente"
+- Subtitulo: "Contacta con soporte para activar tu cuenta"
+- Boton "Contactar Soporte" (mailto: o link externo)
+- Boton "Cerrar Sesion"
+- Fondo negro (#000000), boton con color dinamico de la empresa (`var(--primary-company)`)
+
+### 6. Traducciones
+
+Agregar claves en `es/common.json`, `en/common.json`, `pt/common.json` para:
+- `subscription.pending`, `subscription.contactSupport`, `subscription.title`, `subscription.subtitle`
+- `admin.newSubscription`, `admin.createSubscription`, `admin.billingCycle`, `admin.price`, `admin.startDate`, `admin.generateStripeLink`, `admin.status`, `admin.plan`
 
 ## Archivos afectados
 
 | Archivo | Accion |
 |---------|--------|
-| `src/hooks/useMetaMetrics.ts` | Routing dinamico por `data_source` en `fetchMetric` |
-| `src/hooks/useWidgets.ts` | Agregar `data_source?: DataSource` a `MetricConfig` |
-| `src/hooks/useOmnichannelMetrics.ts` | Agregar `error`, filtrar por integraciones conectadas |
-| `src/components/dashboards/widgets/DashboardWidget.tsx` | Pasar `data_source` al config de fetchMetric |
-| `src/components/OmnichannelPerformance.tsx` | Usar hook, Skeleton loading, estado error |
-| `src/components/dashboards/DashboardCanvas.tsx` | Mejorar skeletons con componente Skeleton |
+| Nueva migracion SQL | Crear tabla `subscriptions` con RLS |
+| `src/hooks/useSubscription.ts` | Nuevo: hook para consultar suscripcion activa |
+| `src/pages/AdminDashboard.tsx` | Refactorizar pestana subscriptions con CRUD real |
+| `src/pages/Index.tsx` | Agregar paywall con `useSubscription` |
+| `src/components/SubscriptionPending.tsx` | Nuevo: vista de suscripcion pendiente |
+| `src/i18n/locales/es/common.json` | Agregar traducciones |
+| `src/i18n/locales/en/common.json` | Agregar traducciones |
+| `src/i18n/locales/pt/common.json` | Agregar traducciones |
 
-## Sin cambios de base de datos
+## Consideraciones de seguridad
 
-No se requieren migraciones. Todo se basa en el campo `data_source` existente en la tabla `widgets` y `status` en `user_integrations`.
+- Solo admins pueden crear/modificar suscripciones (RLS con `has_role()`)
+- Usuarios solo pueden ver la suscripcion de su propia empresa
+- El paywall se valida en el frontend; las rutas protegidas ya requieren autenticacion via `ProtectedRoute`
+- Los admins NUNCA son bloqueados por el paywall
