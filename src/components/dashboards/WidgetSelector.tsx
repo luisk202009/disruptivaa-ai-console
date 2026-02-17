@@ -8,7 +8,7 @@ import {
   DollarSign, Eye, MousePointer, Percent, Users, TrendingUp, BarChart3, PieChart,
   Activity, Table, Building2, CheckCircle2, Loader2, AlertCircle, Target
 } from "lucide-react";
-import { Widget, WidgetType, MetricType, MetricConfig, GridSettings } from "@/hooks/useWidgets";
+import { Widget, WidgetType, MetricType, MetricConfig, GridSettings, DataSource } from "@/hooks/useWidgets";
 import { METRIC_LABELS } from "@/hooks/useMetaMetrics";
 import { MetaAccountDetail } from "@/hooks/useIntegrations";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ interface WidgetSelectorProps {
   accountsLoading?: boolean;
   onAddWidget: (widget: Omit<Widget, "id" | "created_at" | "updated_at" | "dashboard_id">) => void;
   onClose: () => void;
+  platform?: DataSource;
 }
 
 interface MetricOption {
@@ -64,7 +65,7 @@ const DEFAULT_GRID_SETTINGS: Record<WidgetType, GridSettings> = {
 
 type Step = "metric" | "type" | "account";
 
-export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose }: WidgetSelectorProps) => {
+export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose, platform = "meta_ads" as DataSource }: WidgetSelectorProps) => {
   const { t } = useTranslation();
   const [selectedMetric, setSelectedMetric] = useState<MetricType | null>(null);
   const [selectedType, setSelectedType] = useState<WidgetType | null>(null);
@@ -105,7 +106,7 @@ export const WidgetSelector = ({ accounts, accountsLoading, onAddWidget, onClose
     const widget: Omit<Widget, "id" | "created_at" | "updated_at" | "dashboard_id"> = {
       type: selectedType,
       title: METRIC_LABELS[selectedMetric],
-      data_source: "meta_ads",
+      data_source: platform,
       metric_config: metricConfig,
       grid_settings: DEFAULT_GRID_SETTINGS[selectedType],
     };

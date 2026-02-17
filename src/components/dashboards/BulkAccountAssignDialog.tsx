@@ -14,6 +14,13 @@ import { Widget } from "@/hooks/useWidgets";
 import { MetaAccountDetail } from "@/hooks/useIntegrations";
 import { cn } from "@/lib/utils";
 
+const PLATFORM_DISPLAY_NAMES: Record<string, string> = {
+  meta_ads: "Meta Ads",
+  google_ads: "Google Ads",
+  tiktok_ads: "TikTok Ads",
+  manual: "Manual",
+};
+
 interface BulkAccountAssignDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -21,6 +28,7 @@ interface BulkAccountAssignDialogProps {
   accounts: MetaAccountDetail[];
   accountsLoading?: boolean;
   onAssign: (accountId: string, accountName: string) => Promise<void>;
+  platform?: string;
 }
 
 export const BulkAccountAssignDialog = ({
@@ -30,7 +38,9 @@ export const BulkAccountAssignDialog = ({
   accounts,
   accountsLoading,
   onAssign,
+  platform = "meta_ads",
 }: BulkAccountAssignDialogProps) => {
+  const platformName = PLATFORM_DISPLAY_NAMES[platform] || platform;
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +71,7 @@ export const BulkAccountAssignDialog = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Vincular cuenta de anuncios</DialogTitle>
+          <DialogTitle>Vincular cuenta de {platformName}</DialogTitle>
           <DialogDescription>
             Selecciona una cuenta para vincularla a {widgets.length} widget
             {widgets.length > 1 ? "s" : ""} sin configurar.
@@ -79,10 +89,10 @@ export const BulkAccountAssignDialog = ({
           ) : accounts.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-2">
-                No hay cuentas de anuncios conectadas.
+                No hay cuentas de {platformName} vinculadas.
               </p>
               <p className="text-sm text-muted-foreground">
-                Ve a Conexiones para vincular tu cuenta de Meta Ads.
+                Ve a Conexiones para añadir una cuenta de {platformName}.
               </p>
             </div>
           ) : (

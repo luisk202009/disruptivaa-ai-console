@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/Sidebar";
 import { useDashboards } from "@/hooks/useDashboards";
-import { useWidgets, Widget, GridSettings, DatePreset } from "@/hooks/useWidgets";
+import { useWidgets, Widget, GridSettings, DatePreset, DataSource } from "@/hooks/useWidgets";
 import { useIntegrations, MetaAccountDetail } from "@/hooks/useIntegrations";
 import { DashboardCanvas } from "@/components/dashboards/DashboardCanvas";
 import { WidgetSelector } from "@/components/dashboards/WidgetSelector";
@@ -28,7 +28,7 @@ const DashboardView = () => {
   const { widgets, loading: widgetsLoading, addWidget, updateWidget, updateWidgetPositions, removeWidget } = useWidgets({
     dashboardId,
   });
-  const { getMetaAccountDetails } = useIntegrations();
+  const { getAccountDetailsByPlatform } = useIntegrations();
   
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
@@ -41,6 +41,17 @@ const DashboardView = () => {
   const [accounts, setAccounts] = useState<MetaAccountDetail[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   
+  // Detect dominant platform from widgets
+  const dominantPlatform: DataSource = (() => {
+    if (widgets.length === 0) return "meta_ads" as DataSource;
+    const counts: Record<string, number> = {};
+    widgets.forEach((w) => {
+      const src = w.data_source || "meta_ads";
+      counts[src] = (counts[src] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0] as DataSource;
+  })();
+
   // Unconfigured widgets detection
   const unconfiguredWidgets = widgets.filter(
     (w) => !w.metric_config.account_id
@@ -49,12 +60,12 @@ const DashboardView = () => {
 
   const dashboard = dashboards.find((d) => d.id === dashboardId);
 
-  // Load Meta accounts when needed
+  // Load accounts filtered by dominant platform
   useEffect(() => {
     const loadAccounts = async () => {
       setAccountsLoading(true);
       try {
-        const accountDetails = await getMetaAccountDetails();
+        const accountDetails = await getAccountDetailsByPlatform(dominantPlatform as 'meta_ads' | 'google_ads' | 'tiktok_ads');
         setAccounts(accountDetails);
       } catch (error) {
         console.error("Error loading accounts:", error);
@@ -66,7 +77,7 @@ const DashboardView = () => {
     if (showWidgetSelector || showWidgetSettings || showBulkAccountModal) {
       loadAccounts();
     }
-  }, [showWidgetSelector, showWidgetSettings, showBulkAccountModal]);
+  }, [showWidgetSelector, showWidgetSettings, showBulkAccountModal, dominantPlatform]);
 
   useEffect(() => {
     if (!dashboardLoading && !dashboard) {
@@ -197,11 +208,12 @@ const DashboardView = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-[400px] sm:w-[540px]">
-                <WidgetSelector
+              <WidgetSelector
                   accounts={accounts}
                   accountsLoading={accountsLoading}
                   onAddWidget={handleAddWidget}
                   onClose={() => setShowWidgetSelector(false)}
+                  platform={dominantPlatform}
                 />
               </SheetContent>
             </Sheet>
@@ -246,6 +258,7 @@ const DashboardView = () => {
           accounts={accounts}
           accountsLoading={accountsLoading}
           onAssign={handleBulkAssign}
+          platform={dominantPlatform}
         />
 
         {/* Export Report Dialog */}
