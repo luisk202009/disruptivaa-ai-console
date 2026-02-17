@@ -219,7 +219,12 @@
     "errorSecurity": "Error de seguridad: Estado no válido. Intenta conectar nuevamente.",
     "errorAuth": "No estás autenticado. Inicia sesión e intenta nuevamente.",
     "errorCancelled": "El usuario canceló la autorización",
-    "errorExchange": "Error al procesar la autorización"
+    "errorExchange": "Error al procesar la autorización",
+    "tiktokSuccess": "¡TikTok conectado con éxito! {{count}} cuenta(s) detectadas.",
+    "processingTikTok": "Conectando con TikTok...",
+    "processingTikTokDesc": "Verificando tu cuenta de TikTok Ads",
+    "successTikTok": "Tu cuenta de TikTok Ads ha sido vinculada correctamente. Redirigiendo...",
+    "tiktokConnectLabel": "Conectar con TikTok"
   },
   "exportReport": {
     "copied": "Informe copiado al portapapeles",

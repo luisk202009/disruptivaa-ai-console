@@ -219,7 +219,12 @@
     "errorSecurity": "Erro de segurança: Estado inválido. Tente conectar novamente.",
     "errorAuth": "Você não está autenticado. Faça login e tente novamente.",
     "errorCancelled": "O usuário cancelou a autorização",
-    "errorExchange": "Erro ao processar a autorização"
+    "errorExchange": "Erro ao processar a autorização",
+    "tiktokSuccess": "TikTok conectado com sucesso! {{count}} conta(s) detectada(s).",
+    "processingTikTok": "Conectando com TikTok...",
+    "processingTikTokDesc": "Verificando sua conta TikTok Ads",
+    "successTikTok": "Sua conta TikTok Ads foi vinculada com sucesso. Redirecionando...",
+    "tiktokConnectLabel": "Conectar com TikTok"
   },
   "exportReport": {
     "copied": "Relatório copiado para a área de transferência",

@@ -219,7 +219,12 @@
     "errorSecurity": "Security error: Invalid state. Try connecting again.",
     "errorAuth": "You are not authenticated. Sign in and try again.",
     "errorCancelled": "The user cancelled the authorization",
-    "errorExchange": "Error processing the authorization"
+    "errorExchange": "Error processing the authorization",
+    "tiktokSuccess": "TikTok connected successfully! {{count}} account(s) detected.",
+    "processingTikTok": "Connecting to TikTok...",
+    "processingTikTokDesc": "Verifying your TikTok Ads account",
+    "successTikTok": "Your TikTok Ads account has been linked successfully. Redirecting...",
+    "tiktokConnectLabel": "Connect with TikTok"
   },
   "exportReport": {
     "copied": "Report copied to clipboard",

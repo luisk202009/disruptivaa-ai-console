@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { TrendingUp, DollarSign, Target, AlertTriangle, AlertCircle } from "lucide-react";
+import { TrendingUp, DollarSign, Target, AlertCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOmnichannelMetrics, PlatformMetrics } from "@/hooks/useOmnichannelMetrics";
@@ -124,13 +124,7 @@ const OmnichannelPerformance = () => {
               />
             </div>
 
-            {/* TikTok Demo Note */}
-            {data.tiktok?.isDemo && (
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground italic">
-                <AlertTriangle className="w-3 h-3" />
-                <span>{t("omnichannel.tiktokDemoNote")}</span>
-              </div>
-            )}
+            {/* Spend by Platform Chart */}
 
             {/* Bar Chart */}
             {chartData.length > 1 && (
