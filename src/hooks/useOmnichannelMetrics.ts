@@ -8,6 +8,7 @@ export interface PlatformMetrics {
   cpc: number;
   conversions: number;
   isDemo: boolean;
+  currency?: string;
 }
 
 export interface OmnichannelData {
@@ -54,8 +55,8 @@ export const useOmnichannelMetrics = () => {
             }
           );
           if (!response.ok) return null;
-          const result = await response.json();
-          return { value: result.value ?? 0, is_demo: result.is_demo ?? true };
+      const result = await response.json();
+      return { value: result.value ?? 0, is_demo: result.is_demo ?? true, currency: result.currency };
         })
       );
 
@@ -68,6 +69,9 @@ export const useOmnichannelMetrics = () => {
         if (results[i]?.is_demo) isDemo = true;
       }
 
+      // Capture currency from first response
+      const currency = results[0]?.currency ?? "USD";
+
       return {
         spend: values[0],
         clicks: values[1],
@@ -75,6 +79,7 @@ export const useOmnichannelMetrics = () => {
         cpc: values[3],
         conversions: values[4],
         isDemo,
+        currency,
       };
     } catch {
       return null;

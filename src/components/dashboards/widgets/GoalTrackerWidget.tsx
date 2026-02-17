@@ -50,13 +50,26 @@ export const GoalTrackerWidget = ({ widget, data, goal }: GoalTrackerWidgetProps
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (displayProgress / 100) * circumference;
 
-  // Format current value
+  // Format current value using dynamic currency
+  const goalCurrency = goal.currency || "USD";
+  
+  const formatCurrencyValue = (value: number, cur: string): string => {
+    const noDecimals = ["COP", "CLP", "JPY", "KRW"];
+    const locale = cur === "COP" ? "es-CO" : cur === "EUR" ? "es-ES" : cur === "MXN" ? "es-MX" : "en-US";
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: cur,
+      minimumFractionDigits: noDecimals.includes(cur) ? 0 : 2,
+      maximumFractionDigits: noDecimals.includes(cur) ? 0 : 2,
+    }).format(value);
+  };
+
   const formatValue = (value: number): string => {
     switch (goal.metric_key) {
       case 'cpa':
       case 'cpc':
       case 'spend':
-        return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return formatCurrencyValue(value, goalCurrency);
       case 'roas':
         return `${value.toFixed(2)}x`;
       case 'ctr':

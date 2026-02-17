@@ -10,9 +10,10 @@ interface KPIWidgetProps {
 
 export const KPIWidget = ({ widget, data }: KPIWidgetProps) => {
   const { formatValue } = useMetaMetrics();
-  const { metric, goal } = widget.metric_config;
+  const { metric, goal, currency: configCurrency } = widget.metric_config;
+  const currency = data.currency || configCurrency || "USD";
 
-  const formattedValue = formatValue(data.value, metric);
+  const formattedValue = formatValue(data.value, metric, currency);
   const changePercent = data.change_percent ?? 0;
   const trend = data.trend ?? (changePercent > 0 ? "up" : changePercent < 0 ? "down" : "neutral");
   
@@ -59,7 +60,7 @@ export const KPIWidget = ({ widget, data }: KPIWidgetProps) => {
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="flex items-center gap-1 text-muted-foreground">
               <Target size={12} />
-              Meta: {formatValue(goal, metric)}
+              Meta: {formatValue(goal, metric, currency)}
             </span>
             <span className={cn(
               "flex items-center gap-1",

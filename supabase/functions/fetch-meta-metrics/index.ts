@@ -259,18 +259,22 @@ serve(async (req) => {
       }
     }
 
-    // Get account name
+    // Get account name and currency
     let accountName = `Cuenta act_${cleanAccountId}`;
+    let currency = "USD";
     try {
       const accountResponse = await fetch(
-        `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name&access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name,currency&access_token=${accessToken}`
       );
       const accountData = await accountResponse.json();
       if (accountData.name) {
         accountName = accountData.name;
       }
+      if (accountData.currency) {
+        currency = accountData.currency;
+      }
     } catch (e) {
-      console.warn("⚠️ Could not fetch account name:", e);
+      console.warn("⚠️ Could not fetch account name/currency:", e);
     }
 
     console.log(`✅ Successfully fetched metrics for ${accountName}`);
@@ -283,6 +287,7 @@ serve(async (req) => {
         trend,
         data_points: currentDataPoints,
         account_name: accountName,
+        currency,
         is_demo: false,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

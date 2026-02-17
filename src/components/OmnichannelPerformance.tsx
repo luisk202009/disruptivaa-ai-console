@@ -13,6 +13,7 @@ interface PlatformMetrics {
   cpc: number;
   conversions: number;
   isDemo: boolean;
+  currency?: string;
 }
 
 interface PlatformData {
@@ -36,7 +37,7 @@ const OmnichannelPerformance = () => {
   const fetchPlatformMetrics = useCallback(async (
     functionName: string,
     metric: string
-  ): Promise<{ value: number; is_demo: boolean } | null> => {
+  ): Promise<{ value: number; is_demo: boolean; currency?: string } | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return null;
@@ -55,7 +56,7 @@ const OmnichannelPerformance = () => {
 
       if (!response.ok) return null;
       const result = await response.json();
-      return { value: result.value ?? 0, is_demo: result.is_demo ?? true };
+      return { value: result.value ?? 0, is_demo: result.is_demo ?? true, currency: result.currency };
     } catch {
       return null;
     }
@@ -96,6 +97,7 @@ const OmnichannelPerformance = () => {
             cpc: values[3],
             conversions: values[4],
             isDemo,
+            currency: results[0]?.currency ?? "USD",
           };
         }
       })
@@ -114,8 +116,23 @@ const OmnichannelPerformance = () => {
   const totalSpend = activePlatforms.reduce((sum, [, v]) => sum + v.spend, 0);
   const totalConversions = activePlatforms.reduce((sum, [, v]) => sum + v.conversions, 0);
   const combinedCPA = totalConversions > 0 ? totalSpend / totalConversions : 0;
-  const avgROAS = totalSpend > 0 && totalConversions > 0 ? (totalConversions * 10) / totalSpend : 0; // Simplified ROAS estimate
+  const avgROAS = totalSpend > 0 && totalConversions > 0 ? (totalConversions * 10) / totalSpend : 0;
   const allDemo = activePlatforms.every(([, v]) => v.isDemo);
+  
+  // Get currency from first active platform
+  const detectedCurrency = activePlatforms.length > 0 ? (activePlatforms[0][1].currency || "USD") : "USD";
+  const noDecimals = ["COP", "CLP", "JPY", "KRW"];
+  const useDecimals = !noDecimals.includes(detectedCurrency);
+  const currencyLocale = detectedCurrency === "COP" ? "es-CO" : detectedCurrency === "EUR" ? "es-ES" : detectedCurrency === "MXN" ? "es-MX" : "en-US";
+  
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat(currencyLocale, {
+      style: "currency",
+      currency: detectedCurrency,
+      minimumFractionDigits: useDecimals ? 2 : 0,
+      maximumFractionDigits: useDecimals ? 2 : 0,
+    }).format(value);
+  };
 
   // Chart data
   const chartData = activePlatforms.map(([key, v]) => ({
@@ -162,12 +179,12 @@ const OmnichannelPerformance = () => {
               <KPICard
                 icon={DollarSign}
                 label={t("omnichannel.totalSpend")}
-                value={`$${totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                value={formatCurrency(totalSpend)}
               />
               <KPICard
                 icon={Target}
                 label={t("omnichannel.combinedCPA")}
-                value={combinedCPA > 0 ? `$${combinedCPA.toFixed(2)}` : "—"}
+                value={combinedCPA > 0 ? formatCurrency(combinedCPA) : "—"}
               />
               <KPICard
                 icon={TrendingUp}
@@ -200,7 +217,7 @@ const OmnichannelPerformance = () => {
                       <YAxis
                         tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
                         axisLine={{ stroke: "hsl(var(--border))" }}
-                        tickFormatter={(v) => `$${v}`}
+                        tickFormatter={(v) => formatCurrency(v)}
                       />
                       <Tooltip
                         contentStyle={{
@@ -210,7 +227,7 @@ const OmnichannelPerformance = () => {
                           color: "hsl(var(--foreground))",
                           fontSize: 12,
                         }}
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, t("omnichannel.totalSpend")]}
+                        formatter={(value: number) => [formatCurrency(value), t("omnichannel.totalSpend")]}
                       />
                       <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                         {chartData.map((entry) => (
