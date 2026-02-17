@@ -1,67 +1,67 @@
 
-# Sprint 7 - Tarea 2: Filtrado Inteligente de Cuentas
+# Sprint 7 - Tarea 3: Activacion de Datos Reales
 
-## Resumen
+## Problema critico detectado
 
-Actualmente `DashboardView.tsx` siempre carga cuentas de Meta Ads (`getMetaAccountDetails()`) sin importar la plataforma del dashboard. Los componentes `BulkAccountAssignDialog`, `WidgetSelector` y `WidgetSettings` reciben esas cuentas sin filtrado. La solucion: detectar la plataforma dominante del dashboard y filtrar cuentas estrictamente por esa plataforma.
+`useMetaMetrics.fetchMetric()` siempre invoca `fetch-meta-metrics` (linea 80) sin importar el `data_source` del widget. Esto significa que los widgets de Google Ads y TikTok Ads tambien llaman al endpoint de Meta, lo cual es incorrecto. Este es el fix principal de esta tarea.
 
 ## Cambios
 
-### 1. Detectar plataforma dominante del Dashboard (`DashboardView.tsx`)
+### 1. Refactor de `useMetaMetrics.ts` - Routing dinamico por plataforma
 
-Agregar una funcion que analice los widgets del dashboard para determinar la plataforma dominante:
+Renombrar conceptualmente el hook a un router multi-plataforma. En `fetchMetric`, usar `widget.data_source` (pasado via `MetricConfig`) para determinar que edge function invocar:
 
-```text
-Logica: Contar data_source de todos los widgets -> la plataforma con mas widgets gana
-Fallback: si no hay widgets, usar "meta_ads"
-```
+| data_source | Edge Function |
+|-------------|---------------|
+| `meta_ads` | `fetch-meta-metrics` |
+| `google_ads` | `fetch-google-ads-metrics` |
+| `tiktok_ads` | `fetch-tiktok-ads-metrics` |
 
-Reemplazar la llamada `getMetaAccountDetails()` por `getAccountDetailsByPlatform(dominantPlatform)`.
+Cambios especificos:
+- Agregar `data_source?: DataSource` a la interfaz `MetricConfig`
+- En `fetchMetric`, reemplazar el hardcoded `"fetch-meta-metrics"` por un mapeo basado en `config.data_source`
+- Fallback a `fetch-meta-metrics` si no se especifica
 
-Pasar `platform` como prop a `BulkAccountAssignDialog` y `WidgetSelector`.
+### 2. `DashboardWidget.tsx` - Pasar `data_source` al config
 
-### 2. Actualizar `BulkAccountAssignDialog.tsx`
+Cuando `DashboardWidget` llama a `fetchMetric(config)`, incluir `data_source: widget.data_source` en el config para que el hook sepa que edge function invocar.
 
-- Agregar prop `platform?: string` a la interfaz
-- Usar el nombre de la plataforma en los mensajes:
-  - Titulo: "Vincular cuenta de [Platform]"
-  - Empty state: "No hay cuentas de [Platform] vinculadas. Ve a Conexiones para anadir una."
-- Mapeo de nombres: `{ meta_ads: "Meta Ads", google_ads: "Google Ads", tiktok_ads: "TikTok Ads" }`
+### 3. Refactor de `OmnichannelPerformance.tsx` - Usar el hook
 
-### 3. Actualizar `WidgetSelector.tsx`
+Actualmente este componente duplica toda la logica de fetching (lineas 37-108). Refactorizar para:
+- Importar y usar `useOmnichannelMetrics` en vez de logica duplicada
+- Consumir `data.loading` para el estado de carga
+- Agregar estado `error` con mensaje amigable
 
-- Agregar prop `platform?: string` para pre-seleccionar el `data_source` del widget creado
-- Cuando se crea un widget desde un dashboard con plataforma detectada, usar esa plataforma como `data_source` por defecto (en vez de hardcodear `"meta_ads"` en linea 108)
-- Las cuentas mostradas en el paso "account" ya vienen filtradas desde `DashboardView`
+### 4. Agregar `error` a `useOmnichannelMetrics.ts`
 
-### 4. `WidgetSettings.tsx` - Ya esta resuelto
+- Agregar campo `error: string | null` a `OmnichannelData`
+- Capturar errores de cada plataforma y reportar un error consolidado si todas fallan
+- Solo mostrar error si NINGUNA plataforma retorno datos
 
-Este componente ya implementa filtrado por plataforma correctamente:
-- Tiene un selector de plataforma (linea 112)
-- Llama a `getAccountDetailsByPlatform(platform)` en el `useEffect` (linea 63)
-- Muestra mensaje contextual cuando no hay cuentas (linea 127-129)
+### 5. Skeletons en estados de carga
 
-No requiere cambios.
+**`OmnichannelPerformance.tsx`**: Reemplazar el spinner basico (lineas 144-152) por Skeleton components que repliquen la estructura de los 3 KPI cards + bar chart:
+- 3 skeleton rectangulos de la misma altura que los KPICards
+- 1 skeleton rectangulo para el area del bar chart
 
-### 5. Mapeo de nombres de plataforma (constante reutilizable)
+**`DashboardCanvas.tsx`**: Mejorar los skeletons de carga (lineas 65-76) usando el componente `Skeleton` importado de `@/components/ui/skeleton` en vez de divs con `animate-pulse`.
 
-Crear constante `PLATFORM_DISPLAY_NAMES` en `DashboardView.tsx` (o reusar la existente de `WidgetSettings`):
+### 6. Filtrar plataformas por integraciones conectadas
 
-```text
-meta_ads    -> "Meta Ads"
-google_ads  -> "Google Ads"
-tiktok_ads  -> "TikTok Ads"
-manual      -> "Manual"
-```
+En `useOmnichannelMetrics`, antes de hacer fetch, consultar `user_integrations` para determinar que plataformas tiene conectadas el usuario. Solo invocar edge functions de plataformas con `status = 'connected'`.
 
 ## Archivos afectados
 
 | Archivo | Accion |
 |---------|--------|
-| `src/pages/DashboardView.tsx` | Detectar plataforma dominante, cargar cuentas filtradas, pasar `platform` como prop |
-| `src/components/dashboards/BulkAccountAssignDialog.tsx` | Agregar prop `platform`, mensajes dinamicos por plataforma |
-| `src/components/dashboards/WidgetSelector.tsx` | Agregar prop `platform`, usar como `data_source` por defecto |
+| `src/hooks/useMetaMetrics.ts` | Routing dinamico por `data_source` en `fetchMetric` |
+| `src/hooks/useWidgets.ts` | Agregar `data_source?: DataSource` a `MetricConfig` |
+| `src/hooks/useOmnichannelMetrics.ts` | Agregar `error`, filtrar por integraciones conectadas |
+| `src/components/dashboards/widgets/DashboardWidget.tsx` | Pasar `data_source` al config de fetchMetric |
+| `src/components/OmnichannelPerformance.tsx` | Usar hook, Skeleton loading, estado error |
+| `src/components/dashboards/DashboardCanvas.tsx` | Mejorar skeletons con componente Skeleton |
 
 ## Sin cambios de base de datos
 
-No se requieren migraciones. La deteccion se basa en el campo `data_source` ya existente en los widgets.
+No se requieren migraciones. Todo se basa en el campo `data_source` existente en la tabla `widgets` y `status` en `user_integrations`.
