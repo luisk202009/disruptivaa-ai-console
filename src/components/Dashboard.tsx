@@ -1,14 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogOut } from "lucide-react";
+import { LogOut, Globe2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import OmnichannelPerformance from "./OmnichannelPerformance";
 import { useAuth } from "@/contexts/AuthContext";
 import GoalsSummaryWidget from "./dashboard/GoalsSummaryWidget";
 import RecentActivityWidget from "./dashboard/RecentActivityWidget";
 import ConnectivityWidget from "./dashboard/ConnectivityWidget";
 import SmartAlerts from "./dashboard/SmartAlerts";
+import AgentCard from "./AgentCard";
+import ServiceCard from "./ServiceCard";
+import { DISRUPTIVAA_AGENTS } from "./agentDefinitions";
+import { useAgents } from "@/hooks/useAgents";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { supabase } from "@/integrations/supabase/client";
 
-// Keep DISRUPTIVAA_AGENTS export for Agents page and other consumers
+// Keep exports for other consumers
 export { DISRUPTIVAA_AGENTS } from "./agentDefinitions";
 export type { DisruptivaaAgent } from "./agentDefinitions";
 
@@ -16,6 +23,32 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
+  const { agents } = useAgents();
+  const { profile } = useUserProfile();
+
+  const { data: websites = [] } = useQuery({
+    queryKey: ["company_websites", profile?.company_id],
+    queryFn: async () => {
+      if (!profile?.company_id) return [];
+      const { data, error } = await supabase
+        .from("company_websites")
+        .select("*")
+        .eq("company_id", profile.company_id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!profile?.company_id,
+  });
+
+  // Merge static agent definitions with live DB status
+  const mergedAgents = DISRUPTIVAA_AGENTS.map((def) => {
+    const live = agents.find((a) => a.name === def.dbName);
+    return {
+      ...def,
+      status: (live?.status || "idle") as "idle" | "working" | "completed" | "error",
+      lastAction: live?.last_action || null,
+    };
+  });
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-background">
@@ -47,10 +80,55 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main content - Analytics widgets */}
+      {/* Main content */}
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-5xl mx-auto space-y-6">
           <p className="text-sm text-muted-foreground">{t("dashboardWidgets.welcomeSubtitle")}</p>
+
+          {/* AI Agents Section */}
+          {user && (
+            <section>
+              <h2 className="text-base font-semibold text-foreground mb-4">{t("dashboard.myAgents")}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {mergedAgents.map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    title={agent.name}
+                    description={agent.description}
+                    icon={agent.icon}
+                    status={agent.status}
+                    lastAction={agent.lastAction ?? undefined}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Digital Ecosystem Section */}
+          {user && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Globe2 size={18} className="text-primary" />
+                <h2 className="text-base font-semibold text-foreground">{t("dashboard.digitalEcosystem")}</h2>
+              </div>
+              {websites.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {websites.map((site) => (
+                    <ServiceCard
+                      key={site.id}
+                      url={site.url}
+                      siteType={site.site_type}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border/50 bg-card p-8 text-center">
+                  <Globe2 size={32} className="mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">{t("dashboard.noWebsites")}</p>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Omnichannel Performance */}
           {user && <OmnichannelPerformance />}
