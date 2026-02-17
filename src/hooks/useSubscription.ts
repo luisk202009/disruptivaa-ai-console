@@ -15,7 +15,6 @@ export const useSubscription = () => {
         .from('subscriptions')
         .select('*')
         .eq('company_id', profile.company_id)
-        .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -53,6 +52,7 @@ export const useSubscription = () => {
   return {
     subscription,
     isActive: subscription?.status === 'active',
+    isBlocked: subscription !== null && subscription?.status !== 'active',
     isLoading,
   };
 };
