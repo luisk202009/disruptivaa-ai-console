@@ -10,7 +10,8 @@
     "help": "Ayuda",
     "signOut": "Cerrar sesión",
     "projects": "Proyectos",
-    "recentConversations": "Recientes"
+    "recentConversations": "Recientes",
+    "admin": "Panel Admin"
   },
   "sidebar": {
     "searchConversations": "Buscar conversaciones...",
@@ -329,5 +330,22 @@
     "below": "{{metric}} en {{platform}}: El valor actual ({{current}}) está {{percent}}% por debajo de la meta ({{target}}).",
     "demoNote": "Demo",
     "noGoals": "Define metas en un proyecto para activar alertas inteligentes."
+  },
+  "admin": {
+    "title": "Panel de Administración",
+    "subtitle": "Gestiona empresas y sus sitios web",
+    "companyName": "Empresa",
+    "color": "Color",
+    "actions": "Acciones",
+    "manageSites": "Gestionar Sitios",
+    "sites": "Sitios Web",
+    "noCompanies": "No hay empresas registradas.",
+    "noWebsites": "No hay sitios web registrados.",
+    "addWebsite": "Agregar sitio web",
+    "addSite": "Agregar Sitio",
+    "type": "Tipo",
+    "websiteAdded": "Sitio web agregado correctamente",
+    "websiteDeleted": "Sitio web eliminado",
+    "websiteError": "Error al procesar la solicitud"
   }
 }
