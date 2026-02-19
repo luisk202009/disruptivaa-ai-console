@@ -105,6 +105,50 @@ Deno.serve(async (req) => {
           type: "success",
         });
 
+        // Send branded confirmation email via Resend
+        try {
+          const { data: userProfile } = await supabase
+            .from("profiles")
+            .select("id, full_name, language")
+            .eq("company_id", companyId)
+            .limit(1)
+            .maybeSingle();
+
+          if (userProfile?.id) {
+            const { data: userData } = await supabase.auth.admin.getUserById(userProfile.id);
+            const { data: company } = await supabase
+              .from("companies")
+              .select("name, branding_color, logo_url")
+              .eq("id", companyId)
+              .maybeSingle();
+
+            const userEmail = userData?.user?.email;
+            if (userEmail) {
+              await fetch(`${supabaseUrl}/functions/v1/send-branded-email`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${serviceRoleKey}`,
+                },
+                body: JSON.stringify({
+                  to: userEmail,
+                  subject: "Pago confirmado - Disruptivaa",
+                  templateName: "payment_success",
+                  variables: {
+                    clientName: userProfile.full_name || "Cliente",
+                    logoUrl: company?.logo_url || "",
+                    brandColor: company?.branding_color || "#00A3FF",
+                    lang: userProfile.language || "es",
+                  },
+                }),
+              });
+              console.log(`Payment confirmation email sent to ${userEmail}`);
+            }
+          }
+        } catch (emailErr) {
+          console.error("Non-blocking email error:", emailErr);
+        }
+
         break;
       }
 
