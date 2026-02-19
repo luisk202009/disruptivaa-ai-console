@@ -10,6 +10,8 @@ import {
 import { Widget } from "@/hooks/useWidgets";
 import { MetricData, useMetaMetrics } from "@/hooks/useMetaMetrics";
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
 
 interface LineChartWidgetProps {
   widget: Widget;
@@ -18,11 +20,20 @@ interface LineChartWidgetProps {
 
 export const LineChartWidget = ({ widget, data }: LineChartWidgetProps) => {
   const { formatValue } = useMetaMetrics();
+  const { t } = useTranslation();
   const { metric, currency: configCurrency } = widget.metric_config;
   const currency = data.currency || configCurrency || "USD";
 
-  // Only use real data_points - no fallback to mock data
-  const chartData = data.data_points || [];
+  const currentPoints = data.data_points || [];
+  const previousPoints = data.previous_data_points || [];
+
+  const chartData = useMemo(() => {
+    return currentPoints.map((dp, i) => ({
+      date: dp.date,
+      value: dp.value,
+      previousValue: previousPoints[i]?.value ?? undefined,
+    }));
+  }, [currentPoints, previousPoints]);
 
   if (chartData.length === 0) {
     return (
@@ -32,6 +43,8 @@ export const LineChartWidget = ({ widget, data }: LineChartWidgetProps) => {
       </div>
     );
   }
+
+  const hasPrevious = previousPoints.length > 0;
 
   return (
     <div className="flex-1 min-h-0">
@@ -57,16 +70,33 @@ export const LineChartWidget = ({ widget, data }: LineChartWidgetProps) => {
               borderRadius: "8px",
               fontSize: "12px",
             }}
-            formatter={(value: number) => [formatValue(value, metric, currency), widget.title]}
+            formatter={(value: number, name: string) => {
+              const label = name === "previousValue"
+                ? t("comparison.previousPeriod")
+                : t("comparison.currentPeriod");
+              return [formatValue(value, metric, currency), label];
+            }}
             labelStyle={{ color: "hsl(var(--foreground))" }}
           />
+          {hasPrevious && (
+            <Line
+              type="monotone"
+              dataKey="previousValue"
+              stroke="#6B7280"
+              strokeWidth={1.5}
+              strokeDasharray="5 5"
+              strokeOpacity={0.6}
+              dot={false}
+              activeDot={false}
+            />
+          )}
           <Line
             type="monotone"
             dataKey="value"
-            stroke="hsl(var(--primary))"
+            stroke="var(--primary-company, hsl(var(--primary)))"
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: "hsl(var(--primary))" }}
+            activeDot={{ r: 4, fill: "var(--primary-company, hsl(var(--primary)))" }}
           />
         </LineChart>
       </ResponsiveContainer>

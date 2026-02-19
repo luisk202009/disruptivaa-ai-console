@@ -1,7 +1,8 @@
-import { TrendingUp, TrendingDown, Target, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowUp, ArrowDown, Target, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Widget } from "@/hooks/useWidgets";
 import { MetricData, useMetaMetrics } from "@/hooks/useMetaMetrics";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface KPIWidgetProps {
   widget: Widget;
@@ -10,6 +11,7 @@ interface KPIWidgetProps {
 
 export const KPIWidget = ({ widget, data }: KPIWidgetProps) => {
   const { formatValue } = useMetaMetrics();
+  const { t } = useTranslation();
   const { metric, goal, currency: configCurrency } = widget.metric_config;
   const currency = data.currency || configCurrency || "USD";
 
@@ -35,22 +37,20 @@ export const KPIWidget = ({ widget, data }: KPIWidgetProps) => {
       {hasComparison && changePercent !== 0 && (
         <div className="flex items-center justify-center gap-1 mb-3">
           {trend === "up" ? (
-            <TrendingUp size={16} className="text-green-500" />
+            <ArrowUp size={16} style={{ color: "#10B981" }} />
           ) : trend === "down" ? (
-            <TrendingDown size={16} className="text-red-500" />
+            <ArrowDown size={16} style={{ color: "#EF4444" }} />
           ) : null}
           <span
-            className={cn(
-              "text-sm font-medium",
-              trend === "up" && "text-green-500",
-              trend === "down" && "text-red-500",
-              trend === "neutral" && "text-muted-foreground"
-            )}
+            className="text-sm font-medium"
+            style={{
+              color: trend === "up" ? "#10B981" : trend === "down" ? "#EF4444" : undefined,
+            }}
           >
             {changePercent > 0 ? "+" : ""}
             {changePercent.toFixed(1)}%
           </span>
-          <span className="text-xs text-muted-foreground">vs período anterior</span>
+          <span className="text-xs text-muted-foreground">{t("comparison.vsPreviousPeriod")}</span>
         </div>
       )}
 

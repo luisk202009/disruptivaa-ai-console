@@ -239,6 +239,8 @@ serve(async (req) => {
     let changePercent: number | undefined;
     let trend: "up" | "down" | "neutral" = "neutral";
 
+    let previousDataPointsResult: { date: string; value: number }[] = [];
+
     if (comparison) {
       const previousDataPoints = await fetchInsightsWithDailyBreakdown(
         cleanAccountId,
@@ -249,6 +251,7 @@ serve(async (req) => {
       );
 
       if (!("error" in previousDataPoints)) {
+        previousDataPointsResult = previousDataPoints;
         previousValue = previousDataPoints.reduce((sum, dp) => sum + dp.value, 0);
         console.log(`✅ Previous period value: ${previousValue}`);
         
@@ -286,6 +289,7 @@ serve(async (req) => {
         change_percent: changePercent,
         trend,
         data_points: currentDataPoints,
+        previous_data_points: previousDataPointsResult.length > 0 ? previousDataPointsResult : undefined,
         account_name: accountName,
         currency,
         is_demo: false,
