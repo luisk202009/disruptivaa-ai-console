@@ -1,117 +1,166 @@
 
 
-# Sprint 8, Tarea 2: Dashboard Comparativo
+# Sprint 8, Tarea 3(B): Motor de Email Branding con Resend
 
-## Estado Actual
+## Prerequisito: API Key de Resend
 
-La infraestructura de comparacion ya existe parcialmente:
-- La Edge Function `fetch-meta-metrics` ya calcula `previous_value`, `change_percent` y `trend`
-- `KPIWidget` ya muestra indicadores de cambio con flechas verdes/rojas
-- Sin embargo, las graficas NO reciben los `data_points` del periodo anterior — solo se muestra una linea
+El secret `RESEND_API_KEY` **no existe** actualmente en el proyecto. Antes de implementar, se solicitara al usuario que proporcione su API Key de Resend (obtenible en https://resend.com/api-keys). Tambien se necesita confirmar el dominio verificado en Resend para el campo `from` (por defecto se usara `onboarding@resend.dev` si no hay dominio propio configurado).
 
-El trabajo principal es extender el flujo para que los `data_points` del periodo anterior lleguen hasta las graficas.
+## Arquitectura
+
+```text
+stripe-webhook (evento checkout.session.completed)
+  └── fetch interno a send-branded-email
+        └── Resend API (POST https://api.resend.com/emails)
+              └── Email HTML con branding dinamico
+```
 
 ## Cambios Planificados
 
-### 1. Edge Function: `fetch-meta-metrics` (y Google/TikTok equivalentes)
+### 1. Nueva Edge Function: `supabase/functions/send-branded-email/index.ts`
 
-Incluir `previous_data_points` en la respuesta JSON cuando `comparison = true`. La funcion ya hace el fetch del periodo anterior para calcular el total, pero descarta los puntos individuales. El cambio es conservarlos y enviarlos.
-
+**Payload esperado:**
+```json
+{
+  "to": "cliente@email.com",
+  "subject": "Pago confirmado",
+  "templateName": "payment_success" | "welcome" | "support",
+  "variables": {
+    "clientName": "Luis K",
+    "logoUrl": "https://...",
+    "brandColor": "#00A3FF",
+    "lang": "es"
+  }
+}
 ```
-Respuesta actual:   { value, previous_value, change_percent, trend, data_points }
-Respuesta nueva:    { value, previous_value, change_percent, trend, data_points, previous_data_points }
-```
 
-Donde `previous_data_points` tiene la misma estructura `{ date, value }[]` pero con las fechas del periodo anterior.
+**Logica:**
+- Lee `RESEND_API_KEY` de `Deno.env`
+- Selecciona plantilla HTML segun `templateName`
+- Inyecta variables dinamicas (nombre, logo, color, textos i18n segun `lang`)
+- Envia via `POST https://api.resend.com/emails`
+- `from`: `"Disruptivaa <no-reply@disruptivaa.com>"` (configurable)
+- En caso de error, registra en tabla `ai_agent_logs` para auditoria
 
-### 2. Interface `MetricData` en `useMetaMetrics.ts`
+**Plantilla HTML premium:**
+- Fondo `#000000`, texto `#FFFFFF`
+- Tipografia: stack de Fira Sans via Google Fonts (con fallbacks system)
+- Logo del cliente centrado arriba
+- Boton de accion principal con `brand_color` dinamico
+- Diseno responsivo (max-width 600px, padding adaptivo)
+- Footer con enlace a soporte
 
-Agregar campo opcional:
+**Templates incluidos:**
+| templateName | Uso |
+|---|---|
+| `welcome` | Bienvenida tras registro |
+| `payment_success` | Confirmacion de pago exitoso |
+| `support` | Mensaje de soporte/contacto |
+
+### 2. Modificacion: `supabase/functions/stripe-webhook/index.ts`
+
+En el case `checkout.session.completed`, despues de activar la suscripcion y crear la notificacion:
+
+1. Obtener el email y nombre del usuario desde `profiles` usando el `company_id`
+2. Obtener el `branding_color` de la empresa desde `companies`
+3. Obtener el idioma preferido del usuario desde `profiles.language`
+4. Hacer un `fetch` interno a `send-branded-email` con los datos
+
 ```typescript
-previous_data_points?: { date: string; value: number }[];
+// Despues de la notificacion existente...
+const { data: userProfile } = await supabase
+  .from("profiles")
+  .select("id, full_name, language")
+  .eq("company_id", companyId)
+  .limit(1)
+  .maybeSingle();
+
+const { data: userAuth } = await supabase.auth.admin.getUserById(userProfile.id);
+
+const { data: company } = await supabase
+  .from("companies")
+  .select("name, branding_color")
+  .eq("id", companyId)
+  .maybeSingle();
+
+await fetch(`${supabaseUrl}/functions/v1/send-branded-email`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${serviceRoleKey}`
+  },
+  body: JSON.stringify({
+    to: userAuth.user.email,
+    subject: "Pago confirmado - Disruptivaa",
+    templateName: "payment_success",
+    variables: {
+      clientName: userProfile.full_name || "Cliente",
+      logoUrl: "",  // Logo de Disruptivaa por defecto
+      brandColor: company?.branding_color || "#00A3FF",
+      lang: userProfile.language || "es"
+    }
+  })
+});
 ```
 
-### 3. KPIWidget — Internacionalizacion
+El error del email no debe bloquear la respuesta del webhook (wrapped en try/catch).
 
-El widget ya funciona correctamente con comparacion. Solo se necesita reemplazar el texto hardcoded "vs periodo anterior" por la clave i18n `t("comparison.vsPreviousPeriod")`.
+### 3. Configuracion en `supabase/config.toml`
 
-Tambien se mejoraran los colores para usar exactamente los solicitados:
-- Verde: `#10B981` (mejora)
-- Rojo: `#EF4444` (empeora)
-- Iconos: `ArrowUp` / `ArrowDown` de lucide (reemplazando `TrendingUp`/`TrendingDown` para un look mas limpio)
+Agregar la nueva funcion:
+```toml
+[functions.send-branded-email]
+verify_jwt = false
+```
 
-### 4. AreaChartWidget — Doble linea comparativa
+### 4. i18n: Nuevas claves para emails
 
-Merge de `data_points` y `previous_data_points` en un solo array para Recharts, usando el indice como eje X (dia 1, dia 2...) para alinear ambos periodos:
+Dado que los emails se generan server-side (edge function), las traducciones se embeben directamente en la funcion como un objeto de traducciones (no se puede importar los JSON del frontend en Deno). Se creara un mapa inline:
 
 ```typescript
-// Estructura del chartData mergeado:
-[
-  { date: "Lun 10", value: 1500, previousValue: 1200 },
-  { date: "Mar 11", value: 1800, previousValue: 1100 },
-  ...
-]
+const emailTranslations = {
+  es: {
+    welcome: { heading: "Bienvenido a Disruptivaa", body: "Tu cuenta ha sido creada...", cta: "Ir al Dashboard" },
+    payment_success: { heading: "Pago Exitoso", body: "Tu pago ha sido confirmado...", cta: "Ver mi cuenta" },
+    support: { heading: "Soporte Disruptivaa", body: "Estamos aqui para ayudarte...", cta: "Contactar Soporte" }
+  },
+  en: {
+    welcome: { heading: "Welcome to Disruptivaa", body: "Your account has been created...", cta: "Go to Dashboard" },
+    payment_success: { heading: "Payment Successful", body: "Your payment has been confirmed...", cta: "View my account" },
+    support: { heading: "Disruptivaa Support", body: "We're here to help...", cta: "Contact Support" }
+  },
+  pt: {
+    welcome: { heading: "Bem-vindo ao Disruptivaa", body: "Sua conta foi criada...", cta: "Ir ao Painel" },
+    payment_success: { heading: "Pagamento Confirmado", body: "Seu pagamento foi confirmado...", cta: "Ver minha conta" },
+    support: { heading: "Suporte Disruptivaa", body: "Estamos aqui para ajudar...", cta: "Contatar Suporte" }
+  }
+};
 ```
 
-Se renderizaran dos `<Area>`:
-- **Linea principal**: Color de empresa (`var(--primary-company)`), solida, con relleno gradiente
-- **Linea anterior**: Gris tenue (`#6B7280`), punteada (`strokeDasharray="5 5"`), sin relleno
+### 5. Manejo de Errores
 
-El Tooltip mostrara ambos valores con etiquetas i18n ("Actual" / "Periodo anterior").
-
-### 5. LineChartWidget — Misma logica de doble linea
-
-Aplicar la misma estrategia de merge y renderizar dos `<Line>`:
-- Principal: color empresa, solida
-- Anterior: gris punteada
-
-### 6. Etiquetas i18n (ES, EN, PT)
-
-Nuevas claves bajo `comparison`:
-
-| Clave | ES | EN | PT |
-|-------|----|----|-----|
-| `comparison.vsPreviousPeriod` | vs periodo anterior | vs previous period | vs periodo anterior |
-| `comparison.growth` | Crecimiento | Growth | Crescimento |
-| `comparison.performance` | Rendimiento | Performance | Desempenho |
-| `comparison.currentPeriod` | Periodo actual | Current period | Periodo atual |
-| `comparison.previousPeriod` | Periodo anterior | Previous period | Periodo anterior |
+- Si `RESEND_API_KEY` no esta configurado: log error + retornar 500
+- Si Resend retorna error: capturar respuesta, loguear en `ai_agent_logs` con `action_type: "email_send_error"` y retornar el error al caller
+- En `stripe-webhook`: el fetch a `send-branded-email` esta envuelto en try/catch para que un fallo de email **nunca** bloquee la respuesta 200 al webhook de Stripe
 
 ## Archivos Afectados
 
 | Archivo | Cambio |
 |---------|--------|
-| `supabase/functions/fetch-meta-metrics/index.ts` | Incluir `previous_data_points` en respuesta |
-| `supabase/functions/fetch-google-ads-metrics/index.ts` | Mismo cambio |
-| `supabase/functions/fetch-tiktok-ads-metrics/index.ts` | Mismo cambio |
-| `src/hooks/useMetaMetrics.ts` | Agregar `previous_data_points` a `MetricData` |
-| `src/components/dashboards/widgets/KPIWidget.tsx` | Usar i18n, colores exactos, iconos ArrowUp/Down |
-| `src/components/dashboards/widgets/AreaChartWidget.tsx` | Doble area con periodo anterior |
-| `src/components/dashboards/widgets/LineChartWidget.tsx` | Doble linea con periodo anterior |
-| `src/i18n/locales/es/common.json` | Agregar claves `comparison.*` |
-| `src/i18n/locales/en/common.json` | Agregar claves `comparison.*` |
-| `src/i18n/locales/pt/common.json` | Agregar claves `comparison.*` |
+| `supabase/functions/send-branded-email/index.ts` | **NUEVO** — Motor de email con Resend + plantillas HTML |
+| `supabase/functions/stripe-webhook/index.ts` | Agregar llamada a `send-branded-email` tras pago exitoso |
+| `supabase/config.toml` | Registrar nueva funcion |
 
-## Estetica
+## Seguridad
 
-- Fondo dark de la consola se mantiene intacto
-- Linea principal usa `var(--primary-company)` (color dinamico de empresa)
-- Linea de periodo anterior: `#6B7280` (zinc-500), punteada, opacidad 60%
-- Gradiente del area principal usa el color de empresa con opacidad decreciente
-- Indicadores KPI: verde `#10B981`, rojo `#EF4444`
+- `RESEND_API_KEY` almacenado como secret de Supabase (nunca en codigo)
+- La funcion acepta llamadas autenticadas (service role) desde otras edge functions
+- No se expone informacion sensible en logs (solo IDs y status codes)
 
-## Flujo de Datos
+## Paso Previo Requerido
 
-```text
-Edge Function (fetch-meta-metrics)
-  ├── current period  → data_points[]  + value (total)
-  └── previous period → previous_data_points[] + previous_value (total)
-        ↓
-  useMetaMetrics.fetchMetric()
-        ↓
-  DashboardWidget (pasa MetricData a cada widget)
-        ↓
-  ├── KPIWidget:       value vs previous_value → % cambio con flecha
-  ├── AreaChartWidget:  merge data_points + previous_data_points → 2 areas
-  └── LineChartWidget:  merge data_points + previous_data_points → 2 lineas
-```
+Antes de implementar, se solicitara al usuario la API Key de Resend mediante la herramienta `add_secret`. El usuario debe:
+1. Crear cuenta en https://resend.com
+2. Obtener su API Key en https://resend.com/api-keys
+3. (Opcional) Verificar un dominio propio para enviar desde `@su-dominio.com`
+
