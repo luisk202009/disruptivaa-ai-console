@@ -15,6 +15,7 @@ export interface MetricData {
   change_percent?: number;
   trend?: "up" | "down" | "neutral";
   data_points?: { date: string; value: number }[];
+  previous_data_points?: { date: string; value: number }[];
   currency?: string;
 }
 

@@ -290,6 +290,8 @@ serve(async (req) => {
         previous_value: previousValue,
         change_percent: changePercent != null ? Math.round(changePercent * 100) / 100 : undefined,
         trend,
+        data_points: [],
+        previous_data_points: [],
         account_name: `TikTok Ads ${targetAccountId}`,
         currency: "USD",
         is_demo: false,

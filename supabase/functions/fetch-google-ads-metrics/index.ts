@@ -284,6 +284,8 @@ serve(async (req) => {
     const previousValue = demoValue * (0.8 + Math.random() * 0.4);
     const changePercent = ((demoValue - previousValue) / previousValue) * 100;
 
+    const previousDataPoints = comparison ? generateDemoDataPoints(date_preset, metric) : undefined;
+
     return new Response(
       JSON.stringify({
         value: demoValue,
@@ -291,6 +293,7 @@ serve(async (req) => {
         change_percent: comparison ? changePercent : undefined,
         trend: changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral",
         data_points: generateDemoDataPoints(date_preset, metric),
+        previous_data_points: previousDataPoints,
         account_name: `Google Ads ${targetAccountId}`,
         currency: "USD",
         is_demo: true,

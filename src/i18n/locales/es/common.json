@@ -449,5 +449,12 @@
     "creating": "Creando...",
     "success": "Empresa creada exitosamente",
     "error": "Error al crear la empresa"
+  },
+  "comparison": {
+    "vsPreviousPeriod": "vs periodo anterior",
+    "growth": "Crecimiento",
+    "performance": "Rendimiento",
+    "currentPeriod": "Periodo actual",
+    "previousPeriod": "Periodo anterior"
   }
 }

@@ -449,5 +449,12 @@
     "creating": "Creating...",
     "success": "Company created successfully",
     "error": "Error creating company"
+  },
+  "comparison": {
+    "vsPreviousPeriod": "vs previous period",
+    "growth": "Growth",
+    "performance": "Performance",
+    "currentPeriod": "Current period",
+    "previousPeriod": "Previous period"
   }
 }
