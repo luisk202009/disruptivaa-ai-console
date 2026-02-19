@@ -1,96 +1,117 @@
 
-# Fix: Acceso a Crear Proyectos y Definir Metas para Nuevos Usuarios
 
-## Diagnostico
+# Sprint 8, Tarea 2: Dashboard Comparativo
 
-El usuario `luisk20@gmail.com` tiene **cero proyectos** en la base de datos. La situacion es la siguiente:
+## Estado Actual
 
-**Problema 1 — GoalsSummaryWidget sin CTA:**
-El widget "Metas" en el Dashboard muestra el texto vacío `t("dashboardWidgets.goalsEmpty")` pero **no tiene ningun boton ni enlace** para que el usuario cree su primer proyecto. El usuario ve el widget pero no puede hacer nada desde ahi.
+La infraestructura de comparacion ya existe parcialmente:
+- La Edge Function `fetch-meta-metrics` ya calcula `previous_value`, `change_percent` y `trend`
+- `KPIWidget` ya muestra indicadores de cambio con flechas verdes/rojas
+- Sin embargo, las graficas NO reciben los `data_points` del periodo anterior — solo se muestra una linea
 
-**Problema 2 — Proyectos solo accesibles desde /agents tab:**
-La creacion de proyectos fue movida a la pestaña "Historial" dentro de `/agents`. Para un usuario nuevo esto no es intuitivo — hay que saber navegar a Agentes > Historial > icono `+` para crear un proyecto.
+El trabajo principal es extender el flujo para que los `data_points` del periodo anterior lleguen hasta las graficas.
 
-**Problema 3 — Metas inaccesibles sin proyecto:**
-Las metas se definen en `/project/:id` (pagina de detalle). Sin un proyecto existente, el usuario no puede navegar ahi y no sabe como crear uno primero.
+## Cambios Planificados
 
-## Solucion: Agregar CTAs (llamadas a la accion) claras
+### 1. Edge Function: `fetch-meta-metrics` (y Google/TikTok equivalentes)
 
-### Cambio 1: `src/components/dashboard/GoalsSummaryWidget.tsx`
-
-Cuando no hay proyectos (`!firstProject`), en lugar del texto vacío estatico, mostrar un boton "Crear primer proyecto" que lleve al usuario a `/agents` con la pestaña de historial abierta y el dialogo de creacion activado, **o** simplemente redirigir a `/agents?tab=history&createProject=true`.
-
-La forma mas simple y compatible con la arquitectura actual: navegar a `/agents` con un `state` que indique que se debe abrir el `CreateProjectDialog` automaticamente.
+Incluir `previous_data_points` en la respuesta JSON cuando `comparison = true`. La funcion ya hace el fetch del periodo anterior para calcular el total, pero descarta los puntos individuales. El cambio es conservarlos y enviarlos.
 
 ```
-Sin proyecto → boton "Nuevo proyecto" → navigate("/agents", { state: { openCreateProject: true } })
-Con proyecto sin metas → boton "Definir metas" → navigate(`/project/${firstProject.id}`)
+Respuesta actual:   { value, previous_value, change_percent, trend, data_points }
+Respuesta nueva:    { value, previous_value, change_percent, trend, data_points, previous_data_points }
 ```
 
-### Cambio 2: `src/pages/Agents.tsx`
+Donde `previous_data_points` tiene la misma estructura `{ date, value }[]` pero con las fechas del periodo anterior.
 
-Leer el `location.state.openCreateProject` al montar el componente y, si es `true`, abrir automaticamente el dialogo `CreateProjectDialog` (setShowCreateProject(true)) y cambiar la tab activa a "history".
+### 2. Interface `MetricData` en `useMetaMetrics.ts`
 
-### Cambio 3 (opcional pero recomendado): `src/components/Dashboard.tsx`
+Agregar campo opcional:
+```typescript
+previous_data_points?: { date: string; value: number }[];
+```
 
-En la seccion de widgets del Dashboard, cuando el usuario esta autenticado pero no tiene proyectos, mostrar un banner/card de bienvenida que oriente al usuario con un paso a paso simple:
-1. Crear un proyecto
-2. Definir metas
-3. Conectar cuentas publicitarias
+### 3. KPIWidget — Internacionalizacion
+
+El widget ya funciona correctamente con comparacion. Solo se necesita reemplazar el texto hardcoded "vs periodo anterior" por la clave i18n `t("comparison.vsPreviousPeriod")`.
+
+Tambien se mejoraran los colores para usar exactamente los solicitados:
+- Verde: `#10B981` (mejora)
+- Rojo: `#EF4444` (empeora)
+- Iconos: `ArrowUp` / `ArrowDown` de lucide (reemplazando `TrendingUp`/`TrendingDown` para un look mas limpio)
+
+### 4. AreaChartWidget — Doble linea comparativa
+
+Merge de `data_points` y `previous_data_points` en un solo array para Recharts, usando el indice como eje X (dia 1, dia 2...) para alinear ambos periodos:
+
+```typescript
+// Estructura del chartData mergeado:
+[
+  { date: "Lun 10", value: 1500, previousValue: 1200 },
+  { date: "Mar 11", value: 1800, previousValue: 1100 },
+  ...
+]
+```
+
+Se renderizaran dos `<Area>`:
+- **Linea principal**: Color de empresa (`var(--primary-company)`), solida, con relleno gradiente
+- **Linea anterior**: Gris tenue (`#6B7280`), punteada (`strokeDasharray="5 5"`), sin relleno
+
+El Tooltip mostrara ambos valores con etiquetas i18n ("Actual" / "Periodo anterior").
+
+### 5. LineChartWidget — Misma logica de doble linea
+
+Aplicar la misma estrategia de merge y renderizar dos `<Line>`:
+- Principal: color empresa, solida
+- Anterior: gris punteada
+
+### 6. Etiquetas i18n (ES, EN, PT)
+
+Nuevas claves bajo `comparison`:
+
+| Clave | ES | EN | PT |
+|-------|----|----|-----|
+| `comparison.vsPreviousPeriod` | vs periodo anterior | vs previous period | vs periodo anterior |
+| `comparison.growth` | Crecimiento | Growth | Crescimento |
+| `comparison.performance` | Rendimiento | Performance | Desempenho |
+| `comparison.currentPeriod` | Periodo actual | Current period | Periodo atual |
+| `comparison.previousPeriod` | Periodo anterior | Previous period | Periodo anterior |
 
 ## Archivos Afectados
 
 | Archivo | Cambio |
 |---------|--------|
-| `src/components/dashboard/GoalsSummaryWidget.tsx` | Agregar boton CTA cuando no hay proyectos o no hay metas |
-| `src/pages/Agents.tsx` | Leer `location.state.openCreateProject` y abrir dialogo automaticamente + activar tab history |
+| `supabase/functions/fetch-meta-metrics/index.ts` | Incluir `previous_data_points` en respuesta |
+| `supabase/functions/fetch-google-ads-metrics/index.ts` | Mismo cambio |
+| `supabase/functions/fetch-tiktok-ads-metrics/index.ts` | Mismo cambio |
+| `src/hooks/useMetaMetrics.ts` | Agregar `previous_data_points` a `MetricData` |
+| `src/components/dashboards/widgets/KPIWidget.tsx` | Usar i18n, colores exactos, iconos ArrowUp/Down |
+| `src/components/dashboards/widgets/AreaChartWidget.tsx` | Doble area con periodo anterior |
+| `src/components/dashboards/widgets/LineChartWidget.tsx` | Doble linea con periodo anterior |
+| `src/i18n/locales/es/common.json` | Agregar claves `comparison.*` |
+| `src/i18n/locales/en/common.json` | Agregar claves `comparison.*` |
+| `src/i18n/locales/pt/common.json` | Agregar claves `comparison.*` |
 
-## Flujo Resultante para un Usuario Nuevo
+## Estetica
+
+- Fondo dark de la consola se mantiene intacto
+- Linea principal usa `var(--primary-company)` (color dinamico de empresa)
+- Linea de periodo anterior: `#6B7280` (zinc-500), punteada, opacidad 60%
+- Gradiente del area principal usa el color de empresa con opacidad decreciente
+- Indicadores KPI: verde `#10B981`, rojo `#EF4444`
+
+## Flujo de Datos
 
 ```text
-Dashboard (luisk20 entra)
-  └── GoalsSummaryWidget muestra "No tienes proyectos aun"
-      + boton [Crear proyecto]
-          └── navega a /agents con state { openCreateProject: true, activeTab: "history" }
-              └── Agents.tsx detecta el state
-                  └── activa tab "history" + abre CreateProjectDialog automaticamente
-                      └── usuario crea proyecto "Mi Proyecto"
-                          └── se redirige a /project/:id
-                              └── usuario puede definir metas con ProjectGoalsEditor
+Edge Function (fetch-meta-metrics)
+  ├── current period  → data_points[]  + value (total)
+  └── previous period → previous_data_points[] + previous_value (total)
+        ↓
+  useMetaMetrics.fetchMetric()
+        ↓
+  DashboardWidget (pasa MetricData a cada widget)
+        ↓
+  ├── KPIWidget:       value vs previous_value → % cambio con flecha
+  ├── AreaChartWidget:  merge data_points + previous_data_points → 2 areas
+  └── LineChartWidget:  merge data_points + previous_data_points → 2 lineas
 ```
-
-## Detalles Tecnicos
-
-### GoalsSummaryWidget - Estado sin proyectos
-```tsx
-// Antes: texto estatico
-<p className="text-sm text-muted-foreground">{t("dashboardWidgets.goalsEmpty")}</p>
-
-// Despues: CTA actionable
-<p className="text-sm text-muted-foreground mb-3">{t("dashboardWidgets.goalsEmpty")}</p>
-<button onClick={() => navigate("/agents", { state: { openCreateProject: true } })}
-  className="mt-2 text-xs text-primary hover:underline flex items-center gap-1">
-  <Plus size={12} /> Crear primer proyecto
-</button>
-```
-
-### GoalsSummaryWidget - Estado con proyecto pero sin metas
-```tsx
-// Agregar boton "Definir metas" que lleva a /project/:id
-<button onClick={() => navigate(`/project/${firstProject.id}`)}>
-  Definir metas →
-</button>
-```
-
-### Agents.tsx - Leer state y auto-abrir dialogo
-```tsx
-useEffect(() => {
-  if (location.state?.openCreateProject) {
-    setActiveTab("history");        // cambiar tab activa
-    setShowCreateProject(true);     // abrir dialogo
-    window.history.replaceState({}, document.title); // limpiar state
-  }
-}, [location.state]);
-```
-
-Para implementar el cambio de tab programaticamente, se necesita convertir el `Tabs` de `defaultValue="gallery"` a controlado con `value={activeTab}` y `onValueChange={setActiveTab}`.
