@@ -1,157 +1,103 @@
 
 
-# Sprint 8, Tarea 5: Optimizacion de Performance
+# Tarea 4.5 Final: Sistema de Autenticacion White-Label
 
 ## Resumen
 
-Implementar cache backend en Edge Functions, optimizar TanStack Query defaults, aplicar lazy loading en rutas pesadas, mejorar skeletons en KPIWidget, y agregar indicador "Datos actualizados hace X minutos".
+Completar el flujo de autenticacion con Magic Link, restablecimiento de contrasena con vistas dedicadas, y consistencia de branding en redirecciones.
 
-## 1. Cache Backend en Edge Functions
+## Cambios Planificados
 
-### Estrategia
+### 1. Magic Link en Login
 
-Usar una tabla Supabase `metrics_cache` para almacenar respuestas de API por 5 minutos, indexadas por `user_id`, `platform`, `metric`, `date_preset` y `account_id`. Las tres Edge Functions (`fetch-meta-metrics`, `fetch-google-ads-metrics`, `fetch-tiktok-ads-metrics`) consultaran la cache antes de llamar a la API externa.
+**Archivo**: `src/components/AuthForm.tsx`
 
-### Nueva tabla: `metrics_cache`
+- Agregar una tercera pestana/seccion "Entrar sin contrasena" debajo del formulario de login
+- Implementar `signInWithOtp({ email, options: { emailRedirectTo } })` de Supabase
+- El boton muestra un estado de carga y un toast de exito indicando que se envio el enlace
+- La URL de redireccion apunta a `window.location.origin` (que en produccion seria `app.disruptivaa.com`)
 
-```text
-metrics_cache
-  id          uuid PK DEFAULT gen_random_uuid()
-  user_id     uuid NOT NULL
-  cache_key   text NOT NULL  -- hash de platform+metric+date_preset+account_id
-  response    jsonb NOT NULL
-  created_at  timestamptz DEFAULT now()
-  expires_at  timestamptz NOT NULL
-  
-  UNIQUE(user_id, cache_key)
-```
+Nota: El diseno del email enviado por Supabase Auth se configura en Supabase Dashboard > Authentication > Email Templates. El Admin Email Manager ya existente genera el HTML que se debe pegar alli.
 
-RLS: Solo el usuario puede ver/insertar/actualizar su propia cache. La Edge Function usa `service_role_key` asi que bypasea RLS, pero se activa igualmente por seguridad.
+### 2. Restablecimiento de Contrasena - Vista de Solicitud
 
-### Logica en cada Edge Function
+**Archivo**: `src/components/AuthForm.tsx`
 
-Al inicio del handler (despues de autenticacion):
+- Agregar un enlace "Olvidaste tu contrasena?" debajo del formulario de login
+- Al hacer clic, mostrar un formulario inline (o alternar vista) con campo de email y boton "Enviar enlace"
+- Llama a `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/update-password' })`
 
-1. Construir `cache_key` = `{platform}:{metric}:{date_preset}:{account_id}`
-2. Consultar `metrics_cache` WHERE `user_id` = userId AND `cache_key` = key AND `expires_at` > now()
-3. Si existe: devolver `response` directamente (respuesta en ~50ms vs ~2s)
-4. Si no existe: ejecutar flujo normal, y al final hacer UPSERT en `metrics_cache` con `expires_at = now() + 5 minutos`
+**Archivo**: `src/pages/Settings.tsx`
 
-### Archivos afectados
+- Actualizar `redirectTo` de `/auth` a `/update-password` para consistencia
 
-- `supabase/functions/fetch-meta-metrics/index.ts`
-- `supabase/functions/fetch-google-ads-metrics/index.ts`
-- `supabase/functions/fetch-tiktok-ads-metrics/index.ts`
+### 3. Vista `/update-password`
 
-Se agregara un bloque de ~15 lineas al inicio (cache check) y ~5 lineas al final (cache write) de cada funcion. La logica de negocio existente no cambia.
+**Archivo nuevo**: `src/pages/UpdatePassword.tsx`
 
-## 2. TanStack Query Defaults
+- Pagina publica (no protegida) que se muestra cuando el usuario llega desde el enlace de recuperacion
+- Supabase inyecta los tokens en el hash de la URL; el `onAuthStateChange` con evento `PASSWORD_RECOVERY` los detecta automaticamente
+- Muestra un formulario con campo "Nueva contrasena" y "Confirmar contrasena"
+- Al enviar, llama a `supabase.auth.updateUser({ password })`
+- Tras exito, redirige a `/` con toast "Contrasena actualizada correctamente"
+- Estilo consistente con la pagina de Auth (fondo oscuro, logo centrado, contenedor con borde sutil)
 
-### Archivo: `src/App.tsx`
+**Archivo**: `src/App.tsx`
 
-Configurar `QueryClient` con defaults optimizados:
+- Agregar ruta `/update-password` apuntando a `UpdatePassword` (ruta publica, sin ProtectedRoute)
 
-```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,    // 5 minutos
-      gcTime: 10 * 60 * 1000,      // 10 minutos (antes cacheTime)
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
-```
+### 4. Consistencia de Branding en Redirecciones
 
-Esto implementa stale-while-revalidate: los datos se sirven inmediatamente desde cache local y se revalidan en background despues de 5 minutos.
+**Archivo**: `src/components/AuthForm.tsx`
 
-## 3. Lazy Loading y Code Splitting
+- En `signUp`, cambiar `emailRedirectTo` de `window.location.origin + '/'` a `window.location.origin` (ya correcto)
+- En Magic Link, usar `window.location.origin` como redirect
 
-### Archivo: `src/App.tsx`
+**Archivo**: `src/pages/Settings.tsx`
 
-Aplicar `React.lazy` + `Suspense` en las rutas mas pesadas:
+- Cambiar `redirectTo` a `window.location.origin + '/update-password'`
 
-- `/landing-builder` (LandingBuilder) -- contiene ResizablePanels + preview rendering
-- `/admin` (AdminDashboard) -- contiene multiples tabs con email previewer
-- `/dashboards/:dashboardId` (DashboardView) -- contiene GridLayout + Recharts
+Nota sobre produccion: Cuando el dominio `app.disruptivaa.com` este configurado, `window.location.origin` automaticamente apuntara al dominio correcto. No se hardcodea ningun dominio.
 
-Las rutas ligeras (Auth, Index, etc.) se mantienen con import estatico.
+### 5. i18n - Nuevas claves
 
-El `Suspense` fallback usara el `LoadingScreen` existente simplificado (solo spinner + texto).
+**Archivos**: `src/i18n/locales/[es|en|pt]/common.json`
 
-```typescript
-const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const DashboardView = lazy(() => import("./pages/DashboardView"));
-
-// En Routes:
-<Suspense fallback={<LazyFallback />}>
-  <LandingBuilder />
-</Suspense>
-```
-
-Se creara un componente `LazyFallback` minimalista inline en App.tsx (spinner centrado con texto "Cargando...").
-
-## 4. Skeleton para KPIWidget
-
-### Archivo: `src/components/dashboards/widgets/DashboardWidget.tsx`
-
-Reemplazar el spinner de carga actual (lineas 126-131) con un skeleton que coincida con el layout real del KPIWidget:
-
-```text
-┌─────────────────────┐
-│  [skeleton h-8 w-32] │  ← valor principal
-│  [skeleton h-4 w-20] │  ← porcentaje cambio
-│  [skeleton h-2 w-full]│  ← barra de progreso (si aplica)
-└─────────────────────┘
-```
-
-Esto elimina el layout shift (CLS) cuando los datos se cargan.
-
-## 5. Indicador "Datos actualizados hace X minutos"
-
-### Archivo: `src/pages/DashboardView.tsx`
-
-Agregar un timestamp en la esquina inferior derecha del header o en el footer del canvas:
-
-- Almacenar `lastUpdated: Date | null` en estado
-- Actualizar con `new Date()` cada vez que los widgets terminen de cargar
-- Mostrar texto tipo: "Datos actualizados hace 2 min" usando `date-fns` (ya instalado): `formatDistanceToNow(lastUpdated, { addSuffix: true, locale: es })`
-- El texto se actualiza cada 30 segundos con un intervalo
-
-### Archivo: `src/components/dashboards/DashboardCanvas.tsx`
-
-Pasar un callback `onDataLoaded` para notificar al padre cuando los widgets terminan de cargar. Alternativamente, el timestamp se calcula directamente en `DashboardView` basandose en cuando `widgetsLoading` cambia de `true` a `false`.
-
-## 6. i18n
-
-### Nuevas claves
+Nuevas claves en la seccion `auth`:
 
 | Clave | ES | EN | PT |
 |-------|----|----|-----|
-| `dashboard.dataUpdated` | Datos actualizados | Data updated | Dados atualizados |
-| `dashboard.updating` | Actualizando... | Updating... | Atualizando... |
-| `common.loading` | Cargando... | Loading... | Carregando... |
+| `auth.magicLink` | Entrar sin contrasena | Sign in without password | Entrar sem senha |
+| `auth.magicLinkSent` | Enlace enviado a tu email | Link sent to your email | Link enviado para seu email |
+| `auth.magicLinkDesc` | Te enviaremos un enlace de acceso directo | We'll send you a direct access link | Enviaremos um link de acesso direto |
+| `auth.forgotPassword` | Olvidaste tu contrasena? | Forgot your password? | Esqueceu sua senha? |
+| `auth.sendResetLink` | Enviar enlace de recuperacion | Send recovery link | Enviar link de recuperacao |
+| `auth.resetLinkSent` | Enlace de recuperacion enviado | Recovery link sent | Link de recuperacao enviado |
+| `auth.newPassword` | Nueva contrasena | New password | Nova senha |
+| `auth.confirmPassword` | Confirmar contrasena | Confirm password | Confirmar senha |
+| `auth.updatePassword` | Actualizar contrasena | Update password | Atualizar senha |
+| `auth.passwordUpdated` | Contrasena actualizada correctamente | Password updated successfully | Senha atualizada com sucesso |
+| `auth.passwordMismatch` | Las contrasenas no coinciden | Passwords don't match | As senhas nao coincidem |
+| `auth.backToLogin` | Volver al login | Back to login | Voltar ao login |
 
 ## Archivos Afectados
 
 | Archivo | Tipo | Cambio |
 |---------|------|--------|
-| Nueva migracion SQL | Nuevo | Tabla `metrics_cache` |
-| `supabase/functions/fetch-meta-metrics/index.ts` | Edicion | Cache check + write |
-| `supabase/functions/fetch-google-ads-metrics/index.ts` | Edicion | Cache check + write |
-| `supabase/functions/fetch-tiktok-ads-metrics/index.ts` | Edicion | Cache check + write |
-| `src/App.tsx` | Edicion | QueryClient defaults + lazy imports + Suspense |
-| `src/components/dashboards/widgets/DashboardWidget.tsx` | Edicion | Skeleton loading |
-| `src/pages/DashboardView.tsx` | Edicion | Indicador de actualizacion |
-| `src/i18n/locales/es/common.json` | Edicion | Nuevas claves |
-| `src/i18n/locales/en/common.json` | Edicion | Nuevas claves |
-| `src/i18n/locales/pt/common.json` | Edicion | Nuevas claves |
+| `src/components/AuthForm.tsx` | Edicion | Magic Link, forgot password link, i18n |
+| `src/pages/UpdatePassword.tsx` | Nuevo | Vista de cambio de contrasena |
+| `src/App.tsx` | Edicion | Nueva ruta /update-password |
+| `src/pages/Settings.tsx` | Edicion | Corregir redirectTo |
+| `src/i18n/locales/es/common.json` | Edicion | 12 nuevas claves |
+| `src/i18n/locales/en/common.json` | Edicion | 12 nuevas claves |
+| `src/i18n/locales/pt/common.json` | Edicion | 12 nuevas claves |
 
 ## Notas
 
-- La cache en `useMetaMetrics.ts` (frontend, linea 60-63) ya implementa un TTL de 5 min en memoria. Con los nuevos defaults de TanStack Query y la cache backend, el sistema tendra 3 capas: TanStack Query (5min stale) -> useState cache (5min TTL) -> Supabase metrics_cache (5min TTL). Esto es intencional: cada capa cubre un escenario diferente (navegacion entre paginas, re-renders, y cold starts).
-- Los skeletons en DashboardWidget reemplazaran solo el spinner en el estado `loading` -- los estados de error y configuracion no se tocan.
-- `date-fns` ya esta instalado como dependencia del proyecto.
+- El `VerificationBanner` ya esta implementado y funcional en `Index.tsx`
+- El registro ya hace auto-login (Supabase crea sesion inmediata con `signUp`)
+- El flujo de onboarding post-registro ya existe en `Index.tsx` (redirige a `CompanyOnboarding` si `company_id` es null)
+- No se requieren migraciones de base de datos
+- No se requieren cambios en Edge Functions
+- El diseno del email de Magic Link y Recovery se configura en Supabase Dashboard; el Admin Email Manager existente genera el HTML para copiar
 
