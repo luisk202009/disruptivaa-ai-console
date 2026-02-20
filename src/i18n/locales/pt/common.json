@@ -67,7 +67,19 @@
     "verificationSent": "Email de verificação reenviado",
     "createAccount": "Criar Conta",
     "welcomeTitle": "Transforme sua estratégia digital",
-    "welcomeDescription": "Acesse agentes de IA especializados e conecte suas campanhas reais"
+    "welcomeDescription": "Acesse agentes de IA especializados e conecte suas campanhas reais",
+    "magicLink": "Entrar sem senha",
+    "magicLinkSent": "Link enviado para seu email",
+    "magicLinkDesc": "Enviaremos um link de acesso direto",
+    "forgotPassword": "Esqueceu sua senha?",
+    "sendResetLink": "Enviar link de recuperação",
+    "resetLinkSent": "Link de recuperação enviado",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar senha",
+    "updatePassword": "Atualizar senha",
+    "passwordUpdated": "Senha atualizada com sucesso",
+    "passwordMismatch": "As senhas não coincidem",
+    "backToLogin": "Voltar ao login"
   },
   "agents": {
     "title": "Agentes IA",
