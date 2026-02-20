@@ -67,7 +67,19 @@
     "verificationSent": "Verification email resent",
     "createAccount": "Create Account",
     "welcomeTitle": "Transform your digital strategy",
-    "welcomeDescription": "Access specialized AI agents and connect your real campaigns"
+    "welcomeDescription": "Access specialized AI agents and connect your real campaigns",
+    "magicLink": "Sign in without password",
+    "magicLinkSent": "Link sent to your email",
+    "magicLinkDesc": "We'll send you a direct access link",
+    "forgotPassword": "Forgot your password?",
+    "sendResetLink": "Send recovery link",
+    "resetLinkSent": "Recovery link sent",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "updatePassword": "Update password",
+    "passwordUpdated": "Password updated successfully",
+    "passwordMismatch": "Passwords don't match",
+    "backToLogin": "Back to login"
   },
   "agents": {
     "title": "AI Agents",

@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Conversations from "./pages/Conversations";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
+import UpdatePassword from "./pages/UpdatePassword";
 import Agents from "./pages/Agents";
 import Connections from "./pages/Connections";
 import MetaCallback from "./pages/MetaCallback";
@@ -63,6 +64,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/agents" element={<Agents />} />
               <Route
                 path="/conversations"

@@ -53,7 +53,7 @@ const Settings = () => {
     
     setSendingReset(true);
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
     setSendingReset(false);
     
