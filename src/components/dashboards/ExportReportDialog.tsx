@@ -206,9 +206,9 @@ export const ExportReportDialog = ({
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
         doc.text("Widget", margin + 3, y);
-        doc.text("Métrica", margin + colWidth + 3, y);
-        doc.text("Período", margin + colWidth * 2 + 3, y);
-        doc.text("Cuenta", margin + colWidth * 3 + 3, y);
+        doc.text(t("exportReport.metricHeader", "Métrica"), margin + colWidth + 3, y);
+        doc.text(t("exportReport.periodHeader", "Período"), margin + colWidth * 2 + 3, y);
+        doc.text(t("exportReport.accountHeader", "Cuenta"), margin + colWidth * 3 + 3, y);
         y += 6;
 
         // Table rows
@@ -301,10 +301,10 @@ export const ExportReportDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText size={20} />
-            Exportar Informe
+            {t("exportReport.title", "Exportar Informe")}
           </DialogTitle>
           <DialogDescription>
-            Descarga un PDF branded o copia el resumen en texto.
+            {t("exportReport.subtitle", "Descarga un PDF branded o copia el resumen en texto.")}
           </DialogDescription>
         </DialogHeader>
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { LayoutGrid, Facebook, Search, Music2, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +37,7 @@ export const CreateDashboardDialog = ({
   onOpenChange,
   onCreate,
 }: CreateDashboardDialogProps) => {
+  const { t } = useTranslation();
   const [step, setStep] = useState<Step>("select");
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -199,7 +201,7 @@ export const CreateDashboardDialog = ({
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Panel para monitorear el rendimiento de campañas..."
+                  placeholder={t("widget.panelDescPlaceholder", "Panel para monitorear el rendimiento de campañas...")}
                   rows={3}
                   disabled={loading}
                 />

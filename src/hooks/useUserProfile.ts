@@ -56,6 +56,23 @@ export const useUserProfile = () => {
     if (profile?.language && profile.language !== i18n.language) {
       i18n.changeLanguage(profile.language);
     }
+
+    // Auto-detect browser language for new users with default 'es'
+    if (profile && profile.language === 'es' && user && !localStorage.getItem('language_synced')) {
+      const browserLang = i18n.language?.slice(0, 2) as SupportedLanguage;
+      if ((browserLang === 'en' || browserLang === 'pt')) {
+        localStorage.setItem('language_synced', 'true');
+        supabase
+          .from('profiles')
+          .update({ language: browserLang })
+          .eq('id', user.id)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['profile'] });
+          });
+      } else {
+        localStorage.setItem('language_synced', 'true');
+      }
+    }
   }, [profile?.language]);
 
   const updateLanguage = useMutation({

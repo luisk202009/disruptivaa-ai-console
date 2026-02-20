@@ -234,7 +234,12 @@
     "pdfSuccess": "PDF downloaded successfully",
     "pdfError": "Error generating PDF",
     "downloadPdf": "Download PDF",
-    "copyClipboard": "Copy to Clipboard"
+    "copyClipboard": "Copy to Clipboard",
+    "title": "Export Report",
+    "subtitle": "Download a branded PDF or copy the text summary.",
+    "metricHeader": "Metric",
+    "periodHeader": "Period",
+    "accountHeader": "Account"
   },
   "projectExport": {
     "title": "Generate Report",
@@ -489,5 +494,8 @@
     "performance": "Performance",
     "currentPeriod": "Current period",
     "previousPeriod": "Previous period"
+  },
+  "language": {
+    "updated": "Language updated to"
   }
 }
