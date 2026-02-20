@@ -2,6 +2,7 @@ import { useState } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
 import Sidebar from "@/components/Sidebar";
 import Dashboard from "@/components/Dashboard";
+import VerificationBanner from "@/components/VerificationBanner";
 import CompanyOnboarding from "@/components/CompanyOnboarding";
 import SubscriptionPending from "@/components/SubscriptionPending";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,9 +38,12 @@ const Index = () => {
         <LoadingScreen onComplete={() => setIsLoading(false)} />
       )}
       
-      <div className={`flex min-h-screen w-full transition-opacity duration-500 ${showLoading ? 'opacity-0' : 'opacity-100'}`}>
-        <Sidebar />
-        <Dashboard />
+      <div className={`flex flex-col min-h-screen w-full transition-opacity duration-500 ${showLoading ? 'opacity-0' : 'opacity-100'}`}>
+        <VerificationBanner />
+        <div className="flex flex-1">
+          <Sidebar />
+          <Dashboard />
+        </div>
       </div>
     </>
   );

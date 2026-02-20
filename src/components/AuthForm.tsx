@@ -82,7 +82,7 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
 
       toast({
         title: "¡Cuenta creada!",
-        description: "Revisa tu email para confirmar tu cuenta.",
+        description: "Verifica tu email para desbloquear todas las funciones.",
       });
       resetForm();
       onSuccess?.();

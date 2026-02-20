@@ -152,14 +152,27 @@ const Dashboard = () => {
 
           {/* Unauthenticated state */}
           {!user && (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground mb-4">{t("connections.loginRequired")}</p>
-              <button
-                onClick={() => navigate("/auth")}
-                className="px-6 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
-              >
-                {t("auth.signIn")}
-              </button>
+            <div className="text-center py-20 space-y-6">
+              <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                {t("auth.welcomeTitle")}
+              </h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                {t("auth.welcomeDescription")}
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => navigate("/auth")}
+                  className="px-6 py-2.5 text-sm font-medium text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  {t("auth.signIn")}
+                </button>
+                <button
+                  onClick={() => navigate("/auth?tab=register")}
+                  className="px-6 py-2.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors"
+                >
+                  {t("auth.createAccount")}
+                </button>
+              </div>
             </div>
           )}
         </div>
