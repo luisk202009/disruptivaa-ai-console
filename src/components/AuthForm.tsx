@@ -13,6 +13,13 @@ interface AuthFormProps {
   defaultTab?: "login" | "register";
 }
 
+const getAuthErrorMessage = (error: any, t: (key: string) => string): string => {
+  if (error?.status === 429 || error?.message?.toLowerCase().includes('rate limit') || error?.message?.toLowerCase().includes('too many')) {
+    return t("auth.rateLimitError");
+  }
+  return "";
+};
+
 const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -39,8 +46,9 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
       resetForm();
       onSuccess?.();
     } catch (error: any) {
-      let errorMessage = "Ha ocurrido un error. Intenta de nuevo.";
-      if (error.message?.includes("Invalid login credentials")) {
+      const rateLimitMsg = getAuthErrorMessage(error, t);
+      let errorMessage = rateLimitMsg || "Ha ocurrido un error. Intenta de nuevo.";
+      if (!rateLimitMsg && error.message?.includes("Invalid login credentials")) {
         errorMessage = "Credenciales incorrectas. Verifica tu email y contraseña.";
       }
       toast({ title: "Error de autenticación", description: errorMessage, variant: "destructive" });
@@ -66,11 +74,14 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
       resetForm();
       onSuccess?.();
     } catch (error: any) {
-      let errorMessage = "Ha ocurrido un error. Intenta de nuevo.";
-      if (error.message?.includes("User already registered")) {
-        errorMessage = "Este email ya está registrado. Intenta iniciar sesión.";
-      } else if (error.message?.includes("Password should be")) {
-        errorMessage = "La contraseña debe tener al menos 6 caracteres.";
+      const rateLimitMsg = getAuthErrorMessage(error, t);
+      let errorMessage = rateLimitMsg || "Ha ocurrido un error. Intenta de nuevo.";
+      if (!rateLimitMsg) {
+        if (error.message?.includes("User already registered")) {
+          errorMessage = "Este email ya está registrado. Intenta iniciar sesión.";
+        } else if (error.message?.includes("Password should be")) {
+          errorMessage = "La contraseña debe tener al menos 6 caracteres.";
+        }
       }
       toast({ title: "Error de registro", description: errorMessage, variant: "destructive" });
     } finally {
@@ -88,8 +99,9 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
       });
       if (error) throw error;
       toast({ title: t("auth.magicLinkSent"), description: t("auth.magicLinkDesc") });
-    } catch {
-      toast({ title: "Error", description: "Ha ocurrido un error.", variant: "destructive" });
+    } catch (error: any) {
+      const rateLimitMsg = getAuthErrorMessage(error, t);
+      toast({ title: "Error", description: rateLimitMsg || "Ha ocurrido un error.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -104,8 +116,9 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
       });
       if (error) throw error;
       toast({ title: t("auth.resetLinkSent") });
-    } catch {
-      toast({ title: "Error", variant: "destructive" });
+    } catch (error: any) {
+      const rateLimitMsg = getAuthErrorMessage(error, t);
+      toast({ title: "Error", description: rateLimitMsg || undefined, variant: "destructive" });
     } finally {
       setLoading(false);
     }

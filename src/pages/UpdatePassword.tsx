@@ -38,10 +38,15 @@ const UpdatePassword = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      // Clean hash before redirecting
+      if (window.location.hash) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
       toast({ title: t("auth.passwordUpdated") });
       navigate("/");
-    } catch {
-      toast({ title: "Error", variant: "destructive" });
+    } catch (error: any) {
+      const isRateLimit = error?.status === 429 || error?.message?.toLowerCase().includes('rate limit');
+      toast({ title: "Error", description: isRateLimit ? t("auth.rateLimitError") : undefined, variant: "destructive" });
     } finally {
       setLoading(false);
     }
