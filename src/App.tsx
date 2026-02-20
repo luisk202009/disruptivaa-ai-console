@@ -18,6 +18,7 @@ import Dashboards from "./pages/Dashboards";
 import DashboardView from "./pages/DashboardView";
 import ProjectDetail from "./pages/ProjectDetail";
 import Websites from "./pages/Websites";
+import LandingBuilder from "./pages/LandingBuilder";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -105,6 +106,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Websites />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/landing-builder"
+                element={
+                  <ProtectedRoute>
+                    <LandingBuilder />
                   </ProtectedRoute>
                 }
               />

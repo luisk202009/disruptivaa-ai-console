@@ -10,7 +10,8 @@ import {
   ChevronUp,
   LayoutGrid,
   ShieldCheck,
-  Globe
+  Globe,
+  Wand2
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -92,6 +93,7 @@ const Sidebar = () => {
     if (location.pathname === "/admin") return "admin";
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
+    if (location.pathname === "/landing-builder") return "landing-builder";
     if (location.pathname.startsWith("/project/")) return "project";
     if (location.pathname === "/websites") return "websites";
     if (location.pathname === "/connections") return "connections";
@@ -155,6 +157,13 @@ const Sidebar = () => {
               active={getActiveItem() === "agents"}
               collapsed={collapsed}
               onClick={() => navigate("/agents")}
+            />
+            <NavItem
+              icon={<Wand2 size={18} strokeWidth={1.5} />}
+              label={t("landingBuilder.vibeBuilder")}
+              active={getActiveItem() === "landing-builder"}
+              collapsed={collapsed}
+              onClick={() => navigate("/landing-builder")}
             />
           </div>
 

@@ -456,5 +456,31 @@
     "performance": "Performance",
     "currentPeriod": "Current period",
     "previousPeriod": "Previous period"
+  },
+  "landingBuilder": {
+    "title": "Landing Builder",
+    "vibeBuilder": "Vibe Builder",
+    "generateWithAI": "Generate with AI",
+    "generating": "Generating...",
+    "salesStructure": "Sales Structure",
+    "copyCopy": "Copy Content",
+    "copied": "Copied to clipboard",
+    "objective": "Landing objective",
+    "tone": "Tone of voice",
+    "additionalContext": "Additional context",
+    "leadGeneration": "Lead generation",
+    "sales": "Direct sales",
+    "branding": "Branding / Awareness",
+    "event": "Event or launch",
+    "professional": "Professional",
+    "casual": "Casual and friendly",
+    "urgent": "Urgent / Scarcity",
+    "inspirational": "Inspirational",
+    "hero": "Hero",
+    "benefits": "Benefits",
+    "socialProof": "Social Proof",
+    "faq": "FAQ",
+    "finalCta": "Final CTA",
+    "emptyState": "Set the parameters and generate your landing with AI"
   }
 }
