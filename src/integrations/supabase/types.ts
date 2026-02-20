@@ -256,6 +256,33 @@ export type Database = {
         }
         Relationships: []
       }
+      metrics_cache: {
+        Row: {
+          cache_key: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          response: Json
+          user_id: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          response: Json
+          user_id: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          response?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           company_id: string | null

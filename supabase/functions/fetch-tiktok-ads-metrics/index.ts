@@ -221,6 +221,25 @@ serve(async (req) => {
 
     console.log(`📊 TikTok metrics: user=${userId}, metric=${metric}, preset=${date_preset}`);
 
+    // --- Cache check ---
+    const cacheKey = `tiktok_ads:${metric}:${date_preset}:${account_id || "default"}`;
+    const { data: cached } = await supabaseAdmin
+      .from("metrics_cache")
+      .select("response")
+      .eq("user_id", userId)
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (cached?.response) {
+      console.log(`⚡ Cache hit for ${cacheKey}`);
+      return new Response(
+        JSON.stringify(cached.response),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log(`🔄 Cache miss for ${cacheKey}`);
+
     // Get user's TikTok integration
     const { data: integration } = await supabaseAdmin
       .from("user_integrations")
@@ -284,19 +303,33 @@ serve(async (req) => {
       }
     }
 
+    const responsePayload = {
+      value,
+      previous_value: previousValue,
+      change_percent: changePercent != null ? Math.round(changePercent * 100) / 100 : undefined,
+      trend,
+      data_points: [],
+      previous_data_points: [],
+      account_name: `TikTok Ads ${targetAccountId}`,
+      currency: "USD",
+      is_demo: false,
+      platform: "tiktok_ads",
+    };
+
+    // --- Cache write ---
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    await supabaseAdmin
+      .from("metrics_cache")
+      .upsert({
+        user_id: userId,
+        cache_key: cacheKey,
+        response: responsePayload,
+        expires_at: expiresAt,
+      }, { onConflict: "user_id,cache_key" })
+      .then(({ error }) => { if (error) console.warn("⚠️ Cache write error:", error.message); });
+
     return new Response(
-      JSON.stringify({
-        value,
-        previous_value: previousValue,
-        change_percent: changePercent != null ? Math.round(changePercent * 100) / 100 : undefined,
-        trend,
-        data_points: [],
-        previous_data_points: [],
-        account_name: `TikTok Ads ${targetAccountId}`,
-        currency: "USD",
-        is_demo: false,
-        platform: "tiktok_ads",
-      }),
+      JSON.stringify(responsePayload),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

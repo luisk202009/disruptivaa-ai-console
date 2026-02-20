@@ -279,7 +279,9 @@
     "digitalEcosystem": "Ecosistema Digital",
     "viewSite": "Ver Sitio",
     "contractedServices": "Servicios Contratados",
-    "noWebsites": "No hay sitios asignados a tu empresa."
+    "noWebsites": "No hay sitios asignados a tu empresa.",
+    "dataUpdated": "Datos actualizados",
+    "updating": "Actualizando..."
   },
   "omnichannel": {
     "title": "Rendimiento Omnicanal",

@@ -191,6 +191,25 @@ serve(async (req) => {
 
     console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
 
+    // --- Cache check ---
+    const cacheKey = `google_ads:${metric}:${date_preset}:${account_id || "default"}`;
+    const { data: cached } = await supabaseAdmin
+      .from("metrics_cache")
+      .select("response")
+      .eq("user_id", userId)
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (cached?.response) {
+      console.log(`⚡ Cache hit for ${cacheKey}`);
+      return new Response(
+        JSON.stringify(cached.response),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log(`🔄 Cache miss for ${cacheKey}`);
+
     // Get user's Google Ads integration with token_expires_at
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from("user_integrations")
@@ -286,19 +305,33 @@ serve(async (req) => {
 
     const previousDataPoints = comparison ? generateDemoDataPoints(date_preset, metric) : undefined;
 
+    const responsePayload = {
+      value: demoValue,
+      previous_value: comparison ? previousValue : undefined,
+      change_percent: comparison ? changePercent : undefined,
+      trend: changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral",
+      data_points: generateDemoDataPoints(date_preset, metric),
+      previous_data_points: previousDataPoints,
+      account_name: `Google Ads ${targetAccountId}`,
+      currency: "USD",
+      is_demo: true,
+      platform: "google_ads",
+    };
+
+    // --- Cache write ---
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    await supabaseAdmin
+      .from("metrics_cache")
+      .upsert({
+        user_id: userId,
+        cache_key: cacheKey,
+        response: responsePayload,
+        expires_at: expiresAt,
+      }, { onConflict: "user_id,cache_key" })
+      .then(({ error }) => { if (error) console.warn("⚠️ Cache write error:", error.message); });
+
     return new Response(
-      JSON.stringify({
-        value: demoValue,
-        previous_value: comparison ? previousValue : undefined,
-        change_percent: comparison ? changePercent : undefined,
-        trend: changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral",
-        data_points: generateDemoDataPoints(date_preset, metric),
-        previous_data_points: previousDataPoints,
-        account_name: `Google Ads ${targetAccountId}`,
-        currency: "USD",
-        is_demo: true,
-        platform: "google_ads",
-      }),
+      JSON.stringify(responsePayload),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

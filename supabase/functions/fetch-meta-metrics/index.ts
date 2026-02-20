@@ -141,6 +141,25 @@ serve(async (req) => {
 
     console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
 
+    // --- Cache check ---
+    const cacheKey = `meta_ads:${metric}:${date_preset}:${account_id || "default"}`;
+    const { data: cached } = await supabaseAdmin
+      .from("metrics_cache")
+      .select("response")
+      .eq("user_id", userId)
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+
+    if (cached?.response) {
+      console.log(`⚡ Cache hit for ${cacheKey}`);
+      return new Response(
+        JSON.stringify(cached.response),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    console.log(`🔄 Cache miss for ${cacheKey}`);
+
     // Get user's Meta integration using service role key
     const { data: integration, error: integrationError } = await supabaseAdmin
       .from("user_integrations")
@@ -282,18 +301,32 @@ serve(async (req) => {
 
     console.log(`✅ Successfully fetched metrics for ${accountName}`);
 
+    const responsePayload = {
+      value: currentValue,
+      previous_value: previousValue,
+      change_percent: changePercent,
+      trend,
+      data_points: currentDataPoints,
+      previous_data_points: previousDataPointsResult.length > 0 ? previousDataPointsResult : undefined,
+      account_name: accountName,
+      currency,
+      is_demo: false,
+    };
+
+    // --- Cache write ---
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    await supabaseAdmin
+      .from("metrics_cache")
+      .upsert({
+        user_id: userId,
+        cache_key: cacheKey,
+        response: responsePayload,
+        expires_at: expiresAt,
+      }, { onConflict: "user_id,cache_key" })
+      .then(({ error }) => { if (error) console.warn("⚠️ Cache write error:", error.message); });
+
     return new Response(
-      JSON.stringify({
-        value: currentValue,
-        previous_value: previousValue,
-        change_percent: changePercent,
-        trend,
-        data_points: currentDataPoints,
-        previous_data_points: previousDataPointsResult.length > 0 ? previousDataPointsResult : undefined,
-        account_name: accountName,
-        currency,
-        is_demo: false,
-      }),
+      JSON.stringify(responsePayload),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
