@@ -79,7 +79,8 @@
     "updatePassword": "Actualizar contraseña",
     "passwordUpdated": "Contraseña actualizada correctamente",
     "passwordMismatch": "Las contraseñas no coinciden",
-    "backToLogin": "Volver al login"
+    "backToLogin": "Volver al login",
+    "rateLimitError": "Demasiados intentos. Espera unos minutos."
   },
   "agents": {
     "title": "Agentes AI",
@@ -450,7 +451,8 @@
     "emailConfirmation": "Confirmación de cuenta",
     "emailRecovery": "Recuperación de contraseña",
     "emailCopied": "HTML copiado al portapapeles",
-    "emailNote": "Pega este HTML en Supabase Dashboard > Authentication > Email Templates"
+    "emailNote": "Pega este HTML en Supabase Dashboard > Authentication > Email Templates",
+    "emailMagicLink": "Magic Link"
   },
   "notifications": {
     "title": "Notificaciones",

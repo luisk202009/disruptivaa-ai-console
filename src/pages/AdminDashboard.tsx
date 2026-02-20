@@ -815,6 +815,7 @@ const AdminDashboard = () => {
                       <SelectContent>
                         <SelectItem value="confirmation">{t("admin.emailConfirmation")}</SelectItem>
                         <SelectItem value="recovery">{t("admin.emailRecovery")}</SelectItem>
+                        <SelectItem value="magiclink">{t("admin.emailMagicLink")}</SelectItem>
                       </SelectContent>
                     </Select>
 
@@ -823,7 +824,7 @@ const AdminDashboard = () => {
                       <Input
                         value={emailSubject}
                         onChange={(e) => setEmailSubject(e.target.value)}
-                        placeholder={emailTemplate === "confirmation" ? "Confirma tu cuenta" : "Recupera tu contraseña"}
+                        placeholder={emailTemplate === "confirmation" ? "Confirma tu cuenta" : emailTemplate === "magiclink" ? "Tu enlace de acceso" : "Recupera tu contraseña"}
                         className="bg-white/[0.03] border-white/[0.08]"
                       />
                     </div>
@@ -860,6 +861,14 @@ const AdminDashboard = () => {
                         {t("admin.emailSave")}
                       </Button>
                     </div>
+
+                    {(emailTemplate === "confirmation" || emailTemplate === "magiclink") && (
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-xs text-amber-400">
+                          ⚠️ Esta plantilla requiere la variable <code className="bg-white/10 px-1 rounded">{"{{ .ConfirmationURL }}"}</code> para el enlace de acción.
+                        </p>
+                      </div>
+                    )}
 
                     <p className="text-xs text-muted-foreground border-t border-white/[0.06] pt-3">
                       💡 {t("admin.emailNote")}

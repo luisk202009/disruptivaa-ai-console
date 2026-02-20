@@ -79,7 +79,8 @@
     "updatePassword": "Update password",
     "passwordUpdated": "Password updated successfully",
     "passwordMismatch": "Passwords don't match",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "rateLimitError": "Too many attempts. Wait a few minutes."
   },
   "agents": {
     "title": "AI Agents",
@@ -450,7 +451,8 @@
     "emailConfirmation": "Account confirmation",
     "emailRecovery": "Password recovery",
     "emailCopied": "HTML copied to clipboard",
-    "emailNote": "Paste this HTML in Supabase Dashboard > Authentication > Email Templates"
+    "emailNote": "Paste this HTML in Supabase Dashboard > Authentication > Email Templates",
+    "emailMagicLink": "Magic Link"
   },
   "notifications": {
     "title": "Notifications",

@@ -24,6 +24,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Magic Link / OAuth: clean hash tokens and redirect away from /auth
+        if (event === 'SIGNED_IN' && session) {
+          if (window.location.hash && window.location.hash.includes('access_token')) {
+            window.history.replaceState({}, '', window.location.pathname);
+          }
+          const path = window.location.pathname;
+          if (path === '/auth' || path === '/update-password') {
+            window.location.href = '/';
+          }
+        }
       }
     );
 
