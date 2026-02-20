@@ -65,7 +65,7 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: 'https://app.disruptivaa.com',
           data: { full_name: name },
         },
       });
@@ -95,13 +95,23 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email: magicEmail,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: 'https://app.disruptivaa.com/auth' },
       });
       if (error) throw error;
       toast({ title: t("auth.magicLinkSent"), description: t("auth.magicLinkDesc") });
     } catch (error: any) {
+      console.error('[Magic Link Error]', {
+        status: error?.status,
+        message: error?.message,
+        name: error?.name,
+        code: error?.code,
+      });
       const rateLimitMsg = getAuthErrorMessage(error, t);
-      toast({ title: "Error", description: rateLimitMsg || "Ha ocurrido un error.", variant: "destructive" });
+      if (error?.message?.includes('identity_provider_not_found') || error?.message?.includes('otp_disabled')) {
+        toast({ title: t("auth.magicLinkUnavailable"), description: t("auth.magicLinkUnavailableDesc"), variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: rateLimitMsg || "Ha ocurrido un error.", variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
@@ -112,7 +122,7 @@ const AuthForm = ({ onSuccess, defaultTab = "login" }: AuthFormProps) => {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${window.location.origin}/update-password`,
+        redirectTo: 'https://app.disruptivaa.com/update-password',
       });
       if (error) throw error;
       toast({ title: t("auth.resetLinkSent") });

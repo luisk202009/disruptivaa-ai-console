@@ -80,7 +80,9 @@
     "passwordUpdated": "Senha atualizada com sucesso",
     "passwordMismatch": "As senhas não coincidem",
     "backToLogin": "Voltar ao login",
-    "rateLimitError": "Muitas tentativas. Aguarde alguns minutos."
+    "rateLimitError": "Muitas tentativas. Aguarde alguns minutos.",
+    "magicLinkUnavailable": "Magic Link indisponível",
+    "magicLinkUnavailableDesc": "Este método não está habilitado. Use sua senha para acessar."
   },
   "agents": {
     "title": "Agentes IA",
