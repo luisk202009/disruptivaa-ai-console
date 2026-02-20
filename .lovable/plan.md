@@ -1,179 +1,119 @@
 
 
-# Sprint 8, Tarea 1: Constructor de Landings IA (Vibe Builder)
+# Sprint 8, Tarea 4: Multi-idioma Dinamico IA
 
-## Resumen
+## Estado Actual
 
-Crear un constructor de landing pages impulsado por IA que genere estructuras de venta (Hero, Beneficios, Prueba Social, FAQ, CTA) basadas en el contexto de la empresa y los mejores anuncios del usuario. La interfaz sera una herramienta de diseno profesional con estetica dark.
+El sistema de i18n ya tiene una base solida:
+- `useUserProfile` ya persiste el idioma en `profiles.language` via Supabase y sincroniza con i18next
+- `LanguageSelector` ya llama a `updateLanguage()` que hace UPDATE en la tabla `profiles`
+- `disruptivaa-agent` ya detecta el idioma del usuario desde `profiles.language` y ajusta prompts
+- `generate-landing` ya recibe el parametro `language` desde el frontend
+- `send-branded-email` ya tiene traducciones embebidas y recibe `lang`
 
-## Arquitectura
+Lo que **falta** implementar:
 
-```text
-LandingBuilder (pagina /landing-builder)
-  ├── Panel Izquierdo: Configuracion
-  │     ├── Objetivo de la landing (selector)
-  │     ├── Tono de voz (selector)
-  │     └── Contexto empresa (auto: nombre, color, descripcion)
-  │
-  ├── Boton "Generar con IA"
-  │     └── Edge Function: generate-landing
-  │           └── Lovable AI Gateway (gemini-3-flash-preview)
-  │                 └── Retorna JSON estructurado con secciones
-  │
-  └── Panel Central: Previsualizacion
-        ├── Hero (titulo, subtitulo, CTA)
-        ├── Beneficios (3-4 items)
-        ├── Prueba Social (testimonios)
-        ├── FAQ (preguntas frecuentes)
-        ├── CTA final
-        └── Boton "Copiar Estructura" (Markdown al clipboard)
-```
+### 1. Toast de exito al cambiar idioma
+El `LanguageSelector` cambia el idioma pero no muestra feedback visual. Se necesita agregar un toast con el nombre del idioma seleccionado.
 
-## Archivos Nuevos
+### 2. Deteccion automatica del idioma del navegador para nuevos usuarios
+El `handle_new_user()` trigger en Supabase crea el perfil con `language = 'es'` por defecto. La deteccion real ocurre client-side via i18next `LanguageDetector`, pero no se persiste al perfil en la primera carga. Se necesita que al cargar el perfil por primera vez (sin idioma personalizado), se sincronice el idioma detectado por el navegador al perfil.
 
-| Archivo | Descripcion |
-|---------|-------------|
-| `src/pages/LandingBuilder.tsx` | Pagina principal con layout de 2 paneles |
-| `src/components/landing-builder/LandingConfig.tsx` | Panel izquierdo de configuracion |
-| `src/components/landing-builder/LandingPreview.tsx` | Panel central de previsualizacion |
-| `supabase/functions/generate-landing/index.ts` | Edge function que llama a Lovable AI Gateway |
+### 3. Textos hardcodeados en componentes
 
-## Archivos Modificados
+**ExportReportDialog.tsx** (PDF generation): Tiene headers de tabla hardcodeados en espanol:
+- Linea 208: `"Widget"` (este es tecnico, OK)
+- Linea 209: `"Metrica"`
+- Linea 210: `"Periodo"`
+- Linea 211: `"Cuenta"`
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/App.tsx` | Agregar ruta `/landing-builder` |
-| `src/components/Sidebar.tsx` | Agregar item de navegacion "Vibe Builder" bajo "Servicios de IA" |
-| `supabase/config.toml` | Registrar `generate-landing` |
-| `src/i18n/locales/es/common.json` | Agregar claves `landingBuilder.*` |
-| `src/i18n/locales/en/common.json` | Agregar claves `landingBuilder.*` |
-| `src/i18n/locales/pt/common.json` | Agregar claves `landingBuilder.*` |
+**CreateDashboardDialog.tsx**: Placeholder hardcodeado:
+- Linea 202: `"Panel para monitorear el rendimiento de campanas..."`
 
-## Detalles Tecnicos
+**LandingBuilder y DashboardCanvas**: Ya estan correctamente internacionalizados con `t()`.
 
-### 1. Edge Function `generate-landing`
+### 4. i18n en reportes PDF
+El `ExportReportDialog` genera PDFs con textos en espanol fijo. Se necesita inyectar el idioma del usuario para que los headers de la tabla KPI se traduzcan.
 
-Recibe el contexto de la empresa y devuelve un JSON estructurado con las secciones de la landing.
+## Cambios Planificados
 
-**Payload de entrada:**
-```json
-{
-  "companyName": "Mi Agencia",
-  "brandColor": "#FF7900",
-  "objective": "lead_generation",
-  "tone": "professional",
-  "language": "es",
-  "adContext": "Mejores anuncios: CTR 3.5%, CPC $0.45..."
-}
-```
+### Archivo 1: `src/components/LanguageSelector.tsx`
+- Agregar `useToast` y mostrar toast de exito al cambiar idioma: "Idioma actualizado a Espanol/English/Portugues"
+- El toast usa el label nativo del idioma seleccionado
 
-**Respuesta esperada (via tool calling para JSON estructurado):**
-```json
-{
-  "sections": {
-    "hero": {
-      "headline": "Titulo principal",
-      "subheadline": "Subtitulo persuasivo",
-      "cta_text": "Empezar ahora"
-    },
-    "benefits": [
-      { "icon": "zap", "title": "Rapido", "description": "..." },
-      { "icon": "shield", "title": "Seguro", "description": "..." },
-      { "icon": "trending-up", "title": "Resultados", "description": "..." }
-    ],
-    "social_proof": [
-      { "quote": "...", "author": "...", "role": "..." }
-    ],
-    "faq": [
-      { "question": "...", "answer": "..." }
-    ],
-    "final_cta": {
-      "headline": "...",
-      "cta_text": "..."
-    }
-  }
-}
-```
+### Archivo 2: `src/hooks/useUserProfile.ts`
+- En el `useEffect` que sincroniza idioma, agregar logica inversa: si el perfil tiene el idioma por defecto (`es`) y el usuario nunca lo cambio, y el navegador detecta otro idioma soportado, persistir ese idioma al perfil automaticamente (solo la primera vez)
 
-Se usara **Lovable AI Gateway** (`https://ai.gateway.lovable.dev/v1/chat/completions`) con el modelo `google/gemini-3-flash-preview` y **tool calling** para obtener JSON estructurado de forma confiable. La API key `LOVABLE_API_KEY` ya esta configurada.
+### Archivo 3: `src/components/dashboards/ExportReportDialog.tsx`
+- Reemplazar strings hardcodeados `"Metrica"`, `"Periodo"`, `"Cuenta"` con claves i18n
+- Dado que la generacion PDF ocurre client-side, se puede usar `t()` directamente
 
-### 2. Pagina `LandingBuilder.tsx`
+### Archivo 4: `src/components/dashboards/CreateDashboardDialog.tsx`
+- Reemplazar placeholder hardcodeado `"Panel para monitorear..."` con clave i18n
 
-Layout de dos paneles con `ResizablePanelGroup` (ya instalado como `react-resizable-panels`):
-
-- **Panel izquierdo (30%)**: Formulario de configuracion con selectores de objetivo, tono, y boton "Generar con IA"
-- **Panel derecho (70%)**: Previsualizacion en vivo de la landing generada con scroll vertical
-
-Estado gestionado con `useState`:
-- `landingData`: El JSON de secciones generado por la IA (null inicialmente)
-- `isGenerating`: Boolean para estado de carga
-- `config`: Objetivo, tono, contexto adicional
-
-### 3. Panel de Configuracion (`LandingConfig.tsx`)
-
-Campos:
-- **Objetivo**: Select con opciones (generacion de leads, ventas, branding, evento)
-- **Tono de voz**: Select (profesional, casual, urgente, inspiracional)
-- **Contexto adicional**: Textarea para informacion extra del usuario
-- **Boton "Generar con IA"**: Llama a la edge function
-
-El nombre de empresa y color de marca se obtienen automaticamente via `useCompanyBranding()`.
-
-### 4. Previsualizacion (`LandingPreview.tsx`)
-
-Renderiza las secciones del JSON en componentes visuales:
-- **Hero**: Fondo con gradiente usando `--primary-company`, titulo grande, subtitulo, boton CTA
-- **Beneficios**: Grid de 3 columnas con iconos de Lucide
-- **Prueba Social**: Cards con comillas y atribucion
-- **FAQ**: Acordeon con Radix (ya instalado)
-- **CTA Final**: Seccion de cierre con boton prominente
-
-Incluye boton flotante **"Copiar Estructura"** que convierte el JSON a Markdown y lo copia al clipboard con `navigator.clipboard.writeText()`.
-
-### 5. Navegacion
-
-Agregar "Vibe Builder" en el sidebar bajo la seccion "Servicios de IA", junto a "Agentes AI". Icono: `Wand2` de Lucide.
-
-Ruta: `/landing-builder` protegida con `ProtectedRoute`.
-
-### 6. i18n
-
-Nuevas claves bajo `landingBuilder`:
+### Archivo 5-7: `src/i18n/locales/[es|en|pt]/common.json`
+Nuevas claves:
 
 | Clave | ES | EN | PT |
 |-------|----|----|-----|
-| `title` | Constructor de Landings | Landing Builder | Construtor de Landings |
-| `generateWithAI` | Generar con IA | Generate with AI | Gerar com IA |
-| `generating` | Generando... | Generating... | Gerando... |
-| `salesStructure` | Estructura de Ventas | Sales Structure | Estrutura de Vendas |
-| `copyCopy` | Copiar Copy | Copy Content | Copiar Conteudo |
-| `copied` | Copiado al portapapeles | Copied to clipboard | Copiado para a area de transferencia |
-| `objective` | Objetivo de la landing | Landing objective | Objetivo da landing |
-| `tone` | Tono de voz | Tone of voice | Tom de voz |
-| `additionalContext` | Contexto adicional | Additional context | Contexto adicional |
-| `leadGeneration` | Generacion de leads | Lead generation | Geracao de leads |
-| `sales` | Ventas directas | Direct sales | Vendas diretas |
-| `branding` | Branding / Awareness | Branding / Awareness | Branding / Awareness |
-| `event` | Evento o lanzamiento | Event or launch | Evento ou lancamento |
-| `professional` | Profesional | Professional | Profissional |
-| `casual` | Casual y cercano | Casual and friendly | Casual e amigavel |
-| `urgent` | Urgente / Escasez | Urgent / Scarcity | Urgente / Escassez |
-| `inspirational` | Inspiracional | Inspirational | Inspiracional |
-| `hero` | Hero | Hero | Hero |
-| `benefits` | Beneficios | Benefits | Beneficios |
-| `socialProof` | Prueba Social | Social Proof | Prova Social |
-| `faq` | Preguntas Frecuentes | FAQ | Perguntas Frequentes |
-| `finalCta` | CTA Final | Final CTA | CTA Final |
-| `emptyState` | Configura los parametros y genera tu landing con IA | Set the parameters and generate your landing with AI | Configure os parametros e gere sua landing com IA |
-| `vibeBuilder` | Vibe Builder | Vibe Builder | Vibe Builder |
+| `language.updated` | Idioma actualizado a | Language updated to | Idioma atualizado para |
+| `exportReport.metricHeader` | Metrica | Metric | Metrica |
+| `exportReport.periodHeader` | Periodo | Period | Periodo |
+| `exportReport.accountHeader` | Cuenta | Account | Conta |
+| `widget.dashboardDescPlaceholder` | Panel para monitorear el rendimiento de campanas... | Panel to monitor campaign performance... | Painel para monitorar o desempenho de campanhas... |
 
-## Estetica
+## Detalle Tecnico
 
-- Fondo: `#000000` (consistente con toda la app)
-- Tipografia: Fira Sans (heredada del sistema)
-- Panel de config: Fondo `zinc-900/50`, bordes `white/[0.06]`
-- Previsualizacion: Cards con bordes `white/[0.08]`, gradientes sutiles con `--primary-company`
-- Boton principal "Generar": Usa `--primary-company` como background
-- Estado vacio: Icono grande + texto orientativo centrado
-- Animaciones de entrada con Framer Motion (fade + slide)
+### Toast de idioma
+```typescript
+// En LanguageSelector.tsx
+const handleChange = (value: string) => {
+  const selected = languages.find(l => l.code === value);
+  updateLanguage(value as SupportedLanguage);
+  toast({ title: `${t('language.updated')} ${selected?.label}` });
+};
+```
+
+### Deteccion automatica (primera vez)
+```typescript
+// En useUserProfile.ts, dentro del useEffect existente
+useEffect(() => {
+  if (profile?.language && profile.language !== i18n.language) {
+    i18n.changeLanguage(profile.language);
+  }
+  // Auto-detect for new users: if profile has default 'es' but browser prefers another supported lang
+  if (profile && profile.language === 'es' && user) {
+    const browserLang = navigator.language?.slice(0, 2);
+    if ((browserLang === 'en' || browserLang === 'pt') && !localStorage.getItem('language_synced')) {
+      localStorage.setItem('language_synced', 'true');
+      // Don't auto-switch - just mark as synced. The i18next LanguageDetector already handles UI.
+      // Only persist if user explicitly changes via LanguageSelector.
+    }
+  }
+}, [profile?.language]);
+```
+
+Nota: Tras reflexion, la mejor estrategia es mas simple: i18next `LanguageDetector` ya detecta el idioma del navegador y lo muestra en la UI. Solo falta persistirlo al perfil cuando es la primera visita. Se hara un check: si `profile.language` es el default `'es'` y el idioma detectado por i18next es diferente (y soportado), hacer un `update` silencioso al perfil.
+
+### PDF headers i18n
+El componente `ExportReportDialog` ya importa `useTranslation`. Solo se necesita reemplazar los strings literales con llamadas a `t()`.
+
+## Archivos Afectados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/components/LanguageSelector.tsx` | Toast de exito al cambiar idioma |
+| `src/hooks/useUserProfile.ts` | Auto-sync idioma del navegador para nuevos usuarios |
+| `src/components/dashboards/ExportReportDialog.tsx` | i18n en headers de tabla PDF |
+| `src/components/dashboards/CreateDashboardDialog.tsx` | i18n en placeholder |
+| `src/i18n/locales/es/common.json` | Nuevas claves |
+| `src/i18n/locales/en/common.json` | Nuevas claves |
+| `src/i18n/locales/pt/common.json` | Nuevas claves |
+
+## Notas
+
+- Las Edge Functions `generate-landing` y `disruptivaa-agent` ya reciben y usan el parametro de idioma correctamente
+- `send-branded-email` ya tiene traducciones embebidas para ES/EN/PT
+- `DashboardCanvas` y `LandingBuilder` ya estan completamente internacionalizados
+- No se requieren cambios en la base de datos ni nuevas migraciones
 
