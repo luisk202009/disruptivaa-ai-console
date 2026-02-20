@@ -456,5 +456,31 @@
     "performance": "Rendimiento",
     "currentPeriod": "Periodo actual",
     "previousPeriod": "Periodo anterior"
+  },
+  "landingBuilder": {
+    "title": "Constructor de Landings",
+    "vibeBuilder": "Vibe Builder",
+    "generateWithAI": "Generar con IA",
+    "generating": "Generando...",
+    "salesStructure": "Estructura de Ventas",
+    "copyCopy": "Copiar Copy",
+    "copied": "Copiado al portapapeles",
+    "objective": "Objetivo de la landing",
+    "tone": "Tono de voz",
+    "additionalContext": "Contexto adicional",
+    "leadGeneration": "Generación de leads",
+    "sales": "Ventas directas",
+    "branding": "Branding / Awareness",
+    "event": "Evento o lanzamiento",
+    "professional": "Profesional",
+    "casual": "Casual y cercano",
+    "urgent": "Urgente / Escasez",
+    "inspirational": "Inspiracional",
+    "hero": "Hero",
+    "benefits": "Beneficios",
+    "socialProof": "Prueba Social",
+    "faq": "Preguntas Frecuentes",
+    "finalCta": "CTA Final",
+    "emptyState": "Configura los parámetros y genera tu landing con IA"
   }
 }
