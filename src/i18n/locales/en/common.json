@@ -80,7 +80,9 @@
     "passwordUpdated": "Password updated successfully",
     "passwordMismatch": "Passwords don't match",
     "backToLogin": "Back to login",
-    "rateLimitError": "Too many attempts. Wait a few minutes."
+    "rateLimitError": "Too many attempts. Wait a few minutes.",
+    "magicLinkUnavailable": "Magic Link unavailable",
+    "magicLinkUnavailableDesc": "This method is not enabled. Use your password to sign in."
   },
   "agents": {
     "title": "AI Agents",
