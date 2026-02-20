@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, ExternalLink, Trash2, Plus, Globe, CreditCard, Link2, Copy, ChevronDown, Bell, Send } from "lucide-react";
+import { Loader2, ExternalLink, Trash2, Plus, Globe, CreditCard, Link2, Copy, ChevronDown, Bell, Send, Mail, Eye } from "lucide-react";
 
 interface Company {
   id: string;
@@ -113,6 +113,11 @@ const AdminDashboard = () => {
   const [notifType, setNotifType] = useState("info");
   const [notifCompany, setNotifCompany] = useState("all");
 
+  // Email template state
+  const [emailTemplate, setEmailTemplate] = useState("confirmation");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
   // Fetch companies
   const { data: companies, isLoading: companiesLoading } = useQuery({
     queryKey: ["admin_companies"],
@@ -372,6 +377,9 @@ const AdminDashboard = () => {
               </TabsTrigger>
               <TabsTrigger value="notifications" className="data-[state=active]:bg-white/[0.08]">
                 {t("admin.notifications")}
+              </TabsTrigger>
+              <TabsTrigger value="emails" className="data-[state=active]:bg-white/[0.08]">
+                {t("admin.emails")}
               </TabsTrigger>
             </TabsList>
 
@@ -788,6 +796,115 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            {/* ===== EMAILS TAB ===== */}
+            <TabsContent value="emails">
+              <div className="space-y-6">
+                <div className="p-5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Mail size={18} className="text-primary" />
+                    <h3 className="font-medium text-foreground">{t("admin.emailTemplate")}</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Select value={emailTemplate} onValueChange={setEmailTemplate}>
+                      <SelectTrigger className="bg-white/[0.03] border-white/[0.08]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="confirmation">{t("admin.emailConfirmation")}</SelectItem>
+                        <SelectItem value="recovery">{t("admin.emailRecovery")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">{t("admin.emailSubject")}</label>
+                      <Input
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        placeholder={emailTemplate === "confirmation" ? "Confirma tu cuenta" : "Recupera tu contraseña"}
+                        className="bg-white/[0.03] border-white/[0.08]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">{t("admin.emailBody")}</label>
+                      <Textarea
+                        value={emailBody}
+                        onChange={(e) => setEmailBody(e.target.value)}
+                        placeholder="<h1>Hola {{ .Name }}</h1><p>...</p>"
+                        className="bg-white/[0.03] border-white/[0.08] font-mono text-xs min-h-[200px]"
+                        rows={10}
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowPreview(true)}
+                        disabled={!emailBody}
+                        className="border-white/10"
+                      >
+                        <Eye size={14} className="mr-2" />
+                        {t("admin.emailPreview")}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(emailBody);
+                          toast.success(t("admin.emailCopied"));
+                        }}
+                        disabled={!emailBody}
+                      >
+                        <Copy size={14} className="mr-2" />
+                        {t("admin.emailSave")}
+                      </Button>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground border-t border-white/[0.06] pt-3">
+                      💡 {t("admin.emailNote")}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Preview Dialog */}
+              <Dialog open={showPreview} onOpenChange={setShowPreview}>
+                <DialogContent className="sm:max-w-2xl bg-background border-white/[0.08] max-h-[80vh]">
+                  <DialogHeader>
+                    <DialogTitle className="text-foreground">{t("admin.emailPreview")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="rounded-lg overflow-hidden border border-white/[0.06]">
+                    <iframe
+                      srcDoc={`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                          <style>
+                            body { margin: 0; padding: 0; background: #000; font-family: 'Fira Sans', Arial, sans-serif; }
+                          </style>
+                        </head>
+                        <body>
+                          <div style="max-width:600px;margin:0 auto;background:#000;padding:40px 24px;">
+                            <div style="text-align:center;margin-bottom:32px;">
+                              <h2 style="color:#fff;font-size:18px;margin:0;">Disruptivaa</h2>
+                            </div>
+                            <div style="background:#111;border-radius:12px;padding:32px 24px;border:1px solid rgba(255,255,255,0.06);">
+                              ${emailBody || '<p style="color:#888;text-align:center;">Sin contenido</p>'}
+                            </div>
+                            <p style="color:#555;font-size:11px;text-align:center;margin-top:24px;">
+                              © ${new Date().getFullYear()} Disruptivaa. Todos los derechos reservados.
+                            </p>
+                          </div>
+                        </body>
+                        </html>
+                      `}
+                      className="w-full h-[400px] bg-black"
+                      title="Email Preview"
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </Tabs>
         </div>

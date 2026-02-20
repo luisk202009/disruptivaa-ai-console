@@ -61,7 +61,13 @@
     "signUp": "Cadastrar",
     "email": "E-mail",
     "password": "Senha",
-    "name": "Nome completo"
+    "name": "Nome completo",
+    "verifyEmail": "Verifique seu email para desbloquear todos os recursos",
+    "resendVerification": "Reenviar email",
+    "verificationSent": "Email de verificação reenviado",
+    "createAccount": "Criar Conta",
+    "welcomeTitle": "Transforme sua estratégia digital",
+    "welcomeDescription": "Acesse agentes de IA especializados e conecte suas campanhas reais"
   },
   "agents": {
     "title": "Agentes IA",
@@ -420,7 +426,17 @@
     "noSubscriptions": "Nenhuma assinatura registrada.",
     "subscriptionCreated": "Assinatura criada com sucesso",
     "statusUpdated": "Status atualizado",
-    "notifications": "Notificações"
+    "notifications": "Notificações",
+    "emails": "Emails",
+    "emailTemplate": "Template de email",
+    "emailSubject": "Assunto",
+    "emailBody": "Corpo HTML",
+    "emailPreview": "Visualizar",
+    "emailSave": "Copiar HTML",
+    "emailConfirmation": "Confirmação de conta",
+    "emailRecovery": "Recuperação de senha",
+    "emailCopied": "HTML copiado para a área de transferência",
+    "emailNote": "Cole este HTML no Supabase Dashboard > Authentication > Email Templates"
   },
   "notifications": {
     "title": "Notificações",

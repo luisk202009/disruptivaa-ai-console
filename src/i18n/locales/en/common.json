@@ -61,7 +61,13 @@
     "signUp": "Sign up",
     "email": "Email",
     "password": "Password",
-    "name": "Full name"
+    "name": "Full name",
+    "verifyEmail": "Verify your email to unlock all features",
+    "resendVerification": "Resend email",
+    "verificationSent": "Verification email resent",
+    "createAccount": "Create Account",
+    "welcomeTitle": "Transform your digital strategy",
+    "welcomeDescription": "Access specialized AI agents and connect your real campaigns"
   },
   "agents": {
     "title": "AI Agents",
@@ -420,7 +426,17 @@
     "noSubscriptions": "No subscriptions registered.",
     "subscriptionCreated": "Subscription created successfully",
     "statusUpdated": "Status updated",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "emails": "Emails",
+    "emailTemplate": "Email template",
+    "emailSubject": "Subject",
+    "emailBody": "HTML Body",
+    "emailPreview": "Preview",
+    "emailSave": "Copy HTML",
+    "emailConfirmation": "Account confirmation",
+    "emailRecovery": "Password recovery",
+    "emailCopied": "HTML copied to clipboard",
+    "emailNote": "Paste this HTML in Supabase Dashboard > Authentication > Email Templates"
   },
   "notifications": {
     "title": "Notifications",

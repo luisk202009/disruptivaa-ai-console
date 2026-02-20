@@ -40,7 +40,7 @@ const LoadingScreen = ({ onComplete }: LoadingScreenProps) => {
             />
           </div>
           <p className="text-muted-foreground text-sm font-medium">
-            Inicializando agentes AI...
+            Estrategia Digital y Automatizaciones
           </p>
         </div>
       </div>
