@@ -1,119 +1,119 @@
 
 
-# Sprint 8, Tarea 4: Multi-idioma Dinamico IA
+# Tarea 4.5: Ajustes Criticos de Marca y Flujo
 
-## Estado Actual
+## Resumen
 
-El sistema de i18n ya tiene una base solida:
-- `useUserProfile` ya persiste el idioma en `profiles.language` via Supabase y sincroniza con i18next
-- `LanguageSelector` ya llama a `updateLanguage()` que hace UPDATE en la tabla `profiles`
-- `disruptivaa-agent` ya detecta el idioma del usuario desde `profiles.language` y ajusta prompts
-- `generate-landing` ya recibe el parametro `language` desde el frontend
-- `send-branded-email` ya tiene traducciones embebidas y recibe `lang`
-
-Lo que **falta** implementar:
-
-### 1. Toast de exito al cambiar idioma
-El `LanguageSelector` cambia el idioma pero no muestra feedback visual. Se necesita agregar un toast con el nombre del idioma seleccionado.
-
-### 2. Deteccion automatica del idioma del navegador para nuevos usuarios
-El `handle_new_user()` trigger en Supabase crea el perfil con `language = 'es'` por defecto. La deteccion real ocurre client-side via i18next `LanguageDetector`, pero no se persiste al perfil en la primera carga. Se necesita que al cargar el perfil por primera vez (sin idioma personalizado), se sincronice el idioma detectado por el navegador al perfil.
-
-### 3. Textos hardcodeados en componentes
-
-**ExportReportDialog.tsx** (PDF generation): Tiene headers de tabla hardcodeados en espanol:
-- Linea 208: `"Widget"` (este es tecnico, OK)
-- Linea 209: `"Metrica"`
-- Linea 210: `"Periodo"`
-- Linea 211: `"Cuenta"`
-
-**CreateDashboardDialog.tsx**: Placeholder hardcodeado:
-- Linea 202: `"Panel para monitorear el rendimiento de campanas..."`
-
-**LandingBuilder y DashboardCanvas**: Ya estan correctamente internacionalizados con `t()`.
-
-### 4. i18n en reportes PDF
-El `ExportReportDialog` genera PDFs con textos en espanol fijo. Se necesita inyectar el idioma del usuario para que los headers de la tabla KPI se traduzcan.
+Aplicar mejoras de branding en el splash screen, optimizar el flujo de registro con auto-login, agregar un banner de verificacion de email, mejorar la landing para usuarios no logueados con CTAs duales, y crear un modulo de configuracion de emails en el panel de administracion.
 
 ## Cambios Planificados
 
-### Archivo 1: `src/components/LanguageSelector.tsx`
-- Agregar `useToast` y mostrar toast de exito al cambiar idioma: "Idioma actualizado a Espanol/English/Portugues"
-- El toast usa el label nativo del idioma seleccionado
+### 1. Splash Screen - Texto y animacion
 
-### Archivo 2: `src/hooks/useUserProfile.ts`
-- En el `useEffect` que sincroniza idioma, agregar logica inversa: si el perfil tiene el idioma por defecto (`es`) y el usuario nunca lo cambio, y el navegador detecta otro idioma soportado, persistir ese idioma al perfil automaticamente (solo la primera vez)
+**Archivo**: `src/components/LoadingScreen.tsx`
 
-### Archivo 3: `src/components/dashboards/ExportReportDialog.tsx`
-- Reemplazar strings hardcodeados `"Metrica"`, `"Periodo"`, `"Cuenta"` con claves i18n
-- Dado que la generacion PDF ocurre client-side, se puede usar `t()` directamente
+- Cambiar `"Inicializando agentes AI..."` por `"Estrategia Digital y Automatizaciones"`
+- El logo ya tiene la clase `logo-pulse` y esta centrado -- se verificara que la animacion exista en CSS; si no, se agregara un keyframe de pulso sutil en `src/index.css`
 
-### Archivo 4: `src/components/dashboards/CreateDashboardDialog.tsx`
-- Reemplazar placeholder hardcodeado `"Panel para monitorear..."` con clave i18n
+### 2. Flujo de Auth - Auto-login tras registro
 
-### Archivo 5-7: `src/i18n/locales/[es|en|pt]/common.json`
-Nuevas claves:
+**Archivo**: `src/components/AuthForm.tsx`
+
+Supabase por defecto crea una sesion inmediatamente al hacer `signUp` (auto-confirm o si la confirmacion de email esta desactivada). Si la confirmacion de email esta habilitada, el usuario recibe sesion con `email_confirmed_at = null`.
+
+- Modificar `handleRegister` para que, tras un `signUp` exitoso, llame a `onSuccess()` inmediatamente (redirigiendo al dashboard)
+- El toast se ajustara a: "Cuenta creada. Verifica tu email para desbloquear todas las funciones"
+- El usuario tendra sesion activa (Supabase lo permite) pero con `email_confirmed_at` pendiente
+
+### 3. VerificationBanner - Banner de verificacion de email
+
+**Archivo nuevo**: `src/components/VerificationBanner.tsx`
+
+- Componente que lee `user.email_confirmed_at` del objeto `User` de Supabase
+- Se muestra solo si `email_confirmed_at` es `null`
+- Estilo: barra fija en la parte superior con fondo `amber-500/10`, borde `amber-500/30`, icono `AlertTriangle`, texto invitando a verificar y un boton "Reenviar email"
+- El boton llama a `supabase.auth.resend({ type: 'signup', email: user.email })`
+
+**Archivo**: `src/pages/Index.tsx`
+- Integrar `VerificationBanner` dentro del layout principal, antes del contenido del dashboard
+
+**Archivo**: `src/App.tsx`
+- Tambien agregar `VerificationBanner` en las rutas protegidas o como componente global despues del `BrandingProvider`
+
+### 4. Landing de acceso - CTAs duales
+
+**Archivo**: `src/components/Dashboard.tsx`
+
+En la seccion `!user` (lineas 154-163), reemplazar el boton unico por dos botones:
+- **"Iniciar Sesion"**: Boton Primary (`bg-primary`), navega a `/auth`
+- **"Crear Cuenta"**: Boton Outline (`border-primary text-primary`), navega a `/auth` con `defaultTab=register` (usando query param o state)
+
+Se mejorara el mensaje de bienvenida con un titulo mas impactante y la propuesta de valor.
+
+### 5. Admin Email Manager - Nueva pestana
+
+**Archivo**: `src/pages/AdminDashboard.tsx`
+
+Agregar una quinta pestana "Emails" al panel de administracion con:
+
+- **Selector de plantilla**: Dropdown con opciones "Confirmacion de cuenta" y "Recuperacion de contrasena"
+- **Campo Asunto**: Input editable para el subject del email
+- **Campo HTML Body**: Textarea grande para editar el contenido del cuerpo
+- **Boton "Previsualizar"**: Abre un Dialog con un iframe que renderiza el HTML usando el layout dark premium de `send-branded-email` (fondo #000, Fira Sans, logo, color de marca)
+- **Boton "Guardar"**: Por ahora muestra un toast informativo indicando que para aplicar estos templates se deben configurar en Supabase Dashboard > Authentication > Email Templates (ya que Supabase gestiona estos emails directamente)
+
+Nota tecnica: Los emails de confirmacion y recuperacion son enviados por Supabase Auth directamente. La configuracion real se hace en el dashboard de Supabase. Este modulo servira como previsualizador y generador del HTML que el admin debe copiar al dashboard de Supabase.
+
+### 6. Stripe Webhook - Verificacion
+
+**Archivo**: `supabase/functions/stripe-webhook/index.ts`
+
+- No se requieren cambios. El endpoint ya esta correctamente configurado con `verify_jwt = false` en `config.toml`
+- La URL del webhook es `https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/stripe-webhook`
+- El flujo de validacion de firma HMAC-SHA256 ya esta implementado
+
+### 7. i18n - Nuevas claves
+
+**Archivos**: `src/i18n/locales/[es|en|pt]/common.json`
 
 | Clave | ES | EN | PT |
 |-------|----|----|-----|
-| `language.updated` | Idioma actualizado a | Language updated to | Idioma atualizado para |
-| `exportReport.metricHeader` | Metrica | Metric | Metrica |
-| `exportReport.periodHeader` | Periodo | Period | Periodo |
-| `exportReport.accountHeader` | Cuenta | Account | Conta |
-| `widget.dashboardDescPlaceholder` | Panel para monitorear el rendimiento de campanas... | Panel to monitor campaign performance... | Painel para monitorar o desempenho de campanhas... |
-
-## Detalle Tecnico
-
-### Toast de idioma
-```typescript
-// En LanguageSelector.tsx
-const handleChange = (value: string) => {
-  const selected = languages.find(l => l.code === value);
-  updateLanguage(value as SupportedLanguage);
-  toast({ title: `${t('language.updated')} ${selected?.label}` });
-};
-```
-
-### Deteccion automatica (primera vez)
-```typescript
-// En useUserProfile.ts, dentro del useEffect existente
-useEffect(() => {
-  if (profile?.language && profile.language !== i18n.language) {
-    i18n.changeLanguage(profile.language);
-  }
-  // Auto-detect for new users: if profile has default 'es' but browser prefers another supported lang
-  if (profile && profile.language === 'es' && user) {
-    const browserLang = navigator.language?.slice(0, 2);
-    if ((browserLang === 'en' || browserLang === 'pt') && !localStorage.getItem('language_synced')) {
-      localStorage.setItem('language_synced', 'true');
-      // Don't auto-switch - just mark as synced. The i18next LanguageDetector already handles UI.
-      // Only persist if user explicitly changes via LanguageSelector.
-    }
-  }
-}, [profile?.language]);
-```
-
-Nota: Tras reflexion, la mejor estrategia es mas simple: i18next `LanguageDetector` ya detecta el idioma del navegador y lo muestra en la UI. Solo falta persistirlo al perfil cuando es la primera visita. Se hara un check: si `profile.language` es el default `'es'` y el idioma detectado por i18next es diferente (y soportado), hacer un `update` silencioso al perfil.
-
-### PDF headers i18n
-El componente `ExportReportDialog` ya importa `useTranslation`. Solo se necesita reemplazar los strings literales con llamadas a `t()`.
+| `auth.verifyEmail` | Verifica tu email para desbloquear todas las funciones | Verify your email to unlock all features | Verifique seu email para desbloquear todos os recursos |
+| `auth.resendVerification` | Reenviar email | Resend email | Reenviar email |
+| `auth.verificationSent` | Email de verificacion reenviado | Verification email resent | Email de verificacao reenviado |
+| `auth.createAccount` | Crear Cuenta | Create Account | Criar Conta |
+| `auth.welcomeTitle` | Transforma tu estrategia digital | Transform your digital strategy | Transforme sua estrategia digital |
+| `auth.welcomeDescription` | Accede a agentes AI especializados y conecta tus campanas reales | Access specialized AI agents and connect your real campaigns | Acesse agentes de IA especializados e conecte suas campanhas reais |
+| `admin.emails` | Emails | Emails | Emails |
+| `admin.emailTemplate` | Plantilla de email | Email template | Template de email |
+| `admin.emailSubject` | Asunto | Subject | Assunto |
+| `admin.emailBody` | Cuerpo HTML | HTML Body | Corpo HTML |
+| `admin.emailPreview` | Previsualizar | Preview | Visualizar |
+| `admin.emailSave` | Copiar HTML | Copy HTML | Copiar HTML |
+| `admin.emailConfirmation` | Confirmacion de cuenta | Account confirmation | Confirmacao de conta |
+| `admin.emailRecovery` | Recuperacion de contrasena | Password recovery | Recuperacao de senha |
+| `admin.emailCopied` | HTML copiado al portapapeles | HTML copied to clipboard | HTML copiado para a area de transferencia |
+| `admin.emailNote` | Pega este HTML en Supabase Dashboard > Authentication > Email Templates | Paste this HTML in Supabase Dashboard > Authentication > Email Templates | Cole este HTML no Supabase Dashboard > Authentication > Email Templates |
 
 ## Archivos Afectados
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/LanguageSelector.tsx` | Toast de exito al cambiar idioma |
-| `src/hooks/useUserProfile.ts` | Auto-sync idioma del navegador para nuevos usuarios |
-| `src/components/dashboards/ExportReportDialog.tsx` | i18n en headers de tabla PDF |
-| `src/components/dashboards/CreateDashboardDialog.tsx` | i18n en placeholder |
-| `src/i18n/locales/es/common.json` | Nuevas claves |
-| `src/i18n/locales/en/common.json` | Nuevas claves |
-| `src/i18n/locales/pt/common.json` | Nuevas claves |
+| Archivo | Tipo | Cambio |
+|---------|------|--------|
+| `src/components/LoadingScreen.tsx` | Edicion | Cambiar texto de carga |
+| `src/index.css` | Edicion | Verificar/agregar animacion `logo-pulse` |
+| `src/components/AuthForm.tsx` | Edicion | Auto-login tras registro, toast ajustado |
+| `src/components/VerificationBanner.tsx` | Nuevo | Banner de verificacion de email |
+| `src/components/Dashboard.tsx` | Edicion | CTAs duales para usuarios no logueados |
+| `src/pages/Index.tsx` | Edicion | Integrar VerificationBanner |
+| `src/pages/AdminDashboard.tsx` | Edicion | Nueva pestana "Emails" con previsualizador |
+| `src/i18n/locales/es/common.json` | Edicion | Nuevas claves |
+| `src/i18n/locales/en/common.json` | Edicion | Nuevas claves |
+| `src/i18n/locales/pt/common.json` | Edicion | Nuevas claves |
 
 ## Notas
 
-- Las Edge Functions `generate-landing` y `disruptivaa-agent` ya reciben y usan el parametro de idioma correctamente
-- `send-branded-email` ya tiene traducciones embebidas para ES/EN/PT
-- `DashboardCanvas` y `LandingBuilder` ya estan completamente internacionalizados
-- No se requieren cambios en la base de datos ni nuevas migraciones
+- No se requieren migraciones de base de datos
+- No se requieren cambios en Edge Functions
+- El webhook de Stripe ya esta correctamente vinculado y no necesita modificaciones
+- La configuracion real de templates de email de Supabase Auth se hace en el dashboard externo; el modulo admin solo genera y previsualiza el HTML
 
