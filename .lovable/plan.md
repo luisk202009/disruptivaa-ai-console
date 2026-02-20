@@ -1,101 +1,101 @@
 
-
-# Fix Criticos de Autenticacion - Fase Final Tarea 4.5
+# Ajustes Finales de Auth - Bypass, Debug y Redirect
 
 ## Resumen
 
-Corregir el bucle de login con Magic Link, manejar errores 429, agregar plantilla "Magic Link" al Admin Email Manager, y asegurar transiciones fluidas en el splash screen.
+Tres ajustes concretos: (1) permitir acceso al onboarding sin verificacion de email, (2) logging detallado de errores en Magic Link con fallback, y (3) URL de redireccion de produccion para Magic Link.
 
-## 1. Fix del Bucle de Login (Magic Link)
+## Contexto Importante
 
-**Archivo**: `src/contexts/AuthContext.tsx`
+No existe una ruta `/onboarding` separada. El wizard de onboarding se renderiza inline en `Index.tsx` cuando `user && !company_id`. El `ProtectedRoute` no protege `/` (Index), asi que los usuarios registrados sin verificar YA pueden acceder al wizard sin problemas. No se requiere crear una ruta nueva.
 
-El problema: cuando un usuario llega desde un Magic Link, Supabase procesa los tokens del hash de la URL y dispara `SIGNED_IN`. Pero si el hash no se limpia, puede haber un loop. Ademas, si el usuario esta en `/auth`, no se redirige automaticamente al dashboard.
+## 1. ProtectedRoute - Bypass para usuarios sin verificar
 
-Solucion:
-- Detectar en `onAuthStateChange` cuando el evento es `SIGNED_IN` y la URL contiene tokens de hash (`#access_token` o parametros tipo `type=magiclink`)
-- Limpiar el hash de la URL con `window.history.replaceState`
-- Si la ruta actual es `/auth` o `/update-password`, forzar redireccion a `/` usando `window.location.href = '/'`
-- No usar `setTimeout` ni `navigate()` (ya que el context no tiene acceso al router), sino `window.location` para garantizar un reload limpio
+**Archivo**: `src/components/ProtectedRoute.tsx`
 
-Cambio concreto en el listener:
-```typescript
-supabase.auth.onAuthStateChange((event, session) => {
-  setSession(session);
-  setUser(session?.user ?? null);
-  setLoading(false);
-  
-  if (event === 'SIGNED_IN' && session) {
-    // Limpiar tokens del hash si existen
-    if (window.location.hash && window.location.hash.includes('access_token')) {
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-    // Redirigir si estamos en /auth
-    if (window.location.pathname === '/auth') {
-      window.location.href = '/';
-    }
-  }
-});
+Actualmente, `ProtectedRoute` solo valida si `user` existe. Esto ya es suficiente porque Supabase crea la sesion inmediatamente al registrarse (aunque `email_confirmed_at` sea null). Sin embargo, para mayor robustez y para el caso futuro donde se quiera forzar verificacion en rutas sensibles, se agregara una prop opcional `requireVerified`:
+
+- Por defecto, `ProtectedRoute` permite acceso a cualquier usuario autenticado (verificado o no) -- comportamiento actual
+- No se bloquea a usuarios sin verificar ya que el wizard vive en `/` (ruta publica)
+
+**Cambio concreto**: Ninguno requerido en `ProtectedRoute.tsx` para el caso del wizard. El flujo actual ya funciona correctamente:
+
+```text
+Registro -> auto-login -> redirect a / -> Index detecta !company_id -> muestra CompanyOnboarding
 ```
 
-## 2. Manejo de Error 429 (Rate Limit)
+Sin embargo, para documentar y prevenir regresiones, se agregara un comentario explicativo en ProtectedRoute.
+
+## 2. Debug de Magic Link - Logging detallado y fallback
 
 **Archivo**: `src/components/AuthForm.tsx`
 
-Agregar deteccion de error 429 en los tres handlers de autenticacion:
+En el handler `handleMagicLink`:
 
-- `handleLogin`: verificar `error.status === 429` o `error.message?.includes('rate limit')`
-- `handleMagicLink`: misma logica
-- `handleForgotPassword`: misma logica
+- Agregar `console.error` detallado con el objeto de error completo (status, message, name) para facilitar debug en produccion
+- Detectar el error `"identity_provider_not_found"` o `"otp_disabled"` especificamente
+- Si ocurre ese error, mostrar un mensaje amigable explicando que el Magic Link no esta disponible y sugiriendo usar contrasena
+- Agregar la clave i18n `auth.magicLinkUnavailable` para este caso
 
-Mensaje amigable: "Demasiados intentos. Por favor, espera unos minutos antes de volver a intentarlo."
+```typescript
+// En handleMagicLink catch:
+console.error('[Magic Link Error]', {
+  status: error?.status,
+  message: error?.message,
+  name: error?.name,
+  code: error?.code,
+});
 
-Se extraera una funcion auxiliar `getAuthErrorMessage(error)` para centralizar la logica de mensajes de error y evitar repeticion.
+if (error?.message?.includes('identity_provider_not_found') || 
+    error?.message?.includes('otp_disabled')) {
+  toast({
+    title: t("auth.magicLinkUnavailable"),
+    description: t("auth.magicLinkUnavailableDesc"),
+    variant: "destructive"
+  });
+} else {
+  // manejo existente
+}
+```
 
-## 3. Admin Email Manager - Plantilla Magic Link
+## 3. URL de Produccion para Magic Link
 
-**Archivo**: `src/pages/AdminDashboard.tsx`
+**Archivo**: `src/components/AuthForm.tsx`
 
-- Agregar `"magiclink"` como tercera opcion en el `Select` de plantillas, con label `t("admin.emailMagicLink")`
-- Actualizar el placeholder del campo `emailSubject` para incluir el caso magiclink: "Tu enlace de acceso"
-- Actualizar el placeholder del campo `emailBody` para incluir `{{ .ConfirmationURL }}` como variable obligatoria
-- Agregar un aviso visible debajo del textarea cuando la plantilla es "magiclink" o "confirmation" recordando que `{{ .ConfirmationURL }}` es requerido
+Cambiar el `emailRedirectTo` en `handleMagicLink` de `window.location.origin` a la URL de produccion explicita:
 
-## 4. Mejoras en UpdatePassword
+```typescript
+emailRedirectTo: 'https://app.disruptivaa.com/auth'
+```
 
-**Archivo**: `src/pages/UpdatePassword.tsx`
+Esto asegura que, independientemente de desde donde se envie el Magic Link (preview, localhost, produccion), el enlace del email siempre apunte al dominio de produccion.
 
-La pagina actual ya esta funcional. Ajustes menores:
-- Mejorar el manejo del evento `PASSWORD_RECOVERY`: el `setReady(true)` incondicional en linea 27 es correcto (Supabase procesa los tokens del hash automaticamente)
-- Agregar manejo de error 429 al `handleSubmit`
-- Tras exito, limpiar hash de la URL antes de redirigir
+**Nota**: Tambien actualizar `handleForgotPassword` y `handleRegister` con el dominio de produccion para consistencia:
 
-## 5. i18n - Nuevas claves
+- `handleRegister` -> `emailRedirectTo: 'https://app.disruptivaa.com'`
+- `handleForgotPassword` -> `redirectTo: 'https://app.disruptivaa.com/update-password'`
+
+## 4. i18n - Nuevas claves
 
 **Archivos**: `src/i18n/locales/[es|en|pt]/common.json`
 
 | Clave | ES | EN | PT |
 |-------|----|----|-----|
-| `auth.rateLimitError` | Demasiados intentos. Espera unos minutos. | Too many attempts. Wait a few minutes. | Muitas tentativas. Aguarde alguns minutos. |
-| `admin.emailMagicLink` | Magic Link | Magic Link | Magic Link |
+| `auth.magicLinkUnavailable` | Magic Link no disponible | Magic Link unavailable | Magic Link indisponivel |
+| `auth.magicLinkUnavailableDesc` | Este metodo no esta habilitado. Usa tu contrasena para acceder. | This method is not enabled. Use your password to sign in. | Este metodo nao esta habilitado. Use sua senha para acessar. |
 
 ## Archivos Afectados
 
 | Archivo | Tipo | Cambio |
 |---------|------|--------|
-| `src/contexts/AuthContext.tsx` | Edicion | Limpiar hash URL y redirigir en Magic Link |
-| `src/components/AuthForm.tsx` | Edicion | Manejo error 429, funcion auxiliar de errores |
-| `src/pages/AdminDashboard.tsx` | Edicion | Agregar opcion "Magic Link" al selector |
-| `src/pages/UpdatePassword.tsx` | Edicion | Manejo error 429, limpiar hash |
+| `src/components/AuthForm.tsx` | Edicion | Logging, fallback, URLs de produccion |
 | `src/i18n/locales/es/common.json` | Edicion | 2 nuevas claves |
 | `src/i18n/locales/en/common.json` | Edicion | 2 nuevas claves |
 | `src/i18n/locales/pt/common.json` | Edicion | 2 nuevas claves |
 
 ## Notas
 
-- El splash screen ya muestra "Estrategia Digital y Automatizaciones" correctamente (verificado en `LoadingScreen.tsx`)
-- La animacion `logo-pulse` ya esta aplicada al logo
 - No se requieren migraciones de base de datos
 - No se requieren cambios en Edge Functions
-- El flujo `/update-password` ya existe y funciona; solo se agregan mejoras menores de robustez
-
+- El `ProtectedRoute` no necesita cambios ya que el wizard vive en `/` (ruta no protegida)
+- Los URLs hardcodeados a `app.disruptivaa.com` son intencionales segun el requerimiento del usuario
