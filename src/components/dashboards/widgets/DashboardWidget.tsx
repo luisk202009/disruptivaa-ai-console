@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { MoreVertical, GripVertical, Pencil, Trash2, RefreshCw, AlertCircle, Settings, AlertTriangle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -125,8 +126,10 @@ export const DashboardWidget = ({
 
     if (loading) {
       return (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex-1 flex flex-col justify-center gap-3 p-2">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-2 w-full" />
         </div>
       );
     }

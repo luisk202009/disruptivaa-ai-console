@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Wrench, FileDown } from "lucide-react";
+import { ArrowLeft, Plus, Wrench, FileDown, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { formatDistanceToNow } from "date-fns";
+import { es, enUS, pt } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Sidebar from "@/components/Sidebar";
@@ -21,9 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const dateFnsLocales: Record<string, typeof es> = { es, en: enUS, pt };
+
 const DashboardView = () => {
   const { dashboardId } = useParams<{ dashboardId: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const { dashboards, loading: dashboardLoading } = useDashboards();
   const { widgets, loading: widgetsLoading, addWidget, updateWidget, updateWidgetPositions, removeWidget } = useWidgets({
     dashboardId,
@@ -36,6 +42,8 @@ const DashboardView = () => {
   const [showBulkAccountModal, setShowBulkAccountModal] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [globalDatePreset, setGlobalDatePreset] = useState<DatePreset>("last_7d");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [, setTick] = useState(0);
   
   // Meta accounts state
   const [accounts, setAccounts] = useState<MetaAccountDetail[]>([]);
@@ -84,6 +92,20 @@ const DashboardView = () => {
       navigate("/dashboards");
     }
   }, [dashboard, dashboardLoading, navigate]);
+
+  // Track when widgets finish loading
+  useEffect(() => {
+    if (!widgetsLoading && widgets.length > 0) {
+      setLastUpdated(new Date());
+    }
+  }, [widgetsLoading, widgets.length]);
+
+  // Refresh "updated X ago" text every 30s
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   const handleLayoutChange = async (newLayout: { id: string; grid_settings: GridSettings }[]) => {
     await updateWidgetPositions(newLayout);
@@ -221,7 +243,19 @@ const DashboardView = () => {
         </header>
 
         {/* Canvas */}
-        <div className="flex-1 p-6 overflow-auto">
+        <div className="flex-1 p-6 overflow-auto relative">
+          {lastUpdated && (
+            <div className="absolute top-2 right-8 flex items-center gap-1.5 text-xs text-muted-foreground z-10">
+              <Clock size={12} />
+              <span>
+                {t("dashboard.dataUpdated")}{" "}
+                {formatDistanceToNow(lastUpdated, {
+                  addSuffix: true,
+                  locale: dateFnsLocales[i18n.language] || es,
+                })}
+              </span>
+            </div>
+          )}
           <DashboardCanvas
             widgets={widgets}
             loading={widgetsLoading}
