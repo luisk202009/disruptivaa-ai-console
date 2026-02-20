@@ -482,5 +482,12 @@
     "faq": "FAQ",
     "finalCta": "Final CTA",
     "emptyState": "Set the parameters and generate your landing with AI"
+  },
+  "comparison": {
+    "vsPreviousPeriod": "vs previous period",
+    "growth": "Growth",
+    "performance": "Performance",
+    "currentPeriod": "Current period",
+    "previousPeriod": "Previous period"
   }
 }

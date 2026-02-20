@@ -482,5 +482,12 @@
     "faq": "Preguntas Frecuentes",
     "finalCta": "CTA Final",
     "emptyState": "Configura los parámetros y genera tu landing con IA"
+  },
+  "comparison": {
+    "vsPreviousPeriod": "vs periodo anterior",
+    "growth": "Crecimiento",
+    "performance": "Rendimiento",
+    "currentPeriod": "Periodo actual",
+    "previousPeriod": "Periodo anterior"
   }
 }
