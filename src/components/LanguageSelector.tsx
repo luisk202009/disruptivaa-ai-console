@@ -1,6 +1,7 @@
 import { Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useUserProfile, SupportedLanguage } from '@/hooks/useUserProfile';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -20,7 +21,9 @@ export const LanguageSelector = () => {
   const { updateLanguage, isUpdatingLanguage } = useUserProfile();
 
   const handleChange = (value: string) => {
+    const selected = languages.find(l => l.code === value);
     updateLanguage(value as SupportedLanguage);
+    toast.success(`${t('language.updated')} ${selected?.label}`);
   };
 
   const currentLang = languages.find(l => l.code === i18n.language) || languages[0];

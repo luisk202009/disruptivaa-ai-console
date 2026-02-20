@@ -234,7 +234,12 @@
     "pdfSuccess": "PDF descargado correctamente",
     "pdfError": "Error al generar el PDF",
     "downloadPdf": "Descargar PDF",
-    "copyClipboard": "Copiar al Portapapeles"
+    "copyClipboard": "Copiar al Portapapeles",
+    "title": "Exportar Informe",
+    "subtitle": "Descarga un PDF branded o copia el resumen en texto.",
+    "metricHeader": "Métrica",
+    "periodHeader": "Período",
+    "accountHeader": "Cuenta"
   },
   "projectExport": {
     "title": "Generar Informe",
@@ -489,5 +494,8 @@
     "performance": "Rendimiento",
     "currentPeriod": "Periodo actual",
     "previousPeriod": "Periodo anterior"
+  },
+  "language": {
+    "updated": "Idioma actualizado a"
   }
 }
