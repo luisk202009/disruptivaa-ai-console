@@ -1,166 +1,179 @@
 
 
-# Sprint 8, Tarea 3(B): Motor de Email Branding con Resend
+# Sprint 8, Tarea 1: Constructor de Landings IA (Vibe Builder)
 
-## Prerequisito: API Key de Resend
+## Resumen
 
-El secret `RESEND_API_KEY` **no existe** actualmente en el proyecto. Antes de implementar, se solicitara al usuario que proporcione su API Key de Resend (obtenible en https://resend.com/api-keys). Tambien se necesita confirmar el dominio verificado en Resend para el campo `from` (por defecto se usara `onboarding@resend.dev` si no hay dominio propio configurado).
+Crear un constructor de landing pages impulsado por IA que genere estructuras de venta (Hero, Beneficios, Prueba Social, FAQ, CTA) basadas en el contexto de la empresa y los mejores anuncios del usuario. La interfaz sera una herramienta de diseno profesional con estetica dark.
 
 ## Arquitectura
 
 ```text
-stripe-webhook (evento checkout.session.completed)
-  └── fetch interno a send-branded-email
-        └── Resend API (POST https://api.resend.com/emails)
-              └── Email HTML con branding dinamico
+LandingBuilder (pagina /landing-builder)
+  ├── Panel Izquierdo: Configuracion
+  │     ├── Objetivo de la landing (selector)
+  │     ├── Tono de voz (selector)
+  │     └── Contexto empresa (auto: nombre, color, descripcion)
+  │
+  ├── Boton "Generar con IA"
+  │     └── Edge Function: generate-landing
+  │           └── Lovable AI Gateway (gemini-3-flash-preview)
+  │                 └── Retorna JSON estructurado con secciones
+  │
+  └── Panel Central: Previsualizacion
+        ├── Hero (titulo, subtitulo, CTA)
+        ├── Beneficios (3-4 items)
+        ├── Prueba Social (testimonios)
+        ├── FAQ (preguntas frecuentes)
+        ├── CTA final
+        └── Boton "Copiar Estructura" (Markdown al clipboard)
 ```
 
-## Cambios Planificados
+## Archivos Nuevos
 
-### 1. Nueva Edge Function: `supabase/functions/send-branded-email/index.ts`
+| Archivo | Descripcion |
+|---------|-------------|
+| `src/pages/LandingBuilder.tsx` | Pagina principal con layout de 2 paneles |
+| `src/components/landing-builder/LandingConfig.tsx` | Panel izquierdo de configuracion |
+| `src/components/landing-builder/LandingPreview.tsx` | Panel central de previsualizacion |
+| `supabase/functions/generate-landing/index.ts` | Edge function que llama a Lovable AI Gateway |
 
-**Payload esperado:**
+## Archivos Modificados
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/App.tsx` | Agregar ruta `/landing-builder` |
+| `src/components/Sidebar.tsx` | Agregar item de navegacion "Vibe Builder" bajo "Servicios de IA" |
+| `supabase/config.toml` | Registrar `generate-landing` |
+| `src/i18n/locales/es/common.json` | Agregar claves `landingBuilder.*` |
+| `src/i18n/locales/en/common.json` | Agregar claves `landingBuilder.*` |
+| `src/i18n/locales/pt/common.json` | Agregar claves `landingBuilder.*` |
+
+## Detalles Tecnicos
+
+### 1. Edge Function `generate-landing`
+
+Recibe el contexto de la empresa y devuelve un JSON estructurado con las secciones de la landing.
+
+**Payload de entrada:**
 ```json
 {
-  "to": "cliente@email.com",
-  "subject": "Pago confirmado",
-  "templateName": "payment_success" | "welcome" | "support",
-  "variables": {
-    "clientName": "Luis K",
-    "logoUrl": "https://...",
-    "brandColor": "#00A3FF",
-    "lang": "es"
+  "companyName": "Mi Agencia",
+  "brandColor": "#FF7900",
+  "objective": "lead_generation",
+  "tone": "professional",
+  "language": "es",
+  "adContext": "Mejores anuncios: CTR 3.5%, CPC $0.45..."
+}
+```
+
+**Respuesta esperada (via tool calling para JSON estructurado):**
+```json
+{
+  "sections": {
+    "hero": {
+      "headline": "Titulo principal",
+      "subheadline": "Subtitulo persuasivo",
+      "cta_text": "Empezar ahora"
+    },
+    "benefits": [
+      { "icon": "zap", "title": "Rapido", "description": "..." },
+      { "icon": "shield", "title": "Seguro", "description": "..." },
+      { "icon": "trending-up", "title": "Resultados", "description": "..." }
+    ],
+    "social_proof": [
+      { "quote": "...", "author": "...", "role": "..." }
+    ],
+    "faq": [
+      { "question": "...", "answer": "..." }
+    ],
+    "final_cta": {
+      "headline": "...",
+      "cta_text": "..."
+    }
   }
 }
 ```
 
-**Logica:**
-- Lee `RESEND_API_KEY` de `Deno.env`
-- Selecciona plantilla HTML segun `templateName`
-- Inyecta variables dinamicas (nombre, logo, color, textos i18n segun `lang`)
-- Envia via `POST https://api.resend.com/emails`
-- `from`: `"Disruptivaa <no-reply@disruptivaa.com>"` (configurable)
-- En caso de error, registra en tabla `ai_agent_logs` para auditoria
+Se usara **Lovable AI Gateway** (`https://ai.gateway.lovable.dev/v1/chat/completions`) con el modelo `google/gemini-3-flash-preview` y **tool calling** para obtener JSON estructurado de forma confiable. La API key `LOVABLE_API_KEY` ya esta configurada.
 
-**Plantilla HTML premium:**
-- Fondo `#000000`, texto `#FFFFFF`
-- Tipografia: stack de Fira Sans via Google Fonts (con fallbacks system)
-- Logo del cliente centrado arriba
-- Boton de accion principal con `brand_color` dinamico
-- Diseno responsivo (max-width 600px, padding adaptivo)
-- Footer con enlace a soporte
+### 2. Pagina `LandingBuilder.tsx`
 
-**Templates incluidos:**
-| templateName | Uso |
-|---|---|
-| `welcome` | Bienvenida tras registro |
-| `payment_success` | Confirmacion de pago exitoso |
-| `support` | Mensaje de soporte/contacto |
+Layout de dos paneles con `ResizablePanelGroup` (ya instalado como `react-resizable-panels`):
 
-### 2. Modificacion: `supabase/functions/stripe-webhook/index.ts`
+- **Panel izquierdo (30%)**: Formulario de configuracion con selectores de objetivo, tono, y boton "Generar con IA"
+- **Panel derecho (70%)**: Previsualizacion en vivo de la landing generada con scroll vertical
 
-En el case `checkout.session.completed`, despues de activar la suscripcion y crear la notificacion:
+Estado gestionado con `useState`:
+- `landingData`: El JSON de secciones generado por la IA (null inicialmente)
+- `isGenerating`: Boolean para estado de carga
+- `config`: Objetivo, tono, contexto adicional
 
-1. Obtener el email y nombre del usuario desde `profiles` usando el `company_id`
-2. Obtener el `branding_color` de la empresa desde `companies`
-3. Obtener el idioma preferido del usuario desde `profiles.language`
-4. Hacer un `fetch` interno a `send-branded-email` con los datos
+### 3. Panel de Configuracion (`LandingConfig.tsx`)
 
-```typescript
-// Despues de la notificacion existente...
-const { data: userProfile } = await supabase
-  .from("profiles")
-  .select("id, full_name, language")
-  .eq("company_id", companyId)
-  .limit(1)
-  .maybeSingle();
+Campos:
+- **Objetivo**: Select con opciones (generacion de leads, ventas, branding, evento)
+- **Tono de voz**: Select (profesional, casual, urgente, inspiracional)
+- **Contexto adicional**: Textarea para informacion extra del usuario
+- **Boton "Generar con IA"**: Llama a la edge function
 
-const { data: userAuth } = await supabase.auth.admin.getUserById(userProfile.id);
+El nombre de empresa y color de marca se obtienen automaticamente via `useCompanyBranding()`.
 
-const { data: company } = await supabase
-  .from("companies")
-  .select("name, branding_color")
-  .eq("id", companyId)
-  .maybeSingle();
+### 4. Previsualizacion (`LandingPreview.tsx`)
 
-await fetch(`${supabaseUrl}/functions/v1/send-branded-email`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${serviceRoleKey}`
-  },
-  body: JSON.stringify({
-    to: userAuth.user.email,
-    subject: "Pago confirmado - Disruptivaa",
-    templateName: "payment_success",
-    variables: {
-      clientName: userProfile.full_name || "Cliente",
-      logoUrl: "",  // Logo de Disruptivaa por defecto
-      brandColor: company?.branding_color || "#00A3FF",
-      lang: userProfile.language || "es"
-    }
-  })
-});
-```
+Renderiza las secciones del JSON en componentes visuales:
+- **Hero**: Fondo con gradiente usando `--primary-company`, titulo grande, subtitulo, boton CTA
+- **Beneficios**: Grid de 3 columnas con iconos de Lucide
+- **Prueba Social**: Cards con comillas y atribucion
+- **FAQ**: Acordeon con Radix (ya instalado)
+- **CTA Final**: Seccion de cierre con boton prominente
 
-El error del email no debe bloquear la respuesta del webhook (wrapped en try/catch).
+Incluye boton flotante **"Copiar Estructura"** que convierte el JSON a Markdown y lo copia al clipboard con `navigator.clipboard.writeText()`.
 
-### 3. Configuracion en `supabase/config.toml`
+### 5. Navegacion
 
-Agregar la nueva funcion:
-```toml
-[functions.send-branded-email]
-verify_jwt = false
-```
+Agregar "Vibe Builder" en el sidebar bajo la seccion "Servicios de IA", junto a "Agentes AI". Icono: `Wand2` de Lucide.
 
-### 4. i18n: Nuevas claves para emails
+Ruta: `/landing-builder` protegida con `ProtectedRoute`.
 
-Dado que los emails se generan server-side (edge function), las traducciones se embeben directamente en la funcion como un objeto de traducciones (no se puede importar los JSON del frontend en Deno). Se creara un mapa inline:
+### 6. i18n
 
-```typescript
-const emailTranslations = {
-  es: {
-    welcome: { heading: "Bienvenido a Disruptivaa", body: "Tu cuenta ha sido creada...", cta: "Ir al Dashboard" },
-    payment_success: { heading: "Pago Exitoso", body: "Tu pago ha sido confirmado...", cta: "Ver mi cuenta" },
-    support: { heading: "Soporte Disruptivaa", body: "Estamos aqui para ayudarte...", cta: "Contactar Soporte" }
-  },
-  en: {
-    welcome: { heading: "Welcome to Disruptivaa", body: "Your account has been created...", cta: "Go to Dashboard" },
-    payment_success: { heading: "Payment Successful", body: "Your payment has been confirmed...", cta: "View my account" },
-    support: { heading: "Disruptivaa Support", body: "We're here to help...", cta: "Contact Support" }
-  },
-  pt: {
-    welcome: { heading: "Bem-vindo ao Disruptivaa", body: "Sua conta foi criada...", cta: "Ir ao Painel" },
-    payment_success: { heading: "Pagamento Confirmado", body: "Seu pagamento foi confirmado...", cta: "Ver minha conta" },
-    support: { heading: "Suporte Disruptivaa", body: "Estamos aqui para ajudar...", cta: "Contatar Suporte" }
-  }
-};
-```
+Nuevas claves bajo `landingBuilder`:
 
-### 5. Manejo de Errores
+| Clave | ES | EN | PT |
+|-------|----|----|-----|
+| `title` | Constructor de Landings | Landing Builder | Construtor de Landings |
+| `generateWithAI` | Generar con IA | Generate with AI | Gerar com IA |
+| `generating` | Generando... | Generating... | Gerando... |
+| `salesStructure` | Estructura de Ventas | Sales Structure | Estrutura de Vendas |
+| `copyCopy` | Copiar Copy | Copy Content | Copiar Conteudo |
+| `copied` | Copiado al portapapeles | Copied to clipboard | Copiado para a area de transferencia |
+| `objective` | Objetivo de la landing | Landing objective | Objetivo da landing |
+| `tone` | Tono de voz | Tone of voice | Tom de voz |
+| `additionalContext` | Contexto adicional | Additional context | Contexto adicional |
+| `leadGeneration` | Generacion de leads | Lead generation | Geracao de leads |
+| `sales` | Ventas directas | Direct sales | Vendas diretas |
+| `branding` | Branding / Awareness | Branding / Awareness | Branding / Awareness |
+| `event` | Evento o lanzamiento | Event or launch | Evento ou lancamento |
+| `professional` | Profesional | Professional | Profissional |
+| `casual` | Casual y cercano | Casual and friendly | Casual e amigavel |
+| `urgent` | Urgente / Escasez | Urgent / Scarcity | Urgente / Escassez |
+| `inspirational` | Inspiracional | Inspirational | Inspiracional |
+| `hero` | Hero | Hero | Hero |
+| `benefits` | Beneficios | Benefits | Beneficios |
+| `socialProof` | Prueba Social | Social Proof | Prova Social |
+| `faq` | Preguntas Frecuentes | FAQ | Perguntas Frequentes |
+| `finalCta` | CTA Final | Final CTA | CTA Final |
+| `emptyState` | Configura los parametros y genera tu landing con IA | Set the parameters and generate your landing with AI | Configure os parametros e gere sua landing com IA |
+| `vibeBuilder` | Vibe Builder | Vibe Builder | Vibe Builder |
 
-- Si `RESEND_API_KEY` no esta configurado: log error + retornar 500
-- Si Resend retorna error: capturar respuesta, loguear en `ai_agent_logs` con `action_type: "email_send_error"` y retornar el error al caller
-- En `stripe-webhook`: el fetch a `send-branded-email` esta envuelto en try/catch para que un fallo de email **nunca** bloquee la respuesta 200 al webhook de Stripe
+## Estetica
 
-## Archivos Afectados
-
-| Archivo | Cambio |
-|---------|--------|
-| `supabase/functions/send-branded-email/index.ts` | **NUEVO** — Motor de email con Resend + plantillas HTML |
-| `supabase/functions/stripe-webhook/index.ts` | Agregar llamada a `send-branded-email` tras pago exitoso |
-| `supabase/config.toml` | Registrar nueva funcion |
-
-## Seguridad
-
-- `RESEND_API_KEY` almacenado como secret de Supabase (nunca en codigo)
-- La funcion acepta llamadas autenticadas (service role) desde otras edge functions
-- No se expone informacion sensible en logs (solo IDs y status codes)
-
-## Paso Previo Requerido
-
-Antes de implementar, se solicitara al usuario la API Key de Resend mediante la herramienta `add_secret`. El usuario debe:
-1. Crear cuenta en https://resend.com
-2. Obtener su API Key en https://resend.com/api-keys
-3. (Opcional) Verificar un dominio propio para enviar desde `@su-dominio.com`
+- Fondo: `#000000` (consistente con toda la app)
+- Tipografia: Fira Sans (heredada del sistema)
+- Panel de config: Fondo `zinc-900/50`, bordes `white/[0.06]`
+- Previsualizacion: Cards con bordes `white/[0.08]`, gradientes sutiles con `--primary-company`
+- Boton principal "Generar": Usa `--primary-company` como background
+- Estado vacio: Icono grande + texto orientativo centrado
+- Animaciones de entrada con Framer Motion (fade + slide)
 
