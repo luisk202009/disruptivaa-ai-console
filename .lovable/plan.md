@@ -1,103 +1,101 @@
 
 
-# Tarea 4.5 Final: Sistema de Autenticacion White-Label
+# Fix Criticos de Autenticacion - Fase Final Tarea 4.5
 
 ## Resumen
 
-Completar el flujo de autenticacion con Magic Link, restablecimiento de contrasena con vistas dedicadas, y consistencia de branding en redirecciones.
+Corregir el bucle de login con Magic Link, manejar errores 429, agregar plantilla "Magic Link" al Admin Email Manager, y asegurar transiciones fluidas en el splash screen.
 
-## Cambios Planificados
+## 1. Fix del Bucle de Login (Magic Link)
 
-### 1. Magic Link en Login
+**Archivo**: `src/contexts/AuthContext.tsx`
 
-**Archivo**: `src/components/AuthForm.tsx`
+El problema: cuando un usuario llega desde un Magic Link, Supabase procesa los tokens del hash de la URL y dispara `SIGNED_IN`. Pero si el hash no se limpia, puede haber un loop. Ademas, si el usuario esta en `/auth`, no se redirige automaticamente al dashboard.
 
-- Agregar una tercera pestana/seccion "Entrar sin contrasena" debajo del formulario de login
-- Implementar `signInWithOtp({ email, options: { emailRedirectTo } })` de Supabase
-- El boton muestra un estado de carga y un toast de exito indicando que se envio el enlace
-- La URL de redireccion apunta a `window.location.origin` (que en produccion seria `app.disruptivaa.com`)
+Solucion:
+- Detectar en `onAuthStateChange` cuando el evento es `SIGNED_IN` y la URL contiene tokens de hash (`#access_token` o parametros tipo `type=magiclink`)
+- Limpiar el hash de la URL con `window.history.replaceState`
+- Si la ruta actual es `/auth` o `/update-password`, forzar redireccion a `/` usando `window.location.href = '/'`
+- No usar `setTimeout` ni `navigate()` (ya que el context no tiene acceso al router), sino `window.location` para garantizar un reload limpio
 
-Nota: El diseno del email enviado por Supabase Auth se configura en Supabase Dashboard > Authentication > Email Templates. El Admin Email Manager ya existente genera el HTML que se debe pegar alli.
+Cambio concreto en el listener:
+```typescript
+supabase.auth.onAuthStateChange((event, session) => {
+  setSession(session);
+  setUser(session?.user ?? null);
+  setLoading(false);
+  
+  if (event === 'SIGNED_IN' && session) {
+    // Limpiar tokens del hash si existen
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    // Redirigir si estamos en /auth
+    if (window.location.pathname === '/auth') {
+      window.location.href = '/';
+    }
+  }
+});
+```
 
-### 2. Restablecimiento de Contrasena - Vista de Solicitud
-
-**Archivo**: `src/components/AuthForm.tsx`
-
-- Agregar un enlace "Olvidaste tu contrasena?" debajo del formulario de login
-- Al hacer clic, mostrar un formulario inline (o alternar vista) con campo de email y boton "Enviar enlace"
-- Llama a `supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/update-password' })`
-
-**Archivo**: `src/pages/Settings.tsx`
-
-- Actualizar `redirectTo` de `/auth` a `/update-password` para consistencia
-
-### 3. Vista `/update-password`
-
-**Archivo nuevo**: `src/pages/UpdatePassword.tsx`
-
-- Pagina publica (no protegida) que se muestra cuando el usuario llega desde el enlace de recuperacion
-- Supabase inyecta los tokens en el hash de la URL; el `onAuthStateChange` con evento `PASSWORD_RECOVERY` los detecta automaticamente
-- Muestra un formulario con campo "Nueva contrasena" y "Confirmar contrasena"
-- Al enviar, llama a `supabase.auth.updateUser({ password })`
-- Tras exito, redirige a `/` con toast "Contrasena actualizada correctamente"
-- Estilo consistente con la pagina de Auth (fondo oscuro, logo centrado, contenedor con borde sutil)
-
-**Archivo**: `src/App.tsx`
-
-- Agregar ruta `/update-password` apuntando a `UpdatePassword` (ruta publica, sin ProtectedRoute)
-
-### 4. Consistencia de Branding en Redirecciones
+## 2. Manejo de Error 429 (Rate Limit)
 
 **Archivo**: `src/components/AuthForm.tsx`
 
-- En `signUp`, cambiar `emailRedirectTo` de `window.location.origin + '/'` a `window.location.origin` (ya correcto)
-- En Magic Link, usar `window.location.origin` como redirect
+Agregar deteccion de error 429 en los tres handlers de autenticacion:
 
-**Archivo**: `src/pages/Settings.tsx`
+- `handleLogin`: verificar `error.status === 429` o `error.message?.includes('rate limit')`
+- `handleMagicLink`: misma logica
+- `handleForgotPassword`: misma logica
 
-- Cambiar `redirectTo` a `window.location.origin + '/update-password'`
+Mensaje amigable: "Demasiados intentos. Por favor, espera unos minutos antes de volver a intentarlo."
 
-Nota sobre produccion: Cuando el dominio `app.disruptivaa.com` este configurado, `window.location.origin` automaticamente apuntara al dominio correcto. No se hardcodea ningun dominio.
+Se extraera una funcion auxiliar `getAuthErrorMessage(error)` para centralizar la logica de mensajes de error y evitar repeticion.
 
-### 5. i18n - Nuevas claves
+## 3. Admin Email Manager - Plantilla Magic Link
+
+**Archivo**: `src/pages/AdminDashboard.tsx`
+
+- Agregar `"magiclink"` como tercera opcion en el `Select` de plantillas, con label `t("admin.emailMagicLink")`
+- Actualizar el placeholder del campo `emailSubject` para incluir el caso magiclink: "Tu enlace de acceso"
+- Actualizar el placeholder del campo `emailBody` para incluir `{{ .ConfirmationURL }}` como variable obligatoria
+- Agregar un aviso visible debajo del textarea cuando la plantilla es "magiclink" o "confirmation" recordando que `{{ .ConfirmationURL }}` es requerido
+
+## 4. Mejoras en UpdatePassword
+
+**Archivo**: `src/pages/UpdatePassword.tsx`
+
+La pagina actual ya esta funcional. Ajustes menores:
+- Mejorar el manejo del evento `PASSWORD_RECOVERY`: el `setReady(true)` incondicional en linea 27 es correcto (Supabase procesa los tokens del hash automaticamente)
+- Agregar manejo de error 429 al `handleSubmit`
+- Tras exito, limpiar hash de la URL antes de redirigir
+
+## 5. i18n - Nuevas claves
 
 **Archivos**: `src/i18n/locales/[es|en|pt]/common.json`
 
-Nuevas claves en la seccion `auth`:
-
 | Clave | ES | EN | PT |
 |-------|----|----|-----|
-| `auth.magicLink` | Entrar sin contrasena | Sign in without password | Entrar sem senha |
-| `auth.magicLinkSent` | Enlace enviado a tu email | Link sent to your email | Link enviado para seu email |
-| `auth.magicLinkDesc` | Te enviaremos un enlace de acceso directo | We'll send you a direct access link | Enviaremos um link de acesso direto |
-| `auth.forgotPassword` | Olvidaste tu contrasena? | Forgot your password? | Esqueceu sua senha? |
-| `auth.sendResetLink` | Enviar enlace de recuperacion | Send recovery link | Enviar link de recuperacao |
-| `auth.resetLinkSent` | Enlace de recuperacion enviado | Recovery link sent | Link de recuperacao enviado |
-| `auth.newPassword` | Nueva contrasena | New password | Nova senha |
-| `auth.confirmPassword` | Confirmar contrasena | Confirm password | Confirmar senha |
-| `auth.updatePassword` | Actualizar contrasena | Update password | Atualizar senha |
-| `auth.passwordUpdated` | Contrasena actualizada correctamente | Password updated successfully | Senha atualizada com sucesso |
-| `auth.passwordMismatch` | Las contrasenas no coinciden | Passwords don't match | As senhas nao coincidem |
-| `auth.backToLogin` | Volver al login | Back to login | Voltar ao login |
+| `auth.rateLimitError` | Demasiados intentos. Espera unos minutos. | Too many attempts. Wait a few minutes. | Muitas tentativas. Aguarde alguns minutos. |
+| `admin.emailMagicLink` | Magic Link | Magic Link | Magic Link |
 
 ## Archivos Afectados
 
 | Archivo | Tipo | Cambio |
 |---------|------|--------|
-| `src/components/AuthForm.tsx` | Edicion | Magic Link, forgot password link, i18n |
-| `src/pages/UpdatePassword.tsx` | Nuevo | Vista de cambio de contrasena |
-| `src/App.tsx` | Edicion | Nueva ruta /update-password |
-| `src/pages/Settings.tsx` | Edicion | Corregir redirectTo |
-| `src/i18n/locales/es/common.json` | Edicion | 12 nuevas claves |
-| `src/i18n/locales/en/common.json` | Edicion | 12 nuevas claves |
-| `src/i18n/locales/pt/common.json` | Edicion | 12 nuevas claves |
+| `src/contexts/AuthContext.tsx` | Edicion | Limpiar hash URL y redirigir en Magic Link |
+| `src/components/AuthForm.tsx` | Edicion | Manejo error 429, funcion auxiliar de errores |
+| `src/pages/AdminDashboard.tsx` | Edicion | Agregar opcion "Magic Link" al selector |
+| `src/pages/UpdatePassword.tsx` | Edicion | Manejo error 429, limpiar hash |
+| `src/i18n/locales/es/common.json` | Edicion | 2 nuevas claves |
+| `src/i18n/locales/en/common.json` | Edicion | 2 nuevas claves |
+| `src/i18n/locales/pt/common.json` | Edicion | 2 nuevas claves |
 
 ## Notas
 
-- El `VerificationBanner` ya esta implementado y funcional en `Index.tsx`
-- El registro ya hace auto-login (Supabase crea sesion inmediata con `signUp`)
-- El flujo de onboarding post-registro ya existe en `Index.tsx` (redirige a `CompanyOnboarding` si `company_id` es null)
+- El splash screen ya muestra "Estrategia Digital y Automatizaciones" correctamente (verificado en `LoadingScreen.tsx`)
+- La animacion `logo-pulse` ya esta aplicada al logo
 - No se requieren migraciones de base de datos
 - No se requieren cambios en Edge Functions
-- El diseno del email de Magic Link y Recovery se configura en Supabase Dashboard; el Admin Email Manager existente genera el HTML para copiar
+- El flujo `/update-password` ya existe y funciona; solo se agregan mejoras menores de robustez
 
