@@ -131,17 +131,74 @@ serve(async (req) => {
     }
 
     const accessToken = tokenData.access_token;
-    const refreshToken = tokenData.refresh_token; // Only provided on first auth with prompt=consent
-    const expiresIn = tokenData.expires_in || 3600; // Google tokens expire in ~1 hour
+    const refreshToken = tokenData.refresh_token;
+    const expiresIn = tokenData.expires_in || 3600;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     console.info(`Google tokens obtained. Access token expires in ${expiresIn} seconds`);
-    console.info(`Refresh token ${refreshToken ? 'received' : 'NOT received (user may have previously authorized)'}`);
+    console.info(`Refresh token ${refreshToken ? 'received' : 'NOT received'}`);
 
-    // Save to database using service role (bypasses RLS for upsert)
+    // === Discover accessible Google Ads accounts ===
+    const GOOGLE_ADS_DEVELOPER_TOKEN = Deno.env.get("GOOGLE_ADS_DEVELOPER_TOKEN");
+    let accountIds: string[] = [];
+    let accountName = "Google Ads";
+
+    if (GOOGLE_ADS_DEVELOPER_TOKEN) {
+      try {
+        console.info("Discovering Google Ads accounts...");
+        const listResponse = await fetch(
+          "https://googleads.googleapis.com/v17/customers:listAccessibleCustomers",
+          {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`,
+              "developer-token": GOOGLE_ADS_DEVELOPER_TOKEN,
+            },
+          }
+        );
+
+        if (listResponse.ok) {
+          const listData = await listResponse.json();
+          const resourceNames: string[] = listData.resourceNames || [];
+          accountIds = resourceNames.map((rn: string) => rn.replace("customers/", ""));
+          console.info(`Found ${accountIds.length} accessible accounts: ${accountIds.join(", ")}`);
+
+          // Try to get descriptive names for the first account
+          if (accountIds.length > 0) {
+            try {
+              const detailResponse = await fetch(
+                `https://googleads.googleapis.com/v17/customers/${accountIds[0]}`,
+                {
+                  headers: {
+                    "Authorization": `Bearer ${accessToken}`,
+                    "developer-token": GOOGLE_ADS_DEVELOPER_TOKEN,
+                    "login-customer-id": accountIds[0],
+                  },
+                }
+              );
+              if (detailResponse.ok) {
+                const detailData = await detailResponse.json();
+                accountName = detailData.descriptiveName || `Google Ads (${accountIds.length} cuentas)`;
+                console.info(`Account name: ${accountName}`);
+              }
+            } catch (nameErr) {
+              console.warn("Could not fetch account name:", nameErr);
+              accountName = `Google Ads (${accountIds.length} cuentas)`;
+            }
+          }
+        } else {
+          const errBody = await listResponse.text();
+          console.warn("Could not list Google Ads accounts:", listResponse.status, errBody);
+        }
+      } catch (discoverErr) {
+        console.warn("Google Ads account discovery failed:", discoverErr);
+      }
+    } else {
+      console.warn("GOOGLE_ADS_DEVELOPER_TOKEN not set, skipping account discovery");
+    }
+
+    // Save to database using service role
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check if user already has a Google integration
     const { data: existingIntegration } = await supabaseAdmin
       .from("user_integrations")
       .select("id, refresh_token")
@@ -149,7 +206,6 @@ serve(async (req) => {
       .eq("platform", "google_ads")
       .maybeSingle();
 
-    // Keep existing refresh_token if we didn't receive a new one
     const finalRefreshToken = refreshToken || existingIntegration?.refresh_token || null;
 
     const integrationData = {
@@ -157,11 +213,11 @@ serve(async (req) => {
       platform: "google_ads",
       status: "connected",
       connected_at: new Date().toISOString(),
-      account_name: "Google Ads",
+      account_name: accountName,
       access_token: accessToken,
       refresh_token: finalRefreshToken,
       token_expires_at: tokenExpiresAt,
-      account_ids: [], // Will be populated later when fetching accounts
+      account_ids: accountIds,
     };
 
     if (existingIntegration) {

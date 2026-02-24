@@ -315,17 +315,6 @@ export const useIntegrations = () => {
         .maybeSingle();
 
       if (error || !data?.account_ids?.length) {
-        // Return demo accounts for Google and TikTok if not connected
-        if (platform === 'google_ads') {
-          return [
-            { id: 'demo-google-1', name: 'Google Ads Demo Account', status: 'demo' },
-          ];
-        }
-        if (platform === 'tiktok_ads') {
-          return [
-            { id: 'demo-tiktok-1', name: 'TikTok Ads Demo Account', status: 'demo' },
-          ];
-        }
         return [];
       }
 
