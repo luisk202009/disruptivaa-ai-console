@@ -1,9 +1,8 @@
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
-// TikTok App ID is a public identifier (like Google Client ID), safe to expose in frontend
-// Set VITE_TIKTOK_APP_ID in .env or hardcode here after obtaining from TikTok for Business portal
-const TIKTOK_APP_ID = import.meta.env.VITE_TIKTOK_APP_ID || "";
+const TIKTOK_APP_ID = "7607279938378399760";
 
 interface TikTokOAuthButtonProps {
   isConnecting: boolean;
@@ -12,10 +11,15 @@ interface TikTokOAuthButtonProps {
 
 const TikTokOAuthButton = ({ isConnecting, disabled }: TikTokOAuthButtonProps) => {
   const initiateOAuth = () => {
+    if (!TIKTOK_APP_ID) {
+      toast({ title: "Error", description: "TikTok App ID no configurado.", variant: "destructive" });
+      return;
+    }
+
     const state = crypto.randomUUID();
     sessionStorage.setItem("tiktok_oauth_state", state);
 
-    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/tiktok/callback`);
+    const redirectUri = encodeURIComponent("https://app.disruptivaa.com/auth/tiktok/callback");
 
     const authUrl = `https://business-api.tiktok.com/portal/auth?app_id=${TIKTOK_APP_ID}&state=${state}&redirect_uri=${redirectUri}`;
 
