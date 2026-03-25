@@ -35,6 +35,8 @@ const Negocio14Dias = lazy(() => import("./pages/Negocio14Dias"));
 const CrmHubspot = lazy(() => import("./pages/servicios/CrmHubspot"));
 const ShopifyPage = lazy(() => import("./pages/servicios/Shopify"));
 const MarketingAds = lazy(() => import("./pages/servicios/MarketingAds"));
+const WebsitesLandings = lazy(() => import("./pages/servicios/WebsitesLandings"));
+const MvpAplicaciones = lazy(() => import("./pages/servicios/MvpAplicaciones"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
