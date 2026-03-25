@@ -116,6 +116,38 @@ export type Database = {
         }
         Relationships: []
       }
+      brief_submissions: {
+        Row: {
+          answers: Json
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          service_type: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          service_type: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          service_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brief_submissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           branding_color: string | null
