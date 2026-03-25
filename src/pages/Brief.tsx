@@ -12,6 +12,8 @@ const options = [
   { id: "14-dias", icon: Rocket, title: "Negocio en 14 días", subtitle: "Web + CRM + Pagos + Automatizaciones", color: "text-primary", bgColor: "bg-primary/10" },
   { id: "shopify", icon: ShoppingBag, title: "Shopify", subtitle: "E-commerce listo para vender", color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
   { id: "marketing-ads", icon: Globe, title: "Marketing & Ads", subtitle: "Campañas multicanal con retorno", color: "text-primary", bgColor: "bg-primary/10" },
+  { id: "website", icon: Layout, title: "Websites & Landings", subtitle: "Sitios web y landing pages de alta conversión", color: "text-blue-400", bgColor: "bg-blue-500/10" },
+  { id: "mvp", icon: Rocket, title: "MVP & Aplicaciones", subtitle: "Tu idea hecha producto digital en semanas", color: "text-violet-400", bgColor: "bg-violet-500/10" },
 ];
 
 const Brief = () => {
