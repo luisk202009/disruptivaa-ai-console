@@ -79,7 +79,7 @@ const Navbar = () => {
           : "bg-transparent"
       )}
     >
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-20">
         {/* Left: Logo */}
         <Link to="/" className="shrink-0">
           <img src={logo} alt="Disruptivaa" className="h-7" />
