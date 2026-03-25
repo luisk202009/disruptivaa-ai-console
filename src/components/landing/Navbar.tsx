@@ -11,6 +11,8 @@ const serviceLinks = [
   { label: "Negocio en 14 días", href: "/servicios/negocio-14-dias" },
   { label: "Shopify", href: "/servicios/shopify" },
   { label: "Marketing & Ads", href: "/servicios/marketing-ads" },
+  { label: "Websites & Landings", href: "/servicios/websites-landings" },
+  { label: "MVP & Aplicaciones", href: "/servicios/mvp-aplicaciones" },
 ];
 
 const navLinks = [

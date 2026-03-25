@@ -87,6 +87,8 @@ const App = () => (
               <Route path="/servicios/crm-hubspot" element={<Lazy><CrmHubspot /></Lazy>} />
               <Route path="/servicios/shopify" element={<Lazy><ShopifyPage /></Lazy>} />
               <Route path="/servicios/marketing-ads" element={<Lazy><MarketingAds /></Lazy>} />
+              <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
+              <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
 
               {/* Brief interno (oculto del nav) */}
               <Route path="/internal/brief-selector" element={<Lazy><Brief /></Lazy>} />

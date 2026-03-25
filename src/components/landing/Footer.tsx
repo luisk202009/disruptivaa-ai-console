@@ -26,6 +26,8 @@ const Footer = () => (
             <li><Link to="/servicios/negocio-14-dias" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Negocio en 14 días</Link></li>
             <li><Link to="/servicios/shopify" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Shopify</Link></li>
             <li><Link to="/servicios/marketing-ads" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Marketing & Ads</Link></li>
+            <li><Link to="/servicios/websites-landings" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Websites & Landings</Link></li>
+            <li><Link to="/servicios/mvp-aplicaciones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">MVP & Aplicaciones</Link></li>
           </ul>
         </div>
 
