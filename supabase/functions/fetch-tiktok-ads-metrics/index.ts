@@ -116,6 +116,13 @@ async function fetchTikTokReport(
     }
   );
 
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await response.text();
+    console.error("❌ TikTok API returned non-JSON response:", response.status, text.substring(0, 200));
+    throw new Error(`TikTok API returned non-JSON response (status ${response.status}). Token may be expired.`);
+  }
+
   const data = await response.json();
   
   if (data.code !== 0) {
