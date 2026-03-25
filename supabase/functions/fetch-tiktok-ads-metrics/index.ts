@@ -116,6 +116,13 @@ async function fetchTikTokReport(
     }
   );
 
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    const text = await response.text();
+    console.error("❌ TikTok API returned non-JSON response:", response.status, text.substring(0, 200));
+    throw new Error(`TikTok API returned non-JSON response (status ${response.status}). Token may be expired.`);
+  }
+
   const data = await response.json();
   
   if (data.code !== 0) {
@@ -272,12 +279,31 @@ serve(async (req) => {
     console.log(`📊 Fetching real TikTok data for account ${targetAccountId}`);
 
     // Fetch current period
-    const currentTotals = await fetchTikTokReport(
-      integration.access_token,
-      targetAccountId,
-      dateRanges.current.since,
-      dateRanges.current.until
-    );
+    let currentTotals: Record<string, number>;
+    try {
+      currentTotals = await fetchTikTokReport(
+        integration.access_token,
+        targetAccountId,
+        dateRanges.current.since,
+        dateRanges.current.until
+      );
+    } catch (e) {
+      console.warn("⚠️ Failed to fetch TikTok current period, returning demo data:", e.message);
+      const demoValue = generateDemoValue(metric);
+      return new Response(
+        JSON.stringify({
+          value: demoValue,
+          previous_value: demoValue * 0.85,
+          change_percent: 15,
+          trend: "up",
+          data_points: generateDemoDataPoints(date_preset, metric),
+          is_demo: true,
+          platform: "tiktok_ads",
+          error_message: e.message,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const value = extractMetricValue(currentTotals, metric);
 
