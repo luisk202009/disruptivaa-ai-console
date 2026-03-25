@@ -256,6 +256,36 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          service_type: string | null
+          status: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          service_type?: string | null
+          status?: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          service_type?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       metrics_cache: {
         Row: {
           cache_key: string
