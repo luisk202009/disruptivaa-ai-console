@@ -86,7 +86,7 @@ const Navbar = () => {
         </Link>
 
         {/* Center: Nav links (desktop) */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-10">
           {navLinks.map((link) =>
             link.children ? (
               <div key={link.label} className="relative" ref={dropdownRef}>
