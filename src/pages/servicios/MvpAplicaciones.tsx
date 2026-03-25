@@ -35,7 +35,7 @@ const MvpAplicaciones = () => (
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             Diseñamos y construimos MVPs, SaaS y aplicaciones internas con bases de datos, autenticación e integraciones. De la idea al producto, sin meses de espera.
           </p>
-          <Link to="/internal/brief-selector">
+          <Link to="/brief">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Solicitar propuesta <ArrowRight size={18} />
             </Button>
@@ -85,7 +85,7 @@ const MvpAplicaciones = () => (
           ))}
         </ul>
         <div className="mt-12">
-          <Link to="/internal/brief-selector">
+          <Link to="/brief">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Empezar ahora <ArrowRight size={18} />
             </Button>
