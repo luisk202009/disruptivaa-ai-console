@@ -29,6 +29,7 @@ const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const SolucionesCanales = lazy(() => import("./pages/SolucionesCanales"));
 const SolucionesAnalytics = lazy(() => import("./pages/SolucionesAnalytics"));
+const Negocio14Dias = lazy(() => import("./pages/Negocio14Dias"));
 const Brief = lazy(() => import("./pages/Brief"));
 
 const LazyFallback = () => (

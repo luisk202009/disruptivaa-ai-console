@@ -32,7 +32,7 @@ const SolucionesCanales = () => (
           <h1 className="text-3xl md:text-5xl font-bold text-foreground tracking-tight leading-[1.15] mb-6">
             Operamos y escalamos tus canales de venta digital
           </h1>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Mercado Libre, WhatsApp Business y más. Tu equipo externo de comercio digital con foco en resultados.
           </p>
         </motion.div>
@@ -49,20 +49,20 @@ const SolucionesCanales = () => (
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
             variants={fadeUp}
-            className="rounded-2xl border border-white/[0.06] bg-card/40 p-8 hover:border-white/[0.12] transition-all duration-300"
+            className="rounded-2xl border border-border bg-card/40 p-8 hover:border-primary/30 transition-all duration-300"
           >
             <div className="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 mb-5">
               <f.icon size={22} strokeWidth={1.5} />
             </div>
             <h3 className="text-base font-semibold text-foreground mb-2">{f.title}</h3>
-            <p className="text-sm text-zinc-400 leading-relaxed">{f.desc}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
           </motion.div>
         ))}
       </div>
 
       <div className="text-center mt-16">
         <Link to="/brief">
-          <Button size="lg" className="bg-[hsl(213,100%,48%)] hover:bg-[hsl(213,100%,42%)] text-white border-0 px-8 h-12">
+          <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground border-0 px-8 h-12">
             Iniciar Brief <ArrowRight size={18} className="ml-2" />
           </Button>
         </Link>

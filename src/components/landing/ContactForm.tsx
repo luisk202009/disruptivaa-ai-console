@@ -43,7 +43,7 @@ const ContactForm = () => {
       >
         <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-foreground mb-2">¡Recibido!</h3>
-        <p className="text-sm text-zinc-400">Nuestro equipo se pondrá en contacto contigo pronto.</p>
+        <p className="text-sm text-muted-foreground">Nuestro equipo se pondrá en contacto contigo pronto.</p>
       </motion.div>
     );
   }
@@ -58,16 +58,16 @@ const ContactForm = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="text-center mb-10">
-            <p className="text-xs uppercase tracking-[0.25em] text-zinc-500 font-semibold mb-3">Contacto</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold mb-3">Contacto</p>
             <h2 className="text-3xl font-bold text-foreground tracking-tight mb-3">
-              ¿Listo para escalar?
+              ¿Listo para ordenar tu negocio?
             </h2>
-            <p className="text-sm text-zinc-400">Dejanos tus datos y te contactamos en menos de 24hs.</p>
+            <p className="text-sm text-muted-foreground">Dejanos tus datos y te contactamos en menos de 24hs.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border border-white/[0.06] bg-card/50 backdrop-blur-sm p-8">
+          <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-8">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-zinc-400 text-xs uppercase tracking-wider">Nombre</Label>
+              <Label htmlFor="name" className="text-muted-foreground text-xs uppercase tracking-wider">Nombre</Label>
               <Input
                 id="name"
                 required
@@ -75,11 +75,11 @@ const ContactForm = () => {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Tu nombre"
-                className="bg-background/50 border-white/[0.08]"
+                className="bg-background/50 border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-400 text-xs uppercase tracking-wider">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground text-xs uppercase tracking-wider">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -88,24 +88,24 @@ const ContactForm = () => {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="tu@empresa.com"
-                className="bg-background/50 border-white/[0.08]"
+                className="bg-background/50 border-border"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="company" className="text-zinc-400 text-xs uppercase tracking-wider">Empresa (opcional)</Label>
+              <Label htmlFor="company" className="text-muted-foreground text-xs uppercase tracking-wider">Empresa (opcional)</Label>
               <Input
                 id="company"
                 maxLength={100}
                 value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
                 placeholder="Nombre de tu empresa"
-                className="bg-background/50 border-white/[0.08]"
+                className="bg-background/50 border-border"
               />
             </div>
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-[hsl(213,100%,48%)] hover:bg-[hsl(213,100%,42%)] text-white border-0 h-11"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground border-0 h-11"
             >
               {loading ? "Enviando..." : (
                 <>
