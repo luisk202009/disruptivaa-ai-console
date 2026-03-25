@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           const path = window.location.pathname;
           if (path === '/auth' || path === '/update-password') {
-            window.location.href = '/';
+            window.location.href = '/dashboard';
           }
         }
       }

@@ -33,7 +33,7 @@ const ProjectDetail = () => {
   };
 
   const handleNewConversation = () => {
-    navigate("/");
+    navigate("/dashboard");
     window.dispatchEvent(new CustomEvent("newConversation", { detail: { projectId: id } }));
   };
 
