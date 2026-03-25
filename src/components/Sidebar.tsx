@@ -85,7 +85,7 @@ const Sidebar = () => {
   const { companyName } = useCompanyBranding();
 
   const topNavItems = [
-    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
+    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/dashboard" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
   ];
 
