@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Rocket, ShoppingBag, Users, ArrowLeft } from "lucide-react";
+import { Globe, Rocket, ShoppingBag, Users, ArrowLeft, Layout } from "lucide-react";
 import PublicLayout from "@/components/landing/PublicLayout";
 import DynamicBriefForm from "@/components/brief/DynamicBriefForm";
 import { cn } from "@/lib/utils";
