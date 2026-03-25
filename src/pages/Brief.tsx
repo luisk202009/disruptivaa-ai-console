@@ -31,7 +31,7 @@ const Brief = () => {
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">¿Qué necesitas?</h1>
                 <p className="text-muted-foreground">Seleccioná la categoría que mejor se ajuste a tu proyecto.</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {options.map((opt) => (
                   <button key={opt.id} onClick={() => setSelected(opt.id)}
                     className={cn("group text-left rounded-2xl border border-border bg-card/40 p-10 transition-all duration-300", "hover:border-primary/30 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1")}>

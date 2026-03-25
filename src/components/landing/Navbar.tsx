@@ -145,7 +145,7 @@ const Navbar = () => {
         </div>
 
         {/* Right: CTAs (desktop) */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-4">
           <Link to="/auth">
             <Button
               variant="ghost"
