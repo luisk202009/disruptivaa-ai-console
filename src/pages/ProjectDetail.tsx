@@ -28,12 +28,12 @@ const ProjectDetail = () => {
   const { metricsData, loading: metricsLoading, refreshing: metricsRefreshing, refresh, isDemo } = useGoalMetrics(goals);
 
   const handleOpenConversation = (chatId: string) => {
-    navigate("/");
+    navigate("/dashboard");
     window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
   };
 
   const handleNewConversation = () => {
-    navigate("/");
+    navigate("/dashboard");
     window.dispatchEvent(new CustomEvent("newConversation", { detail: { projectId: id } }));
   };
 

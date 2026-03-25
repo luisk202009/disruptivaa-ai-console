@@ -13,7 +13,7 @@ const Conversations = () => {
   };
 
   const handleOpenConversation = (chatId: string) => {
-    navigate("/");
+    navigate("/dashboard");
     window.dispatchEvent(new CustomEvent("loadConversation", { detail: { chatId } }));
   };
 

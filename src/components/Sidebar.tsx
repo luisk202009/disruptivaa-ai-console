@@ -85,7 +85,7 @@ const Sidebar = () => {
   const { companyName } = useCompanyBranding();
 
   const topNavItems = [
-    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/" },
+    { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/dashboard" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
   ];
 
@@ -97,7 +97,8 @@ const Sidebar = () => {
     if (location.pathname.startsWith("/project/")) return "project";
     if (location.pathname === "/websites") return "websites";
     if (location.pathname === "/connections") return "connections";
-    return "dashboard";
+    if (location.pathname === "/dashboard") return "dashboard";
+    return "";
   };
 
   const getUserDisplayName = () => {

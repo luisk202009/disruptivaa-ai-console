@@ -43,7 +43,7 @@ const UpdatePassword = () => {
         window.history.replaceState({}, '', window.location.pathname);
       }
       toast({ title: t("auth.passwordUpdated") });
-      navigate("/");
+      navigate("/dashboard");
     } catch (error: any) {
       const isRateLimit = error?.status === 429 || error?.message?.toLowerCase().includes('rate limit');
       toast({ title: "Error", description: isRateLimit ? t("auth.rateLimitError") : undefined, variant: "destructive" });
