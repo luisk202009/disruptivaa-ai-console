@@ -90,8 +90,8 @@ const App = () => (
               <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
               <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
 
-              {/* Brief interno (oculto del nav) */}
-              <Route path="/internal/brief-selector" element={<Lazy><Brief /></Lazy>} />
+              {/* Brief público */}
+              <Route path="/brief" element={<Lazy><Brief /></Lazy>} />
 
               {/* OAuth callbacks */}
               <Route path="/auth/meta/callback" element={<Lazy><MetaCallback /></Lazy>} />

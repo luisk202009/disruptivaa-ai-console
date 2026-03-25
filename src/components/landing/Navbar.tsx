@@ -79,14 +79,14 @@ const Navbar = () => {
           : "bg-transparent"
       )}
     >
-      <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
+      <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-20">
         {/* Left: Logo */}
         <Link to="/" className="shrink-0">
           <img src={logo} alt="Disruptivaa" className="h-7" />
         </Link>
 
         {/* Center: Nav links (desktop) */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-10">
           {navLinks.map((link) =>
             link.children ? (
               <div key={link.label} className="relative" ref={dropdownRef}>
@@ -145,7 +145,7 @@ const Navbar = () => {
         </div>
 
         {/* Right: CTAs (desktop) */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-4">
           <Link to="/auth">
             <Button
               variant="ghost"

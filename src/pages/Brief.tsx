@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Globe, Rocket, ShoppingBag, Users, ArrowLeft } from "lucide-react";
+import { Globe, Rocket, ShoppingBag, Users, ArrowLeft, Layout } from "lucide-react";
 import PublicLayout from "@/components/landing/PublicLayout";
 import DynamicBriefForm from "@/components/brief/DynamicBriefForm";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,8 @@ const options = [
   { id: "14-dias", icon: Rocket, title: "Negocio en 14 días", subtitle: "Web + CRM + Pagos + Automatizaciones", color: "text-primary", bgColor: "bg-primary/10" },
   { id: "shopify", icon: ShoppingBag, title: "Shopify", subtitle: "E-commerce listo para vender", color: "text-emerald-400", bgColor: "bg-emerald-500/10" },
   { id: "marketing-ads", icon: Globe, title: "Marketing & Ads", subtitle: "Campañas multicanal con retorno", color: "text-primary", bgColor: "bg-primary/10" },
+  { id: "website", icon: Layout, title: "Websites & Landings", subtitle: "Sitios web y landing pages de alta conversión", color: "text-blue-400", bgColor: "bg-blue-500/10" },
+  { id: "mvp", icon: Rocket, title: "MVP & Aplicaciones", subtitle: "Tu idea hecha producto digital en semanas", color: "text-violet-400", bgColor: "bg-violet-500/10" },
 ];
 
 const Brief = () => {
@@ -29,7 +31,7 @@ const Brief = () => {
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight mb-4">¿Qué necesitas?</h1>
                 <p className="text-muted-foreground">Seleccioná la categoría que mejor se ajuste a tu proyecto.</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {options.map((opt) => (
                   <button key={opt.id} onClick={() => setSelected(opt.id)}
                     className={cn("group text-left rounded-2xl border border-border bg-card/40 p-10 transition-all duration-300", "hover:border-primary/30 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1")}>

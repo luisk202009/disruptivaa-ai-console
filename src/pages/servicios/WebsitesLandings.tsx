@@ -35,7 +35,7 @@ const WebsitesLandings = () => (
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             Diseñamos y desarrollamos sitios web y landing pages de alta conversión, optimizados para velocidad, SEO y resultados medibles.
           </p>
-          <Link to="/internal/brief-selector">
+          <Link to="/brief">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Solicitar propuesta <ArrowRight size={18} />
             </Button>
@@ -85,7 +85,7 @@ const WebsitesLandings = () => (
           ))}
         </ul>
         <div className="mt-12">
-          <Link to="/internal/brief-selector">
+          <Link to="/brief">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Empezar ahora <ArrowRight size={18} />
             </Button>
