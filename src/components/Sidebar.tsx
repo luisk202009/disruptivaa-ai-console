@@ -97,7 +97,8 @@ const Sidebar = () => {
     if (location.pathname.startsWith("/project/")) return "project";
     if (location.pathname === "/websites") return "websites";
     if (location.pathname === "/connections") return "connections";
-    return "dashboard";
+    if (location.pathname === "/dashboard") return "dashboard";
+    return "";
   };
 
   const getUserDisplayName = () => {
