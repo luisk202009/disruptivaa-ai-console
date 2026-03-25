@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 const serviceLinks = [
-  { label: "CRM que sí se usa", href: "/brief" },
-  { label: "Negocio en 14 días", href: "/negocio-14-dias" },
-  { label: "Shopify", href: "/brief" },
+  { label: "CRM que sí se usa", href: "/servicios/crm-hubspot" },
+  { label: "Negocio en 14 días", href: "/servicios/negocio-14-dias" },
+  { label: "Shopify", href: "/servicios/shopify" },
+  { label: "Marketing & Ads", href: "/servicios/marketing-ads" },
 ];
 
 const navLinks = [
   { label: "Servicios", children: serviceLinks },
-  { label: "Brief", href: "/brief" },
   { label: "Nosotros", href: "/#nosotros" },
 ];
 

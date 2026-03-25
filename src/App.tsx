@@ -27,10 +27,14 @@ const Websites = lazy(() => import("./pages/Websites"));
 const DashboardView = lazy(() => import("./pages/DashboardView"));
 const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const SolucionesCanales = lazy(() => import("./pages/SolucionesCanales"));
-const SolucionesAnalytics = lazy(() => import("./pages/SolucionesAnalytics"));
-const Negocio14Dias = lazy(() => import("./pages/Negocio14Dias"));
+const AdminLeads = lazy(() => import("./pages/AdminLeads"));
 const Brief = lazy(() => import("./pages/Brief"));
+
+// Páginas de servicios
+const Negocio14Dias = lazy(() => import("./pages/Negocio14Dias"));
+const CrmHubspot = lazy(() => import("./pages/servicios/CrmHubspot"));
+const ShopifyPage = lazy(() => import("./pages/servicios/Shopify"));
+const MarketingAds = lazy(() => import("./pages/servicios/MarketingAds"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -57,6 +61,10 @@ const BrandingProvider = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const Lazy = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<LazyFallback />}>{children}</Suspense>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -66,32 +74,38 @@ const App = () => (
         <BrandingProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public routes */}
+              {/* Rutas públicas */}
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/agents" element={<Agents />} />
-              <Route path="/soluciones/gestion-canales" element={<Suspense fallback={<LazyFallback />}><SolucionesCanales /></Suspense>} />
-              <Route path="/soluciones/data-analytics" element={<Suspense fallback={<LazyFallback />}><SolucionesAnalytics /></Suspense>} />
-              <Route path="/brief" element={<Suspense fallback={<LazyFallback />}><Brief /></Suspense>} />
-              <Route path="/negocio-14-dias" element={<Suspense fallback={<LazyFallback />}><Negocio14Dias /></Suspense>} />
+
+              {/* Páginas de servicios */}
+              <Route path="/servicios/negocio-14-dias" element={<Lazy><Negocio14Dias /></Lazy>} />
+              <Route path="/servicios/crm-hubspot" element={<Lazy><CrmHubspot /></Lazy>} />
+              <Route path="/servicios/shopify" element={<Lazy><ShopifyPage /></Lazy>} />
+              <Route path="/servicios/marketing-ads" element={<Lazy><MarketingAds /></Lazy>} />
+
+              {/* Brief interno (oculto del nav) */}
+              <Route path="/internal/brief-selector" element={<Lazy><Brief /></Lazy>} />
 
               {/* OAuth callbacks */}
-              <Route path="/auth/meta/callback" element={<Suspense fallback={<LazyFallback />}><MetaCallback /></Suspense>} />
-              <Route path="/auth/google/callback" element={<Suspense fallback={<LazyFallback />}><GoogleCallback /></Suspense>} />
-              <Route path="/auth/tiktok/callback" element={<Suspense fallback={<LazyFallback />}><TikTokCallback /></Suspense>} />
+              <Route path="/auth/meta/callback" element={<Lazy><MetaCallback /></Lazy>} />
+              <Route path="/auth/google/callback" element={<Lazy><GoogleCallback /></Lazy>} />
+              <Route path="/auth/tiktok/callback" element={<Lazy><TikTokCallback /></Lazy>} />
 
-              {/* Protected routes — dashboard is now at /dashboard */}
+              {/* Rutas protegidas */}
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/conversations" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><Conversations /></Suspense></ProtectedRoute>} />
-              <Route path="/project/:id" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><ProjectDetail /></Suspense></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><Settings /></Suspense></ProtectedRoute>} />
-              <Route path="/connections" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><Connections /></Suspense></ProtectedRoute>} />
-              <Route path="/dashboards" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><Dashboards /></Suspense></ProtectedRoute>} />
-              <Route path="/dashboards/:dashboardId" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><DashboardView /></Suspense></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><AdminDashboard /></Suspense></ProtectedRoute>} />
-              <Route path="/websites" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><Websites /></Suspense></ProtectedRoute>} />
-              <Route path="/landing-builder" element={<ProtectedRoute><Suspense fallback={<LazyFallback />}><LandingBuilder /></Suspense></ProtectedRoute>} />
+              <Route path="/conversations" element={<ProtectedRoute><Lazy><Conversations /></Lazy></ProtectedRoute>} />
+              <Route path="/project/:id" element={<ProtectedRoute><Lazy><ProjectDetail /></Lazy></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Lazy><Settings /></Lazy></ProtectedRoute>} />
+              <Route path="/connections" element={<ProtectedRoute><Lazy><Connections /></Lazy></ProtectedRoute>} />
+              <Route path="/dashboards" element={<ProtectedRoute><Lazy><Dashboards /></Lazy></ProtectedRoute>} />
+              <Route path="/dashboards/:dashboardId" element={<ProtectedRoute><Lazy><DashboardView /></Lazy></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><Lazy><AdminDashboard /></Lazy></ProtectedRoute>} />
+              <Route path="/admin/leads" element={<ProtectedRoute><Lazy><AdminLeads /></Lazy></ProtectedRoute>} />
+              <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
+              <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
