@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Zap, ShoppingBag } from "lucide-react";
+import { Users, Zap, ShoppingBag, Layout, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
@@ -31,6 +31,24 @@ const services = [
     link: "/servicios/shopify",
     badge: null,
   },
+  {
+    icon: Layout,
+    title: "Websites & Landing Pages",
+    description: "Sitios web y landings de alta conversión, optimizados para velocidad, SEO y resultados medibles.",
+    gradient: "from-blue-500/10 to-indigo-500/5",
+    iconColor: "text-blue-400",
+    link: "/servicios/websites-landings",
+    badge: null,
+  },
+  {
+    icon: Rocket,
+    title: "MVP & Aplicaciones",
+    description: "De la idea al producto digital en semanas. MVPs, SaaS y apps internas con bases de datos e integraciones.",
+    gradient: "from-violet-500/10 to-purple-500/5",
+    iconColor: "text-violet-400",
+    link: "/servicios/mvp-aplicaciones",
+    badge: "Valida tu idea",
+  },
 ];
 
 const fadeUp = {
@@ -54,11 +72,11 @@ const BentoGrid = () => (
       >
         <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold mb-3">Servicios</p>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-          Los 3 pilares para escalar tu negocio
+          Todo lo que necesitas para escalar tu negocio
         </h2>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         {services.map((service, i) => (
           <motion.div
             key={service.title}
@@ -67,6 +85,7 @@ const BentoGrid = () => (
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
             variants={fadeUp}
+            className={i < 3 ? "md:col-span-2" : "md:col-span-3"}
           >
             <Link to={service.link} className="group block h-full">
               <div className={`relative h-full rounded-2xl border border-border bg-gradient-to-br ${service.gradient} p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1`}>

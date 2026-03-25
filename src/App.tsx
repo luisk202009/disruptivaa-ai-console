@@ -35,6 +35,8 @@ const Negocio14Dias = lazy(() => import("./pages/Negocio14Dias"));
 const CrmHubspot = lazy(() => import("./pages/servicios/CrmHubspot"));
 const ShopifyPage = lazy(() => import("./pages/servicios/Shopify"));
 const MarketingAds = lazy(() => import("./pages/servicios/MarketingAds"));
+const WebsitesLandings = lazy(() => import("./pages/servicios/WebsitesLandings"));
+const MvpAplicaciones = lazy(() => import("./pages/servicios/MvpAplicaciones"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -85,6 +87,8 @@ const App = () => (
               <Route path="/servicios/crm-hubspot" element={<Lazy><CrmHubspot /></Lazy>} />
               <Route path="/servicios/shopify" element={<Lazy><ShopifyPage /></Lazy>} />
               <Route path="/servicios/marketing-ads" element={<Lazy><MarketingAds /></Lazy>} />
+              <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
+              <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
 
               {/* Brief interno (oculto del nav) */}
               <Route path="/internal/brief-selector" element={<Lazy><Brief /></Lazy>} />

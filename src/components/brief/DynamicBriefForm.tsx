@@ -42,6 +42,19 @@ const questionsByService: Record<string, Question[]> = {
     { id: "goal", label: "¿Cuál es tu objetivo principal?", type: "select", options: ["Generar leads", "Vender online", "Posicionar marca", "Retargeting", "No sé por dónde empezar"] },
     { id: "details", label: "¿Algo más que debamos saber?", type: "textarea", placeholder: "Ej: audiencia objetivo, productos estrella, competencia..." },
   ],
+  "website": [
+    { id: "site_goal", label: "¿Cuál es el objetivo principal del sitio?", type: "select", options: ["Venta directa", "Captación de leads", "Informativo", "Portfolio"] },
+    { id: "structure", label: "¿Qué secciones necesitas?", type: "textarea", placeholder: "Ej: Home, Nosotros, Servicios, Blog, Contacto..." },
+    { id: "references", label: "¿Tienes referencias visuales o competencia?", type: "textarea", placeholder: "Ej: URLs de sitios que te gustan, competidores directos..." },
+    { id: "brand_assets", label: "¿Cuentas con manual de marca y activos (fotos/textos)?", type: "select", options: ["Sí, completo", "Parcial (logo y colores)", "No tengo nada"] },
+  ],
+  "mvp": [
+    { id: "problem", label: "¿Qué problema principal resuelve tu app?", type: "textarea", placeholder: "Describe el dolor o necesidad que tu producto soluciona..." },
+    { id: "user_persona", label: "¿Quién es tu usuario final?", type: "textarea", placeholder: "Ej: dueños de pymes, equipos de ventas, consumidores finales..." },
+    { id: "features", label: "¿Qué funcionalidades críticas necesitas?", type: "textarea", placeholder: "Ej: Login, Pagos, Dashboard, Notificaciones, Chat..." },
+    { id: "integrations", label: "¿Necesitas integraciones con servicios externos?", type: "textarea", placeholder: "Ej: Stripe, HubSpot, Google Sheets, API propia..." },
+    { id: "design_level", label: "¿Nivel de diseño requerido?", type: "select", options: ["Desde cero (diseño personalizado)", "Basado en template", "Ya tengo diseño (Figma/sketch)"] },
+  ],
 };
 
 const leadSchema = z.object({
