@@ -10,7 +10,7 @@ const services = [
     description: "Adopción real y procesos comerciales. Configuramos, capacitamos y acompañamos para que tu equipo lo use de verdad.",
     gradient: "from-primary/10 to-orange-500/5",
     iconColor: "text-primary",
-    link: "/brief",
+    link: "/servicios/crm-hubspot",
     badge: null,
   },
   {
@@ -19,7 +19,7 @@ const services = [
     description: "Web + CRM + Pagos + Automatizaciones. Todo lo que necesitas para vender online, listo en tiempo récord.",
     gradient: "from-primary/10 to-amber-500/5",
     iconColor: "text-primary",
-    link: "/negocio-14-dias",
+    link: "/servicios/negocio-14-dias",
     badge: "Quick Time-to-market",
   },
   {
@@ -28,7 +28,7 @@ const services = [
     description: "E-commerce de alta conversión. Diseño, configuración, pasarelas de pago y estrategia de lanzamiento incluidos.",
     gradient: "from-emerald-500/10 to-teal-500/5",
     iconColor: "text-emerald-400",
-    link: "/brief",
+    link: "/servicios/shopify",
     badge: null,
   },
 ];
