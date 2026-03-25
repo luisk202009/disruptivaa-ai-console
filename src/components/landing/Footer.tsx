@@ -22,9 +22,10 @@ const Footer = () => (
         <div>
           <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Servicios</h4>
           <ul className="space-y-2.5">
-            <li><Link to="/brief" className="text-sm text-muted-foreground hover:text-foreground transition-colors">CRM que sí se usa</Link></li>
-            <li><Link to="/negocio-14-dias" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Negocio en 14 días</Link></li>
-            <li><Link to="/brief" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Shopify</Link></li>
+            <li><Link to="/servicios/crm-hubspot" className="text-sm text-muted-foreground hover:text-foreground transition-colors">CRM que sí se usa</Link></li>
+            <li><Link to="/servicios/negocio-14-dias" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Negocio en 14 días</Link></li>
+            <li><Link to="/servicios/shopify" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Shopify</Link></li>
+            <li><Link to="/servicios/marketing-ads" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Marketing & Ads</Link></li>
           </ul>
         </div>
 
