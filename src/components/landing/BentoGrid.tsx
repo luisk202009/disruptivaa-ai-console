@@ -1,31 +1,35 @@
 import { motion } from "framer-motion";
-import { BarChart3, MessageSquare, Lightbulb } from "lucide-react";
+import { Users, Zap, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 const services = [
   {
-    icon: Lightbulb,
-    title: "Consultoría Estratégica",
-    description: "Diagnóstico integral de tu ecosistema digital. Diseñamos la hoja de ruta para maximizar tu crecimiento.",
-    gradient: "from-blue-500/10 to-cyan-500/10",
-    iconColor: "text-blue-400",
+    icon: Users,
+    title: "CRM que sí se usa",
+    description: "Adopción real y procesos comerciales. Configuramos, capacitamos y acompañamos para que tu equipo lo use de verdad.",
+    gradient: "from-primary/10 to-orange-500/5",
+    iconColor: "text-primary",
     link: "/brief",
+    badge: null,
   },
   {
-    icon: MessageSquare,
-    title: "Gestión de Canales",
-    description: "Operación integral de Mercado Libre, WhatsApp Business y marketplaces. Automatización y escala.",
-    gradient: "from-emerald-500/10 to-teal-500/10",
+    icon: Zap,
+    title: "Negocio Digital en 14 días",
+    description: "Web + CRM + Pagos + Automatizaciones. Todo lo que necesitas para vender online, listo en tiempo récord.",
+    gradient: "from-primary/10 to-amber-500/5",
+    iconColor: "text-primary",
+    link: "/negocio-14-dias",
+    badge: "Quick Time-to-market",
+  },
+  {
+    icon: ShoppingBag,
+    title: "Shopify listo para vender",
+    description: "E-commerce de alta conversión. Diseño, configuración, pasarelas de pago y estrategia de lanzamiento incluidos.",
+    gradient: "from-emerald-500/10 to-teal-500/5",
     iconColor: "text-emerald-400",
-    link: "/soluciones/gestion-canales",
-  },
-  {
-    icon: BarChart3,
-    title: "Data Analytics",
-    description: "Dashboards en tiempo real, BI avanzado y reportes ejecutivos que transforman datos en decisiones.",
-    gradient: "from-violet-500/10 to-purple-500/10",
-    iconColor: "text-violet-400",
-    link: "/soluciones/data-analytics",
+    link: "/brief",
+    badge: null,
   },
 ];
 
@@ -48,9 +52,9 @@ const BentoGrid = () => (
         transition={{ duration: 0.5 }}
         className="text-center mb-16"
       >
-        <p className="text-xs uppercase tracking-[0.25em] text-zinc-500 font-semibold mb-3">Servicios</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold mb-3">Servicios</p>
         <h2 className="text-3xl md:text-4xl font-bold text-foreground tracking-tight">
-          Todo lo que necesitas para escalar
+          Los 3 pilares para escalar tu negocio
         </h2>
       </motion.div>
 
@@ -65,13 +69,18 @@ const BentoGrid = () => (
             variants={fadeUp}
           >
             <Link to={service.link} className="group block h-full">
-              <div className={`relative h-full rounded-2xl border border-white/[0.06] bg-gradient-to-br ${service.gradient} p-8 transition-all duration-300 hover:border-white/[0.12] hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1`}>
-                <div className={`w-12 h-12 rounded-xl bg-white/[0.06] flex items-center justify-center mb-6 ${service.iconColor}`}>
+              <div className={`relative h-full rounded-2xl border border-border bg-gradient-to-br ${service.gradient} p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-xl hover:shadow-black/20 hover:-translate-y-1`}>
+                {service.badge && (
+                  <Badge className="absolute top-4 right-4 bg-primary/20 text-primary border-primary/30 text-[10px] uppercase tracking-wider">
+                    {service.badge}
+                  </Badge>
+                )}
+                <div className={`w-12 h-12 rounded-xl bg-card flex items-center justify-center mb-6 ${service.iconColor}`}>
                   <service.icon size={24} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-3 tracking-tight">{service.title}</h3>
-                <p className="text-sm text-zinc-400 leading-relaxed">{service.description}</p>
-                <span className="inline-block mt-6 text-xs font-medium text-zinc-500 group-hover:text-white transition-colors">
+                <p className="text-sm text-muted-foreground leading-relaxed">{service.description}</p>
+                <span className="inline-block mt-6 text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
                   Conocer más →
                 </span>
               </div>

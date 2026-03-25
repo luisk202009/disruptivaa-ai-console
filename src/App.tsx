@@ -29,6 +29,7 @@ const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const SolucionesCanales = lazy(() => import("./pages/SolucionesCanales"));
 const SolucionesAnalytics = lazy(() => import("./pages/SolucionesAnalytics"));
+const Negocio14Dias = lazy(() => import("./pages/Negocio14Dias"));
 const Brief = lazy(() => import("./pages/Brief"));
 
 const LazyFallback = () => (
@@ -73,6 +74,7 @@ const App = () => (
               <Route path="/soluciones/gestion-canales" element={<Suspense fallback={<LazyFallback />}><SolucionesCanales /></Suspense>} />
               <Route path="/soluciones/data-analytics" element={<Suspense fallback={<LazyFallback />}><SolucionesAnalytics /></Suspense>} />
               <Route path="/brief" element={<Suspense fallback={<LazyFallback />}><Brief /></Suspense>} />
+              <Route path="/negocio-14-dias" element={<Suspense fallback={<LazyFallback />}><Negocio14Dias /></Suspense>} />
 
               {/* OAuth callbacks */}
               <Route path="/auth/meta/callback" element={<Suspense fallback={<LazyFallback />}><MetaCallback /></Suspense>} />

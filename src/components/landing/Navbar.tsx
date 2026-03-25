@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 
 const navLinks = [
   {
-    label: "Soluciones",
+    label: "Servicios",
     children: [
-      { label: "Gestión de Canales", href: "/soluciones/gestion-canales" },
-      { label: "Data Analytics", href: "/soluciones/data-analytics" },
+      { label: "CRM que sí se usa", href: "/brief" },
+      { label: "Negocio en 14 días", href: "/negocio-14-dias" },
+      { label: "Shopify", href: "/brief" },
     ],
   },
   { label: "Brief", href: "/brief" },
@@ -38,12 +39,11 @@ const Navbar = () => {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled
-          ? "bg-background/70 backdrop-blur-xl border-b border-white/[0.06] shadow-lg shadow-black/10"
+          ? "bg-background/70 backdrop-blur-xl border-b border-border shadow-lg shadow-black/10"
           : "bg-transparent"
       )}
     >
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
-        {/* Logo */}
         <Link to="/" className="shrink-0">
           <img src={logo} alt="Disruptivaa" className="h-7" />
         </Link>
@@ -55,18 +55,18 @@ const Navbar = () => {
               <div key={link.label} className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors"
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {link.label}
                   <ChevronDown size={14} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-56 rounded-xl bg-card/95 backdrop-blur-xl border border-white/[0.08] shadow-xl shadow-black/30 p-2">
+                  <div className="absolute top-full left-0 mt-2 w-56 rounded-xl bg-card/95 backdrop-blur-xl border border-border shadow-xl shadow-black/30 p-2">
                     {link.children.map((child) => (
                       <Link
-                        key={child.href}
+                        key={child.label}
                         to={child.href}
-                        className="block px-4 py-2.5 text-sm text-zinc-300 hover:text-white hover:bg-white/[0.06] rounded-lg transition-colors"
+                        className="block px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
                       >
                         {child.label}
                       </Link>
@@ -78,7 +78,7 @@ const Navbar = () => {
               <Link
                 key={link.label}
                 to={link.href!}
-                className="text-sm text-zinc-400 hover:text-white transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {link.label}
               </Link>
@@ -89,13 +89,13 @@ const Navbar = () => {
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           <Link to="/auth">
-            <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               Log In
             </Button>
           </Link>
           <Link to="/brief">
-            <Button size="sm" className="bg-[hsl(213,100%,48%)] hover:bg-[hsl(213,100%,42%)] text-white border-0">
-              Empezar
+            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
+              Agendar llamada
             </Button>
           </Link>
         </div>
@@ -103,7 +103,7 @@ const Navbar = () => {
         {/* Mobile toggle */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-zinc-400 hover:text-white"
+          className="md:hidden text-muted-foreground hover:text-foreground"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -111,34 +111,34 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-background/95 backdrop-blur-xl border-t border-white/[0.06] px-6 pb-6 pt-4 space-y-4">
+        <div className="md:hidden bg-background/95 backdrop-blur-xl border-t border-border px-6 pb-6 pt-4 space-y-4">
           {navLinks.map((link) =>
             link.children ? (
               <div key={link.label} className="space-y-2">
-                <p className="text-xs uppercase tracking-widest text-zinc-500 font-semibold">{link.label}</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">{link.label}</p>
                 {link.children.map((child) => (
                   <Link
-                    key={child.href}
+                    key={child.label}
                     to={child.href}
-                    className="block text-sm text-zinc-300 hover:text-white pl-3 py-1.5"
+                    className="block text-sm text-muted-foreground hover:text-foreground pl-3 py-1.5"
                   >
                     {child.label}
                   </Link>
                 ))}
               </div>
             ) : (
-              <Link key={link.label} to={link.href!} className="block text-sm text-zinc-300 hover:text-white py-1.5">
+              <Link key={link.label} to={link.href!} className="block text-sm text-muted-foreground hover:text-foreground py-1.5">
                 {link.label}
               </Link>
             )
           )}
-          <div className="flex gap-3 pt-4 border-t border-white/[0.06]">
+          <div className="flex gap-3 pt-4 border-t border-border">
             <Link to="/auth" className="flex-1">
               <Button variant="outline" size="sm" className="w-full">Log In</Button>
             </Link>
             <Link to="/brief" className="flex-1">
-              <Button size="sm" className="w-full bg-[hsl(213,100%,48%)] hover:bg-[hsl(213,100%,42%)] text-white border-0">
-                Empezar
+              <Button size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground border-0">
+                Agendar llamada
               </Button>
             </Link>
           </div>
