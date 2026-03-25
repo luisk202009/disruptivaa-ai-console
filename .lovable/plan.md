@@ -1,68 +1,86 @@
 
 
-# Correccion: Cuentas publicitarias no aparecen en Google Ads y TikTok Ads
+# Disruptivaa Ecosystem: Landing Page + Solutions + Brief
 
-## Problemas encontrados
+## Current State
+The app currently has `/` as the authenticated dashboard (Index.tsx renders Sidebar + Dashboard). There is no public-facing landing page, solutions pages, or brief selector. The `/auth` page exists for login/register.
 
-### Problema 1: TikTok Ads usa "manual" en vez de "tiktok_ads"
-El template de TikTok en `dashboardTemplates.ts` tiene `platform: "manual"` y todos sus widgets tienen `data_source: "manual"`. Por eso el dialogo muestra "Vincular cuenta de **Manual**" y la funcion `getAccountDetailsByPlatform` nunca se llama con "tiktok_ads", asi que las 2 cuentas publicitarias reales que estan guardadas en la base de datos no se muestran.
+## Architecture Decision
+Restructure routing so:
+- `/` becomes the public Landing Page (visible to everyone)
+- `/dashboard` becomes the authenticated app (current Index.tsx logic)
+- `/soluciones/gestion-canales` and `/soluciones/data-analytics` are new public pages
+- `/brief` is the interactive project selector with Tally.so iframes
+- All existing protected routes remain unchanged
 
-### Problema 2: Google Ads no obtiene las cuentas publicitarias
-La Edge Function `google-oauth-exchange` guarda `account_ids: []` (vacio). A diferencia de TikTok (que recibe los `advertiser_ids` directamente en la respuesta del token), Google requiere una llamada adicional a la API de Google Ads para descubrir las cuentas accesibles. Esta llamada nunca se implemento, por lo que la funcion `getAccountDetailsByPlatform('google_ads')` siempre retorna la cuenta demo de fallback.
+## Plan
 
-## Solucion
+### 1. Create Landing Page component (`src/pages/Landing.tsx`)
+- **Hero Section**: Dark (Slate-950) with headline "El crecimiento digital no es suerte, es ingeniería", subtext, and two CTAs ("Empezar Diagnóstico" -> /brief, "Ir a la App" -> /dashboard)
+- **Sticky Navbar**: Glass effect with logo, nav links (Soluciones dropdown, Brief, Login), scroll-aware background
+- **Services Bento Grid**: 3-column grid with glassmorphic cards for Strategic Consulting, Channel Management, Data Analytics
+- **Scroll animations** via Framer Motion (fade-in-up on intersection)
+- **Footer**: Minimal with links and copyright
+- Accent color: Electric Blue (#0070f3) for the public site (distinct from app's orange)
 
-### Cambio 1: Corregir template TikTok - `src/data/dashboardTemplates.ts`
-- Cambiar `platform: "manual"` a `platform: "tiktok_ads"` en el template
-- Cambiar `data_source: "manual"` a `data_source: "tiktok_ads"` en los 5 widgets del template
+### 2. Create Solutions pages
+- **`src/pages/SolucionesCanales.tsx`**: Detail page for Mercado Libre & WhatsApp channel management. Hero + feature grid + CTA
+- **`src/pages/SolucionesAnalytics.tsx`**: Detail page for Data Analytics & BI. Hero + metrics visualization mockup + CTA
 
-### Cambio 2: Agregar "tiktok_ads" al mapa de nombres - `src/components/dashboards/BulkAccountAssignDialog.tsx`
-- Ya esta incluido, no requiere cambios
+### 3. Create Brief Selector (`src/pages/Brief.tsx`)
+- Two large hover-animated cards: "Ecosistema Digital" and "Estrategia de Crecimiento"
+- React state toggles between two Tally.so iframes (placeholder IDs: `ID_TALLY_WEB`, `ID_TALLY_MKT`)
+- Same dark theme and glass styling
 
-### Cambio 3: Obtener cuentas reales de Google Ads - `supabase/functions/google-oauth-exchange/index.ts`
-Despues de obtener el access_token, hacer una llamada a la Google Ads API para descubrir las cuentas accesibles:
-- Llamar a `https://googleads.googleapis.com/v17/customers:listAccessibleCustomers` con el access_token
-- Para cada customer ID obtenido, llamar al endpoint de Google Ads para obtener el nombre descriptivo
-- Guardar los IDs en `account_ids` y un nombre descriptivo en `account_name`
-- Requiere el secret `GOOGLE_ADS_DEVELOPER_TOKEN` (ya configurado en Supabase)
+### 4. Create shared layout components
+- **`src/components/landing/Navbar.tsx`**: Sticky glass navbar with logo, links, "Log In" button. Used on all public pages
+- **`src/components/landing/Footer.tsx`**: Shared footer
+- **`src/components/landing/PublicLayout.tsx`**: Wraps Navbar + children + Footer
 
-### Cambio 4: Eliminar cuentas demo de fallback - `src/hooks/useIntegrations.ts`
-- Eliminar los bloques que retornan "Google Ads Demo Account" y "TikTok Ads Demo Account" cuando no hay `account_ids`
-- Si no hay cuentas, retornar array vacio para que el dialogo muestre el mensaje de "No hay cuentas vinculadas. Ve a Conexiones..."
+### 5. Create `leads` table in Supabase
+- SQL migration to create `leads` table with columns: `id`, `name`, `email`, `company`, `service_type`, `status`, `created_at`
+- RLS: allow anonymous inserts (public lead capture), authenticated select for admins
+- Contact form component on landing page that inserts into this table
 
-### Cambio 5: Corregir widgets TikTok existentes en la base de datos
-- Los widgets de TikTok ya creados tienen `data_source: "manual"`, necesitan actualizarse a `data_source: "tiktok_ads"` mediante una migracion SQL
+### 6. Update routing (`src/App.tsx`)
+- `/` -> Landing (public)
+- `/dashboard` -> current Index.tsx logic (protected, with Sidebar + Dashboard)
+- `/soluciones/gestion-canales` -> SolucionesCanales (public)
+- `/soluciones/data-analytics` -> SolucionesAnalytics (public)
+- `/brief` -> Brief (public)
+- Update all existing internal links that reference `/` to point to `/dashboard`
+- Update ProtectedRoute redirect from `/` to `/dashboard`
 
-## Detalles tecnicos
+### 7. Update Sidebar and internal navigation
+- Sidebar logo click and "Dashboard" nav item -> `/dashboard`
+- Auth redirect after login -> `/dashboard`
 
-### Google Ads API - Descubrimiento de cuentas
-```text
-GET https://googleads.googleapis.com/v17/customers:listAccessibleCustomers
-Headers:
-  Authorization: Bearer {access_token}
-  developer-token: {GOOGLE_ADS_DEVELOPER_TOKEN}
+## Files to create
+| File | Purpose |
+|------|---------|
+| `src/pages/Landing.tsx` | Public landing page |
+| `src/pages/SolucionesCanales.tsx` | Channel management detail |
+| `src/pages/SolucionesAnalytics.tsx` | Data analytics detail |
+| `src/pages/Brief.tsx` | Tally.so brief selector |
+| `src/components/landing/Navbar.tsx` | Sticky glass navbar |
+| `src/components/landing/Footer.tsx` | Shared footer |
+| `src/components/landing/PublicLayout.tsx` | Layout wrapper |
+| `src/components/landing/BentoGrid.tsx` | Services grid component |
+| `src/components/landing/ContactForm.tsx` | Lead capture form |
+| Migration SQL | `leads` table |
 
-Response: { "resourceNames": ["customers/1234567890", "customers/9876543210"] }
-```
+## Files to modify
+| File | Change |
+|------|--------|
+| `src/App.tsx` | New routes, move dashboard to `/dashboard` |
+| `src/components/ProtectedRoute.tsx` | Redirect to `/dashboard` instead of `/` |
+| `src/components/Sidebar.tsx` | Update logo click to `/dashboard` |
+| `src/pages/Auth.tsx` | Redirect to `/dashboard` on success |
+| `src/components/AuthModal.tsx` | Redirect to `/dashboard` |
 
-Para cada ID, se obtiene el nombre:
-```text
-GET https://googleads.googleapis.com/v17/customers/{id}
-Headers: (mismos)
-
-Response incluye: { "descriptiveName": "Mi Empresa - Google Ads" }
-```
-
-### Archivos afectados
-
-| Archivo | Cambio |
-|---------|--------|
-| `src/data/dashboardTemplates.ts` | Cambiar "manual" por "tiktok_ads" en template TikTok |
-| `supabase/functions/google-oauth-exchange/index.ts` | Agregar descubrimiento de cuentas via Google Ads API |
-| `src/hooks/useIntegrations.ts` | Eliminar fallback de cuentas demo para Google/TikTok |
-| Migracion SQL | Actualizar widgets existentes de "manual" a "tiktok_ads" |
-
-### Despliegue
-- Redesplegar la Edge Function `google-oauth-exchange`
-- El usuario debera reconectar Google Ads para que se obtengan las cuentas reales (o podemos agregar un endpoint separado de descubrimiento)
+## Performance considerations
+- Landing page uses no heavy dependencies (no TanStack Query, no Supabase client)
+- Lazy-load solutions and brief pages
+- Optimize hero image/SVG for LCP < 1.2s
+- Mobile-first responsive design throughout
 
