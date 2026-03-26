@@ -28,6 +28,12 @@ const DashboardView = lazy(() => import("./pages/DashboardView"));
 const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminLeads = lazy(() => import("./pages/AdminLeads"));
+const AdminCompanies = lazy(() => import("./pages/admin/AdminCompanies"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
+const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
+const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
+const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const Brief = lazy(() => import("./pages/Brief"));
 
 // Páginas de servicios
