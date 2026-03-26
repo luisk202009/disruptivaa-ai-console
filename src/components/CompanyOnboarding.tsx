@@ -75,6 +75,18 @@ const CompanyOnboarding = () => {
         <div className="space-y-5">
           <div className="space-y-2">
             <Label className="text-zinc-400 text-xs uppercase tracking-wider">
+              {t("onboarding.fullName", "Nombre completo")}
+            </Label>
+            <Input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Tu nombre completo"
+              className="bg-white/[0.03] border-white/[0.08] text-zinc-200 placeholder:text-zinc-600"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-zinc-400 text-xs uppercase tracking-wider">
               {t("onboarding.companyName")}
             </Label>
             <Input

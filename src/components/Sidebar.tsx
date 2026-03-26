@@ -174,6 +174,26 @@ const Sidebar = () => {
             />
           </div>
 
+          {/* ── ADMIN ── */}
+          {adminNavItems.length > 0 && (
+            <div className="px-4 mt-6">
+              {!collapsed && (
+                <p className="text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500 px-3 mb-2">
+                  Admin
+                </p>
+              )}
+              {adminNavItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  icon={item.icon}
+                  label={item.label}
+                  active={getActiveItem() === item.id}
+                  collapsed={collapsed}
+                  onClick={() => navigate(item.path)}
+                />
+              ))}
+            </div>
+          )}
           {/* ── ECOSISTEMA DIGITAL ── */}
           <div className="px-4 mt-6 mb-6">
             {!collapsed && (
