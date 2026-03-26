@@ -61,8 +61,14 @@ const AdminLeads = () => {
     },
   });
 
-  const briefsByLead = new Map<string, BriefSubmission>();
-  briefs?.forEach((b) => { if (b.lead_id) briefsByLead.set(b.lead_id, b); });
+  const briefsByLead = new Map<string, BriefSubmission[]>();
+  briefs?.forEach((b) => {
+    if (b.lead_id) {
+      const existing = briefsByLead.get(b.lead_id) || [];
+      existing.push(b);
+      briefsByLead.set(b.lead_id, existing);
+    }
+  });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
