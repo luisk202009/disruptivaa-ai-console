@@ -1,12 +1,21 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { questionsByService } from "@/components/brief/DynamicBriefForm";
+
+interface BriefSubmission {
+  id: string;
+  service_type: string;
+  answers: Record<string, string>;
+}
 
 interface BriefDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   serviceType: string | null;
-  answers: Record<string, string> | null;
+  submissions: BriefSubmission[];
   leadName: string;
 }
 
@@ -19,21 +28,41 @@ const serviceLabels: Record<string, string> = {
   "mvp": "MVP & Aplicaciones",
 };
 
-const BriefDetailDialog = ({ open, onOpenChange, serviceType, answers, leadName }: BriefDetailDialogProps) => {
-  const questions = serviceType ? questionsByService[serviceType] || [] : [];
+const BriefDetailDialog = ({ open, onOpenChange, serviceType, submissions, leadName }: BriefDetailDialogProps) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const current = submissions[currentIndex];
+  const currentServiceType = current?.service_type || serviceType;
+  const questions = currentServiceType ? questionsByService[currentServiceType] || [] : [];
+  const answers = (current?.answers || {}) as Record<string, string>;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setCurrentIndex(0); }}>
       <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Brief de {leadName}</DialogTitle>
-          <DialogDescription>
-            <Badge variant="outline" className="mt-1">{serviceType ? serviceLabels[serviceType] || serviceType : "—"}</Badge>
+          <DialogDescription className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline">{currentServiceType ? serviceLabels[currentServiceType] || currentServiceType : "—"}</Badge>
+            {submissions.length > 1 && (
+              <span className="text-xs text-muted-foreground">
+                Envío {currentIndex + 1} de {submissions.length}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
+        {submissions.length > 1 && (
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="sm" disabled={currentIndex === 0} onClick={() => setCurrentIndex(i => i - 1)}>
+              <ChevronLeft size={16} className="mr-1" /> Anterior
+            </Button>
+            <Button variant="ghost" size="sm" disabled={currentIndex === submissions.length - 1} onClick={() => setCurrentIndex(i => i + 1)}>
+              Siguiente <ChevronRight size={16} className="ml-1" />
+            </Button>
+          </div>
+        )}
+
         {!answers || Object.keys(answers).length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">Este lead no tiene respuestas de brief.</p>
+          <p className="text-sm text-muted-foreground py-4">Este envío no tiene respuestas de brief.</p>
         ) : (
           <div className="space-y-4 mt-2">
             {questions.map((q) => (
@@ -44,7 +73,6 @@ const BriefDetailDialog = ({ open, onOpenChange, serviceType, answers, leadName 
                 </p>
               </div>
             ))}
-            {/* Show any extra keys not in questions */}
             {Object.entries(answers)
               .filter(([key]) => !questions.find((q) => q.id === key))
               .map(([key, value]) => (

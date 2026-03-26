@@ -89,44 +89,15 @@ const DynamicBriefForm = ({ serviceType, serviceLabel }: DynamicBriefFormProps) 
     e.preventDefault();
     setLoading(true);
     try {
-      const leadId = crypto.randomUUID();
+      const { error } = await supabase.rpc('upsert_lead_and_brief', {
+        _name: contactData.name.trim(),
+        _email: contactData.email.trim(),
+        _company: contactData.company?.trim() || null,
+        _service_type: serviceType,
+        _answers: answers,
+      });
 
-      // Upsert lead by email — reuse existing lead if same email
-      const { error: leadError } = await supabase
-        .from("leads")
-        .upsert(
-          {
-            id: leadId,
-            name: contactData.name.trim(),
-            email: contactData.email.trim(),
-            company: contactData.company?.trim() || null,
-            service_type: serviceType,
-            status: "new",
-          },
-          { onConflict: "email", ignoreDuplicates: false }
-        );
-
-      if (leadError) throw leadError;
-
-      // Get lead ID (might be existing if email matched)
-      const { data: existingLead } = await supabase
-        .from("leads")
-        .select("id")
-        .eq("email", contactData.email.trim())
-        .maybeSingle();
-
-      const finalLeadId = existingLead?.id || leadId;
-
-      // Insertar brief
-      const { error: briefError } = await supabase
-        .from("brief_submissions")
-        .insert({
-          lead_id: finalLeadId,
-          service_type: serviceType,
-          answers,
-        });
-
-      if (briefError) throw briefError;
+      if (error) throw error;
 
       setStep("success");
       toast.success("¡Brief enviado correctamente!");

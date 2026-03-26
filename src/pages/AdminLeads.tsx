@@ -36,8 +36,8 @@ interface BriefSubmission {
 
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
-  const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; answers: Record<string, string> | null; leadName: string }>({
-    open: false, serviceType: null, answers: null, leadName: "",
+  const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; submissions: BriefSubmission[]; leadName: string }>({
+    open: false, serviceType: null, submissions: [], leadName: "",
   });
   const queryClient = useQueryClient();
 
@@ -61,8 +61,14 @@ const AdminLeads = () => {
     },
   });
 
-  const briefsByLead = new Map<string, BriefSubmission>();
-  briefs?.forEach((b) => { if (b.lead_id) briefsByLead.set(b.lead_id, b); });
+  const briefsByLead = new Map<string, BriefSubmission[]>();
+  briefs?.forEach((b) => {
+    if (b.lead_id) {
+      const existing = briefsByLead.get(b.lead_id) || [];
+      existing.push(b);
+      briefsByLead.set(b.lead_id, existing);
+    }
+  });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -94,11 +100,11 @@ const AdminLeads = () => {
   });
 
   const openBrief = (leadId: string, leadName: string, serviceType: string | null) => {
-    const brief = briefsByLead.get(leadId);
+    const leadBriefs = briefsByLead.get(leadId) || [];
     setBriefDialog({
       open: true,
-      serviceType: brief?.service_type || serviceType,
-      answers: brief?.answers as Record<string, string> || null,
+      serviceType: leadBriefs[0]?.service_type || serviceType,
+      submissions: leadBriefs,
       leadName,
     });
   };
@@ -147,7 +153,8 @@ const AdminLeads = () => {
                 </TableHeader>
                 <TableBody>
                   {leads.map((lead) => {
-                    const hasBrief = briefsByLead.has(lead.id);
+                    const leadBriefs = briefsByLead.get(lead.id) || [];
+                    const hasBrief = leadBriefs.length > 0;
                     return (
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">{lead.name}</TableCell>
@@ -173,9 +180,14 @@ const AdminLeads = () => {
                               </SelectContent>
                             </Select>
                             {hasBrief && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver brief"
+                              <Button variant="ghost" size="icon" className="h-8 w-8 relative" title="Ver briefs"
                                 onClick={() => openBrief(lead.id, lead.name, lead.service_type)}>
                                 <FileText size={16} />
+                                {leadBriefs.length > 1 && (
+                                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                                    {leadBriefs.length}
+                                  </span>
+                                )}
                               </Button>
                             )}
                             {lead.status !== "cliente" && (
@@ -201,7 +213,7 @@ const AdminLeads = () => {
         open={briefDialog.open}
         onOpenChange={(open) => setBriefDialog((p) => ({ ...p, open }))}
         serviceType={briefDialog.serviceType}
-        answers={briefDialog.answers}
+        submissions={briefDialog.submissions}
         leadName={briefDialog.leadName}
       />
     </div>

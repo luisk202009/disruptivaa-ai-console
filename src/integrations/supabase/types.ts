@@ -678,6 +678,16 @@ export type Database = {
         Args: { _notification_id: string }
         Returns: undefined
       }
+      upsert_lead_and_brief: {
+        Args: {
+          _answers: Json
+          _company: string
+          _email: string
+          _name: string
+          _service_type: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
