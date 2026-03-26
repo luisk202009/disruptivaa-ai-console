@@ -108,11 +108,20 @@ const DynamicBriefForm = ({ serviceType, serviceLabel }: DynamicBriefFormProps) 
 
       if (leadError) throw leadError;
 
+      // Get lead ID (might be existing if email matched)
+      const { data: existingLead } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("email", contactData.email.trim())
+        .maybeSingle();
+
+      const finalLeadId = existingLead?.id || leadId;
+
       // Insertar brief
       const { error: briefError } = await supabase
         .from("brief_submissions")
         .insert({
-          lead_id: leadId,
+          lead_id: finalLeadId,
           service_type: serviceType,
           answers,
         });
