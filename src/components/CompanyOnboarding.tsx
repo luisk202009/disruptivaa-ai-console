@@ -24,6 +24,16 @@ const CompanyOnboarding = () => {
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
 
+      // Save full_name to profile first
+      if (fullName.trim()) {
+        await supabase.auth.updateUser({ data: { full_name: fullName.trim() } });
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ full_name: fullName.trim() })
+          .eq('id', user.id);
+        if (profileError) throw profileError;
+      }
+
       const { error } = await supabase.rpc('create_company_for_user', {
         _company_name: companyName,
         _branding_color: brandColor,
