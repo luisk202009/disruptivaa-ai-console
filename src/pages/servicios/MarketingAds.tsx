@@ -31,7 +31,7 @@ const MarketingAds = () => (
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             Gestionamos tu inversión publicitaria con estrategia, creatividad y datos para que cada dólar trabaje.
           </p>
-          <Link to="/brief">
+          <Link to="/brief?service=marketing-ads">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Solicitar propuesta <ArrowRight size={18} />
             </Button>
