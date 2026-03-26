@@ -5,11 +5,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, FileText, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import Sidebar from "@/components/Sidebar";
+import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
 
 const statusOptions = [
   { value: "all", label: "Todos" },
@@ -26,8 +27,18 @@ const statusColors: Record<string, string> = {
   finalizado: "bg-muted text-muted-foreground border-border",
 };
 
+interface BriefSubmission {
+  id: string;
+  lead_id: string;
+  service_type: string;
+  answers: Record<string, string>;
+}
+
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
+  const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; answers: Record<string, string> | null; leadName: string }>({
+    open: false, serviceType: null, answers: null, leadName: "",
+  });
   const queryClient = useQueryClient();
 
   const { data: leads, isLoading } = useQuery({
@@ -41,6 +52,18 @@ const AdminLeads = () => {
     },
   });
 
+  const { data: briefs } = useQuery({
+    queryKey: ["admin-briefs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("brief_submissions").select("*");
+      if (error) throw error;
+      return data as unknown as BriefSubmission[];
+    },
+  });
+
+  const briefsByLead = new Map<string, BriefSubmission>();
+  briefs?.forEach((b) => { if (b.lead_id) briefsByLead.set(b.lead_id, b); });
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const { error } = await supabase.from("leads").update({ status }).eq("id", id);
@@ -52,6 +75,33 @@ const AdminLeads = () => {
     },
     onError: () => toast.error("Error al actualizar estado"),
   });
+
+  const inviteLead = useMutation({
+    mutationFn: async (leadId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("invite-lead-user", {
+        body: { lead_id: leadId },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (res.error) throw res.error;
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      toast.success("Invitación enviada correctamente");
+    },
+    onError: (err: any) => toast.error(err?.message || "Error al enviar invitación"),
+  });
+
+  const openBrief = (leadId: string, leadName: string, serviceType: string | null) => {
+    const brief = briefsByLead.get(leadId);
+    setBriefDialog({
+      open: true,
+      serviceType: brief?.service_type || serviceType,
+      answers: brief?.answers as Record<string, string> || null,
+      leadName,
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -96,38 +146,64 @@ const AdminLeads = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">{lead.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{lead.email}</TableCell>
-                      <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Select value={lead.status} onValueChange={(v) => updateStatus.mutate({ id: lead.id, status: v })}>
-                          <SelectTrigger className="w-32 h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusOptions.filter((s) => s.value !== "all").map((s) => (
-                              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {leads.map((lead) => {
+                    const hasBrief = briefsByLead.has(lead.id);
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">{lead.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{lead.email}</TableCell>
+                        <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Select value={lead.status} onValueChange={(v) => updateStatus.mutate({ id: lead.id, status: v })}>
+                              <SelectTrigger className="w-32 h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {statusOptions.filter((s) => s.value !== "all").map((s) => (
+                                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {hasBrief && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver brief"
+                                onClick={() => openBrief(lead.id, lead.name, lead.service_type)}>
+                                <FileText size={16} />
+                              </Button>
+                            )}
+                            {lead.status !== "cliente" && (
+                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Invitar a plataforma"
+                                onClick={() => inviteLead.mutate(lead.id)}
+                                disabled={inviteLead.isPending}>
+                                {inviteLead.isPending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           )}
         </div>
       </main>
+
+      <BriefDetailDialog
+        open={briefDialog.open}
+        onOpenChange={(open) => setBriefDialog((p) => ({ ...p, open }))}
+        serviceType={briefDialog.serviceType}
+        answers={briefDialog.answers}
+        leadName={briefDialog.leadName}
+      />
     </div>
   );
 };
