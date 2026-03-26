@@ -91,17 +91,20 @@ const DynamicBriefForm = ({ serviceType, serviceLabel }: DynamicBriefFormProps) 
     try {
       const leadId = crypto.randomUUID();
 
-      // Insertar lead
+      // Upsert lead by email — reuse existing lead if same email
       const { error: leadError } = await supabase
         .from("leads")
-        .insert({
-          id: leadId,
-          name: contactData.name.trim(),
-          email: contactData.email.trim(),
-          company: contactData.company?.trim() || null,
-          service_type: serviceType,
-          status: "new",
-        });
+        .upsert(
+          {
+            id: leadId,
+            name: contactData.name.trim(),
+            email: contactData.email.trim(),
+            company: contactData.company?.trim() || null,
+            service_type: serviceType,
+            status: "new",
+          },
+          { onConflict: "email", ignoreDuplicates: false }
+        );
 
       if (leadError) throw leadError;
 
