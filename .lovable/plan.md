@@ -1,37 +1,60 @@
 
 
-# Corrección de CTAs y limpieza de rutas de Brief
+# Mejora del flujo Brief + Vista admin de respuestas + Conversión manual de leads
 
-## Diagnóstico
+## 1. Deep-link al brief desde páginas de servicio
 
-Tras revisar todo el código:
-- **Todos los CTAs ya apuntan a `/brief`** (las 6 páginas de servicios, Navbar, Footer).
-- **La ruta `/brief` existe** correctamente en `App.tsx`.
-- **Brief.tsx tiene los 6 servicios** configurados.
-- **No hay rutas duplicadas** ni residuos de `/internal/brief-selector` o `/soluciones/*`.
+**Problema**: Los CTAs de cada servicio llevan a `/brief` donde el usuario debe volver a elegir el servicio.
 
-## Problema encontrado
+**Solución**: Usar query params (`/brief?service=website`) y pre-seleccionar el servicio automáticamente.
 
-El `PublicLayout` tiene `pt-16` (4rem) pero el Navbar mide `h-20` (5rem). Esto causa que el contenido quede parcialmente oculto detrás del Navbar, lo que puede hacer que los CTAs superiores parezcan no funcionar o no ser visibles correctamente.
+### Cambios:
+- **`src/pages/Brief.tsx`**: Leer `searchParams.get("service")` al montar. Si existe y es un ID válido, setear `selected` directamente (el usuario ve el formulario sin el selector).
+- **6 archivos en `src/pages/servicios/`**: Cambiar los `<Link to="/brief">` por `<Link to="/brief?service=ID">` donde ID es el service_type correspondiente (`crm-hubspot`, `shopify`, `14-dias`, `marketing-ads`, `website`, `mvp`).
+- **`src/pages/Negocio14Dias.tsx`**: Igual, usar `/brief?service=14-dias`.
+- El botón "Volver" en el formulario sigue funcionando: lleva al selector o a la página anterior.
 
-## Cambios
+## 2. Vista admin de respuestas de brief
 
-### 1. `src/components/landing/PublicLayout.tsx`
-- Cambiar `pt-16` → `pt-20` para que el contenido no quede detrás del Navbar.
+Actualmente AdminLeads muestra la tabla de leads pero no las respuestas del brief.
 
-### 2. Verificación completa de CTAs
-Confirmar que todos los links en estas páginas apuntan a `/brief`:
+### Cambios:
+- **`src/pages/AdminLeads.tsx`**: 
+  - Hacer join con `brief_submissions` al cargar leads (o cargar briefs por separado).
+  - Añadir un botón "Ver brief" en cada fila que abre un dialog/drawer con las respuestas formateadas.
+  - El dialog muestra: servicio, campos del formulario (labels legibles) y las respuestas del usuario.
+  - Incluir vista de referencia de los campos configurados por servicio (solo lectura, mostrando qué campos tiene cada formulario).
 
-| Archivo | Estado |
+### Nuevo componente:
+- **`src/components/admin/BriefDetailDialog.tsx`**: Dialog que recibe las respuestas JSONB y el `service_type`, mapea las keys a labels legibles usando el mismo `questionsByService` del `DynamicBriefForm`, y las muestra formateadas.
+
+### Exportar preguntas:
+- **`src/components/brief/DynamicBriefForm.tsx`**: Exportar `questionsByService` para reutilizarlo en el admin.
+
+## 3. Conversión manual de lead a usuario
+
+El admin puede convertir un lead en usuario enviándole una invitación por email.
+
+### Cambios:
+- **Nueva edge function `invite-lead-user/index.ts`**: 
+  - Recibe `lead_id` y valida que el caller sea admin (via `has_role`).
+  - Usa `supabase.auth.admin.inviteUserByEmail()` con el email del lead.
+  - Actualiza el status del lead a `cliente`.
+  - Retorna éxito o error.
+
+- **`src/pages/AdminLeads.tsx`**: Añadir botón "Invitar a plataforma" en las acciones de cada lead (solo visible cuando status ≠ `cliente`). Llama a la edge function y muestra confirmación.
+
+- **Flujo del usuario invitado**: Recibe email con link magic → acepta → se crea su cuenta → redirige al dashboard. El trigger `handle_new_user` ya crea el perfil automáticamente.
+
+## Resumen de archivos
+
+| Archivo | Acción |
 |---|---|
-| `Negocio14Dias.tsx` | ✅ Ya apunta a `/brief` |
-| `CrmHubspot.tsx` | ✅ Ya apunta a `/brief` |
-| `Shopify.tsx` | ✅ Ya apunta a `/brief` |
-| `MarketingAds.tsx` | ✅ Ya apunta a `/brief` |
-| `WebsitesLandings.tsx` | ✅ Ya apunta a `/brief` |
-| `MvpAplicaciones.tsx` | ✅ Ya apunta a `/brief` |
-| `Navbar.tsx` ("Agendar llamada") | ✅ Ya apunta a `/brief` |
-| `Footer.tsx` | ✅ Ya apunta a `/brief` |
-
-**Resultado**: Solo se necesita corregir el padding del layout para que el contenido no quede oculto.
+| `src/pages/Brief.tsx` | Leer query param `service` y pre-seleccionar |
+| `src/pages/servicios/*.tsx` (6 archivos) | CTAs → `/brief?service=ID` |
+| `src/pages/Negocio14Dias.tsx` | CTA → `/brief?service=14-dias` |
+| `src/components/brief/DynamicBriefForm.tsx` | Exportar `questionsByService` |
+| `src/pages/AdminLeads.tsx` | Join con briefs, botón "Ver brief", botón "Invitar" |
+| `src/components/admin/BriefDetailDialog.tsx` | Nuevo: dialog de detalle de brief |
+| `supabase/functions/invite-lead-user/index.ts` | Nueva edge function para invitar lead como usuario |
 
