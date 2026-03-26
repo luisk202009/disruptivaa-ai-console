@@ -100,11 +100,11 @@ const AdminLeads = () => {
   });
 
   const openBrief = (leadId: string, leadName: string, serviceType: string | null) => {
-    const brief = briefsByLead.get(leadId);
+    const leadBriefs = briefsByLead.get(leadId) || [];
     setBriefDialog({
       open: true,
-      serviceType: brief?.service_type || serviceType,
-      answers: brief?.answers as Record<string, string> || null,
+      serviceType: leadBriefs[0]?.service_type || serviceType,
+      submissions: leadBriefs,
       leadName,
     });
   };
