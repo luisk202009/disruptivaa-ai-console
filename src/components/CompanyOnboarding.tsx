@@ -16,6 +16,7 @@ const CompanyOnboarding = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [brandColor, setBrandColor] = useState("#00A3FF");
 
