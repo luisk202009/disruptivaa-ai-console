@@ -179,9 +179,14 @@ const AdminLeads = () => {
                               </SelectContent>
                             </Select>
                             {hasBrief && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver brief"
+                              <Button variant="ghost" size="icon" className="h-8 w-8 relative" title="Ver briefs"
                                 onClick={() => openBrief(lead.id, lead.name, lead.service_type)}>
                                 <FileText size={16} />
+                                {leadBriefs.length > 1 && (
+                                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                                    {leadBriefs.length}
+                                  </span>
+                                )}
                               </Button>
                             )}
                             {lead.status !== "cliente" && (
