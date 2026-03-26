@@ -212,7 +212,7 @@ const AdminLeads = () => {
         open={briefDialog.open}
         onOpenChange={(open) => setBriefDialog((p) => ({ ...p, open }))}
         serviceType={briefDialog.serviceType}
-        answers={briefDialog.answers}
+        submissions={briefDialog.submissions}
         leadName={briefDialog.leadName}
       />
     </div>
