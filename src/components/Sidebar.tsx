@@ -89,6 +89,10 @@ const Sidebar = () => {
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
   ];
 
+  const adminNavItems = isAdmin ? [
+    { id: "admin-leads", icon: <Users size={18} strokeWidth={1.5} />, label: "Leads CRM", path: "/admin/leads" },
+  ] : [];
+
   const getActiveItem = () => {
     if (location.pathname === "/admin") return "admin";
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
