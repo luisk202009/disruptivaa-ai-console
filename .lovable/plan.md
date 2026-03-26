@@ -1,69 +1,64 @@
 
 
-# Corrección de Brief + CRM HubSpot + Página Nosotros
+# Admin UX fixes and navigation corrections
 
-## 1. Fix: Error al enviar brief (RLS)
+## 1. Fix Nosotros nav link (Navbar.tsx)
 
-**Causa raíz**: Al insertar un lead, el código hace `.select("id").single()` para obtener el ID. Pero la tabla `leads` solo tiene SELECT para admins. Un usuario anónimo puede insertar pero no leer el resultado.
+The route `/nosotros` exists in `App.tsx` (line 93) and the Navbar already has `href: "/nosotros"` (line 20). The issue is likely in the Navbar's rendering logic -- need to verify the `link.href` path is being used correctly for the non-dropdown nav item. Looking at the code, the logic looks correct. Let me check if `PublicLayout` or `Nosotros.tsx` is wrapping with a layout that re-renders the Navbar and might be conflicting.
 
-**Solución**: Crear una nueva migración SQL que agregue una policy de SELECT en `leads` para que el insertante pueda leer su propio registro recién creado. Alternativa más simple: quitar el `as any` de `brief_submissions` y reestructurar para que el insert de `brief_submissions` no dependa del `.select()`:
+**Root cause**: The Navbar link for "Nosotros" at line 20 shows `href: "/nosotros"` which is correct. But the `Nosotros` component is lazy-loaded -- checking if it renders properly. The route and link look correct in code. Will verify via session replay or console, but the fix may be a rendering issue in the `Link` component in the desktop nav section.
 
+**Action**: Verify the Nosotros link renders as a `<Link to="/nosotros">` (not an anchor with `#`). The code at lines 132-142 renders non-dropdown links correctly. Will test and fix if there's a subtle issue.
+
+## 2. Add Leads CRM link to admin Sidebar
+
+Currently, there's NO link to `/admin/leads` in the Sidebar. The page exists but is only accessible by typing the URL directly.
+
+**Action**: Add a "Leads" nav item in the Sidebar under the admin section, visible only when `isAdmin` is true. Will use the `Users` icon and link to `/admin/leads`.
+
+**File**: `src/components/Sidebar.tsx`
+
+## 3. Show full_name in admin users + collect during onboarding
+
+The admin users tab (line 479) shows `profile.full_name || profile.id.slice(0, 8)`. The `full_name` field exists in `profiles` but is never collected.
+
+**Action**:
+- Add a "Nombre completo" field to `CompanyOnboarding.tsx` before the company name field
+- Update the `create_company_for_user` function or add a separate profile update to save `full_name` during onboarding
+- Since we can't modify DB functions via code, we'll update the profile's `full_name` via a direct `.update()` call before or after company creation
+
+**File**: `src/components/CompanyOnboarding.tsx`
+
+## 4. Group brief submissions by email
+
+Currently each brief submission creates a NEW lead record (even if same email). Multiple submissions from the same person appear as separate leads.
+
+**Action**:
+- In `DynamicBriefForm.tsx`, before inserting a new lead, check if a lead with the same email already exists using an upsert or conditional insert
+- Problem: RLS prevents anonymous users from reading leads. Solution: Use `upsert` with `onConflict: 'email'` -- but `email` is not a unique column currently
+- **Migration needed**: Add a unique constraint on `leads.email` and use upsert, OR change approach: always insert a new `brief_submissions` record but link it to the existing lead by looking up via edge function
+- **Simpler approach**: Add a unique constraint on `leads(email)`, use `.upsert()` with `onConflict: 'email'` to return the existing lead ID, then insert the brief submission linked to that lead
+- In `AdminLeads.tsx`, show a count of brief submissions per lead and allow viewing all of them in the dialog
+
+### Database migration
 ```sql
-CREATE POLICY "Inserters can read their own lead"
-ON public.leads FOR SELECT
-TO anon, authenticated
-USING (true);
+ALTER TABLE public.leads ADD CONSTRAINT leads_email_unique UNIQUE (email);
 ```
 
-O, más seguro, generar el UUID en el cliente y usarlo directamente sin necesitar el `.select()`.
+### Code changes
+- `DynamicBriefForm.tsx`: Use `upsert` with `onConflict: 'email'` instead of `insert` for leads. Keep the client-side UUID but let the DB return the existing ID if email matches.
+- `AdminLeads.tsx`: Query `brief_submissions` grouped by `lead_id`, show count badge, and allow browsing all submissions in the dialog.
+- `BriefDetailDialog.tsx`: Support showing multiple submissions with tabs or a list.
 
-**Enfoque elegido**: Generar `lead_id` con `crypto.randomUUID()` en el cliente, pasarlo en ambos inserts, eliminando la necesidad de `.select("id").single()`. También quitar el `as any` del insert de `brief_submissions` ya que la tabla existe en los tipos.
+## Summary of files
 
-**Archivos**:
-- `src/components/brief/DynamicBriefForm.tsx` — Generar UUID client-side, quitar `.select("id").single()`, quitar `as any`
-
-## 2. CRM HubSpot — Resaltar consultoría + implementación + acompañamiento
-
-Actualizar `src/pages/servicios/CrmHubspot.tsx`:
-- Cambiar subtítulo del hero para enfatizar: "Consultoría, implementación y acompañamiento en HubSpot"
-- Agregar sección de "Nuestro proceso" con 3 fases: Consultoría (diagnóstico), Implementación (setup + migración), Acompañamiento (capacitación + soporte)
-- Actualizar el copy de beneficios para reflejar el servicio integral
-- Actualizar el label en el selector de Brief y Navbar dropdown de "CRM que sí se usa" → "CRM HubSpot" o mantener pero con subtítulo de consultoría
-
-**Archivos**:
-- `src/pages/servicios/CrmHubspot.tsx`
-- `src/components/landing/Navbar.tsx` — Actualizar label del dropdown si aplica
-
-## 3. Página Nosotros
-
-Crear una nueva página `/nosotros` con:
-
-### Secciones
-1. **Hero** — Qué es Disruptivaa, misión: ayudar a empresas a crecer con tecnología y estrategia digital
-2. **Qué hacemos** — Resumen de las 6 líneas de servicio con iconos
-3. **Proceso de trabajo** — Cómo trabajamos (Brief → Estrategia → Ejecución → Acompañamiento)
-4. **Clientes que confían en nosotros** — Logos de los 7 clientes proporcionados en un carousel/grid con fondo oscuro
-5. **CTA** — Enlace a `/brief`
-
-### Logos de clientes
-Copiar las 7 imágenes subidas a `src/assets/clients/`:
-- acontapp, edudestinos, kuppel, albus, asuclean, alatra (+ uno más si hay)
-
-**Archivos nuevos**:
-- `src/pages/Nosotros.tsx`
-
-**Archivos modificados**:
-- `src/App.tsx` — Agregar ruta `/nosotros`
-- `src/components/landing/Navbar.tsx` — Cambiar `href: "/#nosotros"` → `href: "/nosotros"`
-
-## Resumen de archivos
-
-| Archivo | Cambio |
+| File | Change |
 |---|---|
-| `src/components/brief/DynamicBriefForm.tsx` | Fix RLS: UUID client-side, quitar `.select()` y `as any` |
-| `src/pages/servicios/CrmHubspot.tsx` | Resaltar consultoría + implementación + acompañamiento |
-| `src/pages/Nosotros.tsx` | **Nuevo**: página completa con secciones + logos |
-| `src/App.tsx` | Agregar ruta `/nosotros` |
-| `src/components/landing/Navbar.tsx` | Link Nosotros → `/nosotros` |
-| `src/assets/clients/` | 7 logos de clientes copiados |
+| `src/components/landing/Navbar.tsx` | Debug/fix Nosotros link |
+| `src/components/Sidebar.tsx` | Add "Leads" nav item for admins |
+| `src/components/CompanyOnboarding.tsx` | Add full_name field, save to profile |
+| `src/components/brief/DynamicBriefForm.tsx` | Upsert leads by email instead of always inserting |
+| `src/pages/AdminLeads.tsx` | Show submission count, group briefs per lead |
+| `src/components/admin/BriefDetailDialog.tsx` | Support multiple submissions per lead |
+| Migration | `ALTER TABLE leads ADD CONSTRAINT leads_email_unique UNIQUE (email)` |
 
