@@ -9,7 +9,6 @@ import { Loader2, Users, FileText, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import Sidebar from "@/components/Sidebar";
 import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
 
 const statusOptions = [
@@ -75,10 +74,7 @@ const AdminLeads = () => {
       const { error } = await supabase.from("leads").update({ status }).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
-      toast.success("Estado actualizado");
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success("Estado actualizado"); },
     onError: () => toast.error("Error al actualizar estado"),
   });
 
@@ -92,122 +88,88 @@ const AdminLeads = () => {
       if (res.error) throw res.error;
       return res.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
-      toast.success("Invitación enviada correctamente");
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success("Invitación enviada correctamente"); },
     onError: (err: any) => toast.error(err?.message || "Error al enviar invitación"),
   });
 
   const openBrief = (leadId: string, leadName: string, serviceType: string | null) => {
     const leadBriefs = briefsByLead.get(leadId) || [];
-    setBriefDialog({
-      open: true,
-      serviceType: leadBriefs[0]?.service_type || serviceType,
-      submissions: leadBriefs,
-      leadName,
-    });
+    setBriefDialog({ open: true, serviceType: leadBriefs[0]?.service_type || serviceType, submissions: leadBriefs, leadName });
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <main className="flex-1 p-6 md:p-10 overflow-auto">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <Users size={24} className="text-primary" />
-              <h1 className="text-2xl font-bold text-foreground">Leads CRM</h1>
-            </div>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : !leads?.length ? (
-            <p className="text-center text-muted-foreground py-20">No hay leads{filter !== "all" ? ` con estado "${filter}"` : ""}.</p>
-          ) : (
-            <div className="rounded-xl border border-border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Servicio</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leads.map((lead) => {
-                    const leadBriefs = briefsByLead.get(lead.id) || [];
-                    const hasBrief = leadBriefs.length > 0;
-                    return (
-                      <TableRow key={lead.id}>
-                        <TableCell className="font-medium">{lead.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{lead.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
-                        <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Select value={lead.status} onValueChange={(v) => updateStatus.mutate({ id: lead.id, status: v })}>
-                              <SelectTrigger className="w-32 h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {statusOptions.filter((s) => s.value !== "all").map((s) => (
-                                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {hasBrief && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 relative" title="Ver briefs"
-                                onClick={() => openBrief(lead.id, lead.name, lead.service_type)}>
-                                <FileText size={16} />
-                                {leadBriefs.length > 1 && (
-                                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-                                    {leadBriefs.length}
-                                  </span>
-                                )}
-                              </Button>
-                            )}
-                            {lead.status !== "cliente" && (
-                              <Button variant="ghost" size="icon" className="h-8 w-8" title="Invitar a plataforma"
-                                onClick={() => inviteLead.mutate(lead.id)}
-                                disabled={inviteLead.isPending}>
-                                {inviteLead.isPending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+    <div className="max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <Users size={24} className="text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Leads CRM</h1>
         </div>
-      </main>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>{statusOptions.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+      ) : !leads?.length ? (
+        <p className="text-center text-muted-foreground py-20">No hay leads{filter !== "all" ? ` con estado "${filter}"` : ""}.</p>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Empresa</TableHead>
+                <TableHead>Servicio</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leads.map((lead) => {
+                const leadBriefs = briefsByLead.get(lead.id) || [];
+                const hasBrief = leadBriefs.length > 0;
+                return (
+                  <TableRow key={lead.id}>
+                    <TableCell className="font-medium">{lead.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{lead.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
+                    <TableCell><Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Select value={lead.status} onValueChange={(v) => updateStatus.mutate({ id: lead.id, status: v })}>
+                          <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{statusOptions.filter((s) => s.value !== "all").map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
+                        </Select>
+                        {hasBrief && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8 relative" title="Ver briefs"
+                            onClick={() => openBrief(lead.id, lead.name, lead.service_type)}>
+                            <FileText size={16} />
+                            {leadBriefs.length > 1 && (
+                              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center">{leadBriefs.length}</span>
+                            )}
+                          </Button>
+                        )}
+                        {lead.status !== "cliente" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Invitar a plataforma"
+                            onClick={() => inviteLead.mutate(lead.id)} disabled={inviteLead.isPending}>
+                            {inviteLead.isPending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <BriefDetailDialog
         open={briefDialog.open}

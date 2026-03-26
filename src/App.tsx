@@ -28,6 +28,12 @@ const DashboardView = lazy(() => import("./pages/DashboardView"));
 const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminLeads = lazy(() => import("./pages/AdminLeads"));
+const AdminCompanies = lazy(() => import("./pages/admin/AdminCompanies"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
+const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
+const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
+const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const Brief = lazy(() => import("./pages/Brief"));
 
 // Páginas de servicios
@@ -109,7 +115,12 @@ const App = () => (
               <Route path="/dashboards" element={<ProtectedRoute><Lazy><Dashboards /></Lazy></ProtectedRoute>} />
               <Route path="/dashboards/:dashboardId" element={<ProtectedRoute><Lazy><DashboardView /></Lazy></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><Lazy><AdminDashboard /></Lazy></ProtectedRoute>} />
-              <Route path="/admin/leads" element={<ProtectedRoute><Lazy><AdminLeads /></Lazy></ProtectedRoute>} />
+              <Route path="/admin/leads" element={<ProtectedRoute><Lazy><AdminLayout><AdminLeads /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/companies" element={<ProtectedRoute><Lazy><AdminLayout><AdminCompanies /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute><Lazy><AdminLayout><AdminUsers /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/subscriptions" element={<ProtectedRoute><Lazy><AdminLayout><AdminSubscriptions /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/notifications" element={<ProtectedRoute><Lazy><AdminLayout><AdminNotifications /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/emails" element={<ProtectedRoute><Lazy><AdminLayout><AdminEmails /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
               <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
 
