@@ -95,6 +95,7 @@ const Sidebar = () => {
 
   const getActiveItem = () => {
     if (location.pathname === "/admin") return "admin";
+    if (location.pathname === "/admin/leads") return "admin-leads";
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/landing-builder") return "landing-builder";
