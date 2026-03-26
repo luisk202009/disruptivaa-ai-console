@@ -1,60 +1,69 @@
 
 
-# Mejora del flujo Brief + Vista admin de respuestas + Conversión manual de leads
+# Corrección de Brief + CRM HubSpot + Página Nosotros
 
-## 1. Deep-link al brief desde páginas de servicio
+## 1. Fix: Error al enviar brief (RLS)
 
-**Problema**: Los CTAs de cada servicio llevan a `/brief` donde el usuario debe volver a elegir el servicio.
+**Causa raíz**: Al insertar un lead, el código hace `.select("id").single()` para obtener el ID. Pero la tabla `leads` solo tiene SELECT para admins. Un usuario anónimo puede insertar pero no leer el resultado.
 
-**Solución**: Usar query params (`/brief?service=website`) y pre-seleccionar el servicio automáticamente.
+**Solución**: Crear una nueva migración SQL que agregue una policy de SELECT en `leads` para que el insertante pueda leer su propio registro recién creado. Alternativa más simple: quitar el `as any` de `brief_submissions` y reestructurar para que el insert de `brief_submissions` no dependa del `.select()`:
 
-### Cambios:
-- **`src/pages/Brief.tsx`**: Leer `searchParams.get("service")` al montar. Si existe y es un ID válido, setear `selected` directamente (el usuario ve el formulario sin el selector).
-- **6 archivos en `src/pages/servicios/`**: Cambiar los `<Link to="/brief">` por `<Link to="/brief?service=ID">` donde ID es el service_type correspondiente (`crm-hubspot`, `shopify`, `14-dias`, `marketing-ads`, `website`, `mvp`).
-- **`src/pages/Negocio14Dias.tsx`**: Igual, usar `/brief?service=14-dias`.
-- El botón "Volver" en el formulario sigue funcionando: lleva al selector o a la página anterior.
+```sql
+CREATE POLICY "Inserters can read their own lead"
+ON public.leads FOR SELECT
+TO anon, authenticated
+USING (true);
+```
 
-## 2. Vista admin de respuestas de brief
+O, más seguro, generar el UUID en el cliente y usarlo directamente sin necesitar el `.select()`.
 
-Actualmente AdminLeads muestra la tabla de leads pero no las respuestas del brief.
+**Enfoque elegido**: Generar `lead_id` con `crypto.randomUUID()` en el cliente, pasarlo en ambos inserts, eliminando la necesidad de `.select("id").single()`. También quitar el `as any` del insert de `brief_submissions` ya que la tabla existe en los tipos.
 
-### Cambios:
-- **`src/pages/AdminLeads.tsx`**: 
-  - Hacer join con `brief_submissions` al cargar leads (o cargar briefs por separado).
-  - Añadir un botón "Ver brief" en cada fila que abre un dialog/drawer con las respuestas formateadas.
-  - El dialog muestra: servicio, campos del formulario (labels legibles) y las respuestas del usuario.
-  - Incluir vista de referencia de los campos configurados por servicio (solo lectura, mostrando qué campos tiene cada formulario).
+**Archivos**:
+- `src/components/brief/DynamicBriefForm.tsx` — Generar UUID client-side, quitar `.select("id").single()`, quitar `as any`
 
-### Nuevo componente:
-- **`src/components/admin/BriefDetailDialog.tsx`**: Dialog que recibe las respuestas JSONB y el `service_type`, mapea las keys a labels legibles usando el mismo `questionsByService` del `DynamicBriefForm`, y las muestra formateadas.
+## 2. CRM HubSpot — Resaltar consultoría + implementación + acompañamiento
 
-### Exportar preguntas:
-- **`src/components/brief/DynamicBriefForm.tsx`**: Exportar `questionsByService` para reutilizarlo en el admin.
+Actualizar `src/pages/servicios/CrmHubspot.tsx`:
+- Cambiar subtítulo del hero para enfatizar: "Consultoría, implementación y acompañamiento en HubSpot"
+- Agregar sección de "Nuestro proceso" con 3 fases: Consultoría (diagnóstico), Implementación (setup + migración), Acompañamiento (capacitación + soporte)
+- Actualizar el copy de beneficios para reflejar el servicio integral
+- Actualizar el label en el selector de Brief y Navbar dropdown de "CRM que sí se usa" → "CRM HubSpot" o mantener pero con subtítulo de consultoría
 
-## 3. Conversión manual de lead a usuario
+**Archivos**:
+- `src/pages/servicios/CrmHubspot.tsx`
+- `src/components/landing/Navbar.tsx` — Actualizar label del dropdown si aplica
 
-El admin puede convertir un lead en usuario enviándole una invitación por email.
+## 3. Página Nosotros
 
-### Cambios:
-- **Nueva edge function `invite-lead-user/index.ts`**: 
-  - Recibe `lead_id` y valida que el caller sea admin (via `has_role`).
-  - Usa `supabase.auth.admin.inviteUserByEmail()` con el email del lead.
-  - Actualiza el status del lead a `cliente`.
-  - Retorna éxito o error.
+Crear una nueva página `/nosotros` con:
 
-- **`src/pages/AdminLeads.tsx`**: Añadir botón "Invitar a plataforma" en las acciones de cada lead (solo visible cuando status ≠ `cliente`). Llama a la edge function y muestra confirmación.
+### Secciones
+1. **Hero** — Qué es Disruptivaa, misión: ayudar a empresas a crecer con tecnología y estrategia digital
+2. **Qué hacemos** — Resumen de las 6 líneas de servicio con iconos
+3. **Proceso de trabajo** — Cómo trabajamos (Brief → Estrategia → Ejecución → Acompañamiento)
+4. **Clientes que confían en nosotros** — Logos de los 7 clientes proporcionados en un carousel/grid con fondo oscuro
+5. **CTA** — Enlace a `/brief`
 
-- **Flujo del usuario invitado**: Recibe email con link magic → acepta → se crea su cuenta → redirige al dashboard. El trigger `handle_new_user` ya crea el perfil automáticamente.
+### Logos de clientes
+Copiar las 7 imágenes subidas a `src/assets/clients/`:
+- acontapp, edudestinos, kuppel, albus, asuclean, alatra (+ uno más si hay)
+
+**Archivos nuevos**:
+- `src/pages/Nosotros.tsx`
+
+**Archivos modificados**:
+- `src/App.tsx` — Agregar ruta `/nosotros`
+- `src/components/landing/Navbar.tsx` — Cambiar `href: "/#nosotros"` → `href: "/nosotros"`
 
 ## Resumen de archivos
 
-| Archivo | Acción |
+| Archivo | Cambio |
 |---|---|
-| `src/pages/Brief.tsx` | Leer query param `service` y pre-seleccionar |
-| `src/pages/servicios/*.tsx` (6 archivos) | CTAs → `/brief?service=ID` |
-| `src/pages/Negocio14Dias.tsx` | CTA → `/brief?service=14-dias` |
-| `src/components/brief/DynamicBriefForm.tsx` | Exportar `questionsByService` |
-| `src/pages/AdminLeads.tsx` | Join con briefs, botón "Ver brief", botón "Invitar" |
-| `src/components/admin/BriefDetailDialog.tsx` | Nuevo: dialog de detalle de brief |
-| `supabase/functions/invite-lead-user/index.ts` | Nueva edge function para invitar lead como usuario |
+| `src/components/brief/DynamicBriefForm.tsx` | Fix RLS: UUID client-side, quitar `.select()` y `as any` |
+| `src/pages/servicios/CrmHubspot.tsx` | Resaltar consultoría + implementación + acompañamiento |
+| `src/pages/Nosotros.tsx` | **Nuevo**: página completa con secciones + logos |
+| `src/App.tsx` | Agregar ruta `/nosotros` |
+| `src/components/landing/Navbar.tsx` | Link Nosotros → `/nosotros` |
+| `src/assets/clients/` | 7 logos de clientes copiados |
 
