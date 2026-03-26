@@ -87,7 +87,7 @@ const Negocio14Dias = () => (
                     </li>
                   ))}
                 </ul>
-                <Link to="/brief" className="block">
+                <Link to="/brief?service=14-dias" className="block">
                   <Button className={`w-full h-11 ${plan.highlight ? "bg-primary hover:bg-primary/90 text-primary-foreground" : "bg-secondary hover:bg-secondary/80 text-foreground"}`}>
                     Agendar llamada <ArrowRight size={16} className="ml-2" />
                   </Button>

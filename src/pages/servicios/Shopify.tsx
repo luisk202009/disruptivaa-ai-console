@@ -31,7 +31,7 @@ const ShopifyPage = () => (
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
             Diseñamos, configuramos y lanzamos tu e-commerce en Shopify con todo lo necesario para que empieces a facturar.
           </p>
-          <Link to="/brief">
+          <Link to="/brief?service=shopify">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Solicitar propuesta <ArrowRight size={18} />
             </Button>
@@ -74,7 +74,7 @@ const ShopifyPage = () => (
           ))}
         </ul>
         <div className="mt-12">
-          <Link to="/brief">
+          <Link to="/brief?service=shopify">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Empezar ahora <ArrowRight size={18} />
             </Button>
