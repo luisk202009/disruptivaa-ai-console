@@ -36,8 +36,8 @@ interface BriefSubmission {
 
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
-  const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; answers: Record<string, string> | null; leadName: string }>({
-    open: false, serviceType: null, answers: null, leadName: "",
+  const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; submissions: BriefSubmission[]; leadName: string }>({
+    open: false, serviceType: null, submissions: [], leadName: "",
   });
   const queryClient = useQueryClient();
 
