@@ -11,7 +11,8 @@ import {
   LayoutGrid,
   ShieldCheck,
   Globe,
-  Wand2
+  Wand2,
+  Users
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
