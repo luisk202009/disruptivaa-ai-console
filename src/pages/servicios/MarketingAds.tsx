@@ -74,7 +74,7 @@ const MarketingAds = () => (
           ))}
         </ul>
         <div className="mt-12">
-          <Link to="/brief">
+          <Link to="/brief?service=marketing-ads">
             <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Empezar ahora <ArrowRight size={18} />
             </Button>
