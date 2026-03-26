@@ -90,6 +90,7 @@ const App = () => (
               <Route path="/servicios/marketing-ads" element={<Lazy><MarketingAds /></Lazy>} />
               <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
               <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
+              <Route path="/nosotros" element={<Lazy><Nosotros /></Lazy>} />
 
               {/* Brief público */}
               <Route path="/brief" element={<Lazy><Brief /></Lazy>} />

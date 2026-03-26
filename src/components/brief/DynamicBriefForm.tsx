@@ -89,26 +89,27 @@ const DynamicBriefForm = ({ serviceType, serviceLabel }: DynamicBriefFormProps) 
     e.preventDefault();
     setLoading(true);
     try {
+      const leadId = crypto.randomUUID();
+
       // Insertar lead
-      const { data: lead, error: leadError } = await supabase
+      const { error: leadError } = await supabase
         .from("leads")
         .insert({
+          id: leadId,
           name: contactData.name.trim(),
           email: contactData.email.trim(),
           company: contactData.company?.trim() || null,
           service_type: serviceType,
           status: "new",
-        })
-        .select("id")
-        .single();
+        });
 
       if (leadError) throw leadError;
 
       // Insertar brief
       const { error: briefError } = await supabase
-        .from("brief_submissions" as any)
+        .from("brief_submissions")
         .insert({
-          lead_id: lead.id,
+          lead_id: leadId,
           service_type: serviceType,
           answers,
         });

@@ -17,7 +17,7 @@ const serviceLinks = [
 
 const navLinks = [
   { label: "Servicios", children: serviceLinks },
-  { label: "Nosotros", href: "/#nosotros" },
+  { label: "Nosotros", href: "/nosotros" },
 ];
 
 const Navbar = () => {
