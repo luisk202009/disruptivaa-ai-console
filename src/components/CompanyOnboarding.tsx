@@ -16,12 +16,23 @@ const CompanyOnboarding = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [brandColor, setBrandColor] = useState("#00A3FF");
 
   const createCompany = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
+
+      // Save full_name to profile first
+      if (fullName.trim()) {
+        await supabase.auth.updateUser({ data: { full_name: fullName.trim() } });
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ full_name: fullName.trim() })
+          .eq('id', user.id);
+        if (profileError) throw profileError;
+      }
 
       const { error } = await supabase.rpc('create_company_for_user', {
         _company_name: companyName,
@@ -62,6 +73,18 @@ const CompanyOnboarding = () => {
         </div>
 
         <div className="space-y-5">
+          <div className="space-y-2">
+            <Label className="text-zinc-400 text-xs uppercase tracking-wider">
+              {t("onboarding.fullName", "Nombre completo")}
+            </Label>
+            <Input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Tu nombre completo"
+              className="bg-white/[0.03] border-white/[0.08] text-zinc-200 placeholder:text-zinc-600"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label className="text-zinc-400 text-xs uppercase tracking-wider">
               {t("onboarding.companyName")}

@@ -11,7 +11,8 @@ import {
   LayoutGrid,
   ShieldCheck,
   Globe,
-  Wand2
+  Wand2,
+  Users
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -89,8 +90,13 @@ const Sidebar = () => {
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
   ];
 
+  const adminNavItems = isAdmin ? [
+    { id: "admin-leads", icon: <Users size={18} strokeWidth={1.5} />, label: "Leads CRM", path: "/admin/leads" },
+  ] : [];
+
   const getActiveItem = () => {
     if (location.pathname === "/admin") return "admin";
+    if (location.pathname === "/admin/leads") return "admin-leads";
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/landing-builder") return "landing-builder";
@@ -168,6 +174,26 @@ const Sidebar = () => {
             />
           </div>
 
+          {/* ── ADMIN ── */}
+          {adminNavItems.length > 0 && (
+            <div className="px-4 mt-6">
+              {!collapsed && (
+                <p className="text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500 px-3 mb-2">
+                  Admin
+                </p>
+              )}
+              {adminNavItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  icon={item.icon}
+                  label={item.label}
+                  active={getActiveItem() === item.id}
+                  collapsed={collapsed}
+                  onClick={() => navigate(item.path)}
+                />
+              ))}
+            </div>
+          )}
           {/* ── ECOSISTEMA DIGITAL ── */}
           <div className="px-4 mt-6 mb-6">
             {!collapsed && (
