@@ -37,6 +37,7 @@ const ShopifyPage = lazy(() => import("./pages/servicios/Shopify"));
 const MarketingAds = lazy(() => import("./pages/servicios/MarketingAds"));
 const WebsitesLandings = lazy(() => import("./pages/servicios/WebsitesLandings"));
 const MvpAplicaciones = lazy(() => import("./pages/servicios/MvpAplicaciones"));
+const Nosotros = lazy(() => import("./pages/Nosotros"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/servicios/marketing-ads" element={<Lazy><MarketingAds /></Lazy>} />
               <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
               <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
+              <Route path="/nosotros" element={<Lazy><Nosotros /></Lazy>} />
 
               {/* Brief público */}
               <Route path="/brief" element={<Lazy><Brief /></Lazy>} />
