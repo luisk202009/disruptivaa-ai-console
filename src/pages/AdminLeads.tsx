@@ -153,8 +153,8 @@ const AdminLeads = () => {
                 </TableHeader>
                 <TableBody>
                   {leads.map((lead) => {
-                    const hasBrief = briefsByLead.has(lead.id);
-                    return (
+                    const leadBriefs = briefsByLead.get(lead.id) || [];
+                    const hasBrief = leadBriefs.length > 0;
                       <TableRow key={lead.id}>
                         <TableCell className="font-medium">{lead.name}</TableCell>
                         <TableCell className="text-muted-foreground">{lead.email}</TableCell>
