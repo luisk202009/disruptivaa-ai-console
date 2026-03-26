@@ -18,7 +18,7 @@ interface Question {
   placeholder?: string;
 }
 
-const questionsByService: Record<string, Question[]> = {
+export const questionsByService: Record<string, Question[]> = {
   "crm-hubspot": [
     { id: "team_size", label: "¿Cuántos vendedores tiene tu equipo?", type: "select", options: ["1-3", "4-10", "11-25", "25+"] },
     { id: "current_crm", label: "¿Usas algún CRM actualmente?", type: "select", options: ["No, es la primera vez", "Sí, pero no lo usamos", "Sí, pero quiero migrar", "Uso Excel/Sheets"] },

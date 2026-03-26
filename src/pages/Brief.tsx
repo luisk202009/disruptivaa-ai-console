@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe, Rocket, ShoppingBag, Users, ArrowLeft, Layout } from "lucide-react";
 import PublicLayout from "@/components/landing/PublicLayout";
@@ -16,8 +17,18 @@ const options = [
   { id: "mvp", icon: Rocket, title: "MVP & Aplicaciones", subtitle: "Tu idea hecha producto digital en semanas", color: "text-violet-400", bgColor: "bg-violet-500/10" },
 ];
 
+const validIds = options.map((o) => o.id);
+
 const Brief = () => {
+  const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState<ServiceType>(null);
+
+  useEffect(() => {
+    const service = searchParams.get("service");
+    if (service && validIds.includes(service)) {
+      setSelected(service);
+    }
+  }, [searchParams]);
   const selectedOption = options.find((o) => o.id === selected);
 
   return (
