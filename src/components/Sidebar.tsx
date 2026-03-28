@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Globe,
   Wand2,
-  
+  FolderKanban,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -87,6 +87,7 @@ const Sidebar = () => {
 
   const topNavItems = [
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/dashboard" },
+    { id: "projects", icon: <FolderKanban size={18} strokeWidth={1.5} />, label: t("navigation.projects"), path: "/projects" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
   ];
 
@@ -98,7 +99,8 @@ const Sidebar = () => {
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/landing-builder") return "landing-builder";
-    if (location.pathname.startsWith("/project/")) return "project";
+    if (location.pathname === "/projects") return "projects";
+    if (location.pathname.startsWith("/project/")) return "projects";
     if (location.pathname === "/websites") return "websites";
     if (location.pathname === "/connections") return "connections";
     if (location.pathname === "/dashboard") return "dashboard";

@@ -421,6 +421,47 @@ export type Database = {
           },
         ]
       }
+      project_files: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          project_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          project_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          project_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_goals: {
         Row: {
           created_at: string | null
@@ -466,7 +507,9 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string | null
+          description: string | null
           id: string
+          instructions: string | null
           name: string
           updated_at: string | null
           user_id: string
@@ -474,7 +517,9 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
+          instructions?: string | null
           name: string
           updated_at?: string | null
           user_id: string
@@ -482,7 +527,9 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
+          instructions?: string | null
           name?: string
           updated_at?: string | null
           user_id?: string

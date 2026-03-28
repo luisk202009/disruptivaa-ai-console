@@ -23,6 +23,7 @@ const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 const TikTokCallback = lazy(() => import("./pages/TikTokCallback"));
 const Dashboards = lazy(() => import("./pages/Dashboards"));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
+const Projects = lazy(() => import("./pages/Projects"));
 const Websites = lazy(() => import("./pages/Websites"));
 const DashboardView = lazy(() => import("./pages/DashboardView"));
 const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
@@ -109,6 +110,7 @@ const App = () => (
               {/* Rutas protegidas */}
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/conversations" element={<ProtectedRoute><Lazy><Conversations /></Lazy></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><Lazy><Projects /></Lazy></ProtectedRoute>} />
               <Route path="/project/:id" element={<ProtectedRoute><Lazy><ProjectDetail /></Lazy></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Lazy><Settings /></Lazy></ProtectedRoute>} />
               <Route path="/connections" element={<ProtectedRoute><Lazy><Connections /></Lazy></ProtectedRoute>} />
