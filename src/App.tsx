@@ -23,6 +23,7 @@ const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 const TikTokCallback = lazy(() => import("./pages/TikTokCallback"));
 const Dashboards = lazy(() => import("./pages/Dashboards"));
 const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
+const Projects = lazy(() => import("./pages/Projects"));
 const Websites = lazy(() => import("./pages/Websites"));
 const DashboardView = lazy(() => import("./pages/DashboardView"));
 const LandingBuilder = lazy(() => import("./pages/LandingBuilder"));
