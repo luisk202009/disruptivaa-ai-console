@@ -321,59 +321,6 @@ const Agents = () => {
                       </div>
                     </div>
 
-                    {/* Projects */}
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <button
-                          onClick={() => setProjectsExpanded(!projectsExpanded)}
-                          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-                        >
-                          {projectsExpanded ? <ChevronDown size={14} strokeWidth={1.5} /> : <ChevronRight size={14} strokeWidth={1.5} />}
-                          {t("navigation.projects")}
-                        </button>
-                        <button
-                          onClick={() => setShowCreateProject(true)}
-                          className="p-1.5 rounded hover:bg-white/[0.04] text-zinc-500 hover:text-zinc-200 transition-colors"
-                        >
-                          <Plus size={14} strokeWidth={1.5} />
-                        </button>
-                      </div>
-
-                      {projectsExpanded && (
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => setSelectedProjectId(null)}
-                            className={cn(
-                              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
-                              selectedProjectId === null ? "text-foreground bg-white/[0.06]" : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
-                            )}
-                          >
-                            <FolderOpen size={14} strokeWidth={1.5} />
-                            <span>General</span>
-                          </button>
-                          {projectsLoading ? (
-                            <p className="text-xs text-muted-foreground px-3 py-2">{t("common.loading")}</p>
-                          ) : (
-                            filteredProjects.map((project) => (
-                              <div key={project.id} className="flex items-center group">
-                                <button
-                                  onClick={() => setSelectedProjectId(project.id)}
-                                  className={cn(
-                                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors",
-                                    selectedProjectId === project.id ? "text-foreground bg-white/[0.06]" : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]"
-                                  )}
-                                >
-                                  <Folder size={14} strokeWidth={1.5} style={{ color: project.color }} />
-                                  <span>{project.name}</span>
-                                </button>
-                                <ProjectItemMenu project={project} onRename={handleRenameProject} onDelete={handleDeleteProject} />
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
-                    </div>
-
                     {/* Conversations */}
                     <div>
                       <div className="flex items-center gap-2 mb-3">
