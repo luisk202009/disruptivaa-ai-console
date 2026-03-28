@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FolderKanban, Plus, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, type Locale } from "date-fns";
 import { es, enUS, ptBR } from "date-fns/locale";
 import Sidebar from "@/components/Sidebar";
 import { useProjects } from "@/hooks/useProjects";
