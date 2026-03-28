@@ -351,7 +351,7 @@ const Agents = () => {
                               <span className="truncate flex-1">{convo.title || t("sidebar.untitled")}</span>
                               <ConversationItemMenu
                                 conversation={convo}
-                                projects={projects}
+                                projects={[]}
                                 onDelete={handleDeleteConversation}
                                 onMove={handleMoveConversation}
                               />
