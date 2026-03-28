@@ -87,6 +87,7 @@ const Sidebar = () => {
 
   const topNavItems = [
     { id: "dashboard", icon: <LayoutDashboard size={18} strokeWidth={1.5} />, label: t("navigation.dashboard"), path: "/dashboard" },
+    { id: "projects", icon: <FolderKanban size={18} strokeWidth={1.5} />, label: t("navigation.projects"), path: "/projects" },
     { id: "panels", icon: <LayoutGrid size={18} strokeWidth={1.5} />, label: t("navigation.panels"), path: "/dashboards" },
   ];
 
