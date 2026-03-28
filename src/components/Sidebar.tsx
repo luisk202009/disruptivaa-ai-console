@@ -99,7 +99,8 @@ const Sidebar = () => {
     if (location.pathname === "/dashboards" || location.pathname.startsWith("/dashboards/")) return "panels";
     if (location.pathname === "/agents") return "agents";
     if (location.pathname === "/landing-builder") return "landing-builder";
-    if (location.pathname.startsWith("/project/")) return "project";
+    if (location.pathname === "/projects") return "projects";
+    if (location.pathname.startsWith("/project/")) return "projects";
     if (location.pathname === "/websites") return "websites";
     if (location.pathname === "/connections") return "connections";
     if (location.pathname === "/dashboard") return "dashboard";
