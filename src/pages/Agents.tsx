@@ -53,13 +53,9 @@ const Agents = () => {
 
   const [activeTab, setActiveTab] = useState("gallery");
 
-  // Check if redirected with agent pre-selected or openCreateProject
+  // Check if redirected with agent pre-selected
   useEffect(() => {
-    if (location.state?.openCreateProject) {
-      setActiveTab("history");
-      setShowCreateProject(true);
-      window.history.replaceState({}, document.title);
-    } else if (location.state?.selectedAgentId) {
+    if (location.state?.selectedAgentId) {
       const agent = DISRUPTIVAA_AGENTS.find(a => a.id === location.state.selectedAgentId);
       if (agent) {
         setSelectedAgent(agent);
