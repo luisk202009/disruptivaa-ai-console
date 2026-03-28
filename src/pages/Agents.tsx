@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, LogOut, Search, X, MessageSquare, Folder, FolderOpen, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, LogOut, Search, X, MessageSquare } from "lucide-react";
 import { DISRUPTIVAA_AGENTS, DisruptivaaAgent } from "@/components/agentDefinitions";
 import CommandConsole from "@/components/CommandConsole";
 import AgentActivityTimeline from "@/components/AgentActivityTimeline";
