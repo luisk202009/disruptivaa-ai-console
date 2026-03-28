@@ -6,6 +6,8 @@ export interface Project {
   id: string;
   name: string;
   color: string;
+  description: string | null;
+  instructions: string | null;
   user_id: string;
   created_at: string;
   updated_at: string;
@@ -31,7 +33,7 @@ export const useProjects = () => {
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setProjects(data || []);
+      setProjects((data as unknown as Project[]) || []);
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
@@ -39,29 +41,32 @@ export const useProjects = () => {
     }
   }, [user]);
 
-  const createProject = async (name: string, color: string = '#FF7900'): Promise<Project | null> => {
+  const createProject = async (name: string, color: string = '#FF7900', description?: string): Promise<Project | null> => {
     if (!user) return null;
 
     try {
+      const insertData: any = { name, color, user_id: user.id };
+      if (description) insertData.description = description;
+
       const { data, error } = await supabase
         .from("projects")
-        .insert({ name, color, user_id: user.id })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return data as unknown as Project;
     } catch (error) {
       console.error("Error creating project:", error);
       return null;
     }
   };
 
-  const updateProject = async (id: string, updates: { name?: string; color?: string }): Promise<boolean> => {
+  const updateProject = async (id: string, updates: { name?: string; color?: string; description?: string; instructions?: string }): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from("projects")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id);
 
       if (error) throw error;
@@ -75,7 +80,6 @@ export const useProjects = () => {
   const deleteProject = async (id: string, deleteConversations: boolean = false): Promise<boolean> => {
     try {
       if (deleteConversations) {
-        // First delete all conversations in this project (messages will cascade)
         const { data: convos } = await supabase
           .from("conversations")
           .select("chat_id")
@@ -83,21 +87,10 @@ export const useProjects = () => {
 
         if (convos && convos.length > 0) {
           const chatIds = convos.map(c => c.chat_id);
-          
-          // Delete messages first
-          await supabase
-            .from("agent_messages")
-            .delete()
-            .in("chat_id", chatIds);
-          
-          // Then delete conversations
-          await supabase
-            .from("conversations")
-            .delete()
-            .eq("project_id", id);
+          await supabase.from("agent_messages").delete().in("chat_id", chatIds);
+          await supabase.from("conversations").delete().eq("project_id", id);
         }
       }
-      // If not deleteConversations, the FK ON DELETE SET NULL will handle it
 
       const { error } = await supabase
         .from("projects")
@@ -117,7 +110,6 @@ export const useProjects = () => {
 
     if (!user) return;
 
-    // Subscribe to realtime updates
     const channel = supabase
       .channel("projects-changes")
       .on(

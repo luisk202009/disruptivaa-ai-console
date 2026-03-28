@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { FolderPlus } from "lucide-react";
 import { ColorPicker } from "./ColorPicker";
@@ -15,7 +16,7 @@ import { ColorPicker } from "./ColorPicker";
 interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProject: (name: string, color: string) => Promise<void>;
+  onCreateProject: (name: string, color: string, description?: string) => Promise<void>;
 }
 
 export const CreateProjectDialog = ({
@@ -24,6 +25,7 @@ export const CreateProjectDialog = ({
   onCreateProject,
 }: CreateProjectDialogProps) => {
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [color, setColor] = useState("#FF7900");
   const [loading, setLoading] = useState(false);
 
@@ -33,8 +35,9 @@ export const CreateProjectDialog = ({
 
     setLoading(true);
     try {
-      await onCreateProject(name.trim(), color);
+      await onCreateProject(name.trim(), color, description.trim() || undefined);
       setName("");
+      setDescription("");
       setColor("#FF7900");
       onOpenChange(false);
     } finally {
@@ -64,6 +67,19 @@ export const CreateProjectDialog = ({
                 placeholder="Ej: Marketing Q1"
                 className="mt-2 bg-zinc-800 border-zinc-700 text-foreground"
                 autoFocus
+              />
+            </div>
+            <div>
+              <Label htmlFor="project-description" className="text-muted-foreground">
+                Descripción (opcional)
+              </Label>
+              <Textarea
+                id="project-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ej: Campaña Q1 2025 para cliente XYZ"
+                className="mt-2 bg-zinc-800 border-zinc-700 text-foreground min-h-[80px]"
+                rows={3}
               />
             </div>
             <div>
