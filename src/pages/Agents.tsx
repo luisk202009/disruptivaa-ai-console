@@ -160,19 +160,6 @@ const Agents = () => {
     setSelectedAgent(null);
   };
 
-  const handleCreateProject = async (name: string, color: string) => {
-    await createProject(name, color);
-  };
-
-  const handleRenameProject = async (id: string, name: string, color: string) => {
-    await updateProject(id, { name, color });
-  };
-
-  const handleDeleteProject = async (id: string, deleteConvos: boolean) => {
-    await deleteProject(id, deleteConvos);
-    if (selectedProjectId === id) setSelectedProjectId(null);
-  };
-
   const handleDeleteConversation = async (chatId: string) => {
     await deleteConversation(chatId);
   };
