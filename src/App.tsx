@@ -110,6 +110,7 @@ const App = () => (
               {/* Rutas protegidas */}
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/conversations" element={<ProtectedRoute><Lazy><Conversations /></Lazy></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><Lazy><Projects /></Lazy></ProtectedRoute>} />
               <Route path="/project/:id" element={<ProtectedRoute><Lazy><ProjectDetail /></Lazy></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Lazy><Settings /></Lazy></ProtectedRoute>} />
               <Route path="/connections" element={<ProtectedRoute><Lazy><Connections /></Lazy></ProtectedRoute>} />
