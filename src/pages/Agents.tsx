@@ -409,11 +409,6 @@ const Agents = () => {
 
         <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
 
-        <CreateProjectDialog
-          open={showCreateProject}
-          onOpenChange={setShowCreateProject}
-          onCreateProject={handleCreateProject}
-        />
       </div>
     </div>
   );
