@@ -28,13 +28,9 @@ const Agents = () => {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
   // History tab state
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showCreateProject, setShowCreateProject] = useState(false);
 
   const { clearMessages } = useMessages(activeChatId);
-  const { projects, loading: projectsLoading, createProject, updateProject, deleteProject } = useProjects();
   const {
     conversations,
     loading: conversationsLoading,
@@ -43,9 +39,7 @@ const Agents = () => {
     loadMore,
     deleteConversation,
     moveConversation,
-  } = useConversations(
-    selectedProjectId !== undefined ? { projectId: selectedProjectId } : {}
-  );
+  } = useConversations({});
 
   const generateChatId = useCallback(() => crypto.randomUUID(), []);
 
