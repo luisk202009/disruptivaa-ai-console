@@ -50,11 +50,6 @@ const Agents = () => {
     return conversations.filter(convo => convo.title?.toLowerCase().includes(query));
   }, [conversations, searchQuery]);
 
-  const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return projects;
-    const query = searchQuery.toLowerCase();
-    return projects.filter(project => project.name.toLowerCase().includes(query));
-  }, [projects, searchQuery]);
 
   const [activeTab, setActiveTab] = useState("gallery");
 
