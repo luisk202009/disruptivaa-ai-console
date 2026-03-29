@@ -170,6 +170,25 @@
     animation: pulse-subtle 2s ease-in-out infinite;
   }
 
+  /* Marquee animation for client logos */
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .marquee-container {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .marquee-track {
+    display: flex;
+    gap: 3.5rem;
+    align-items: center;
+    width: max-content;
+    animation: marquee 30s linear infinite;
+  }
+
   /* Terminal cursor blink */
   @keyframes cursor-blink {
     0%, 100% { opacity: 1; }
