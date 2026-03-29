@@ -237,7 +237,7 @@ serve(async (req) => {
       );
     }
 
-    const accessToken = integration.access_token;
+    const accessToken = await decryptToken(integration.access_token);
     const field = metricFieldMap[metric] || "impressions";
     const dateRanges = calculateDateRanges(date_preset);
     

@@ -209,14 +209,17 @@ serve(async (req) => {
 
     const finalRefreshToken = refreshToken || existingIntegration?.refresh_token || null;
 
+    const encryptedAccessToken = await encryptToken(accessToken);
+    const encryptedRefreshToken = finalRefreshToken ? await encryptToken(finalRefreshToken) : null;
+
     const integrationData = {
       user_id: userId,
       platform: "google_ads",
       status: "connected",
       connected_at: new Date().toISOString(),
       account_name: accountName,
-      access_token: accessToken,
-      refresh_token: finalRefreshToken,
+      access_token: encryptedAccessToken,
+      refresh_token: encryptedRefreshToken,
       token_expires_at: tokenExpiresAt,
       account_ids: accountIds,
     };

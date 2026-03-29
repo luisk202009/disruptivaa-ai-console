@@ -114,7 +114,7 @@ serve(async (req) => {
         {
           user_id: userId,
           platform: "tiktok_ads",
-          access_token: accessToken,
+          access_token: encryptedAccessToken,
           account_ids: advertiserIds.map(String),
           account_name: advertiserIds.length > 0 ? `TikTok Ads (${advertiserIds.length} accounts)` : "TikTok Ads",
           status: "connected",

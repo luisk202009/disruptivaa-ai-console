@@ -202,13 +202,15 @@ serve(async (req) => {
       .eq("platform", "meta_ads")
       .maybeSingle();
 
+    const encryptedToken = await encryptToken(longLivedToken);
+
     const integrationData = {
       user_id: userId,
       platform: "meta_ads",
       status: "connected",
       connected_at: new Date().toISOString(),
       account_name: accountName,
-      access_token: longLivedToken,
+      access_token: encryptedToken,
       token_expires_at: tokenExpiresAt,
       account_ids: accountIds,
       meta_app_id: META_APP_ID,

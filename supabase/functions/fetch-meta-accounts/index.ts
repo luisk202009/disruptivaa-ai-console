@@ -112,7 +112,7 @@ serve(async (req) => {
         try {
           // Use normalized ID with act_ prefix for API call
           const response = await fetch(
-            `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name,account_status&access_token=${integration.access_token}`
+            `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name,account_status&access_token=${decryptedToken}`
           );
           const data = await response.json();
 

@@ -336,7 +336,7 @@ serve(async (req) => {
     if (comparison) {
       try {
         const previousTotals = await fetchTikTokReport(
-          integration.access_token,
+          decryptedAccessToken,
           targetAccountId,
           dateRanges.previous.since,
           dateRanges.previous.until
