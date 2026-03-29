@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { encryptToken, decryptToken } from "../_shared/crypto.ts";
 
 const ALLOWED_ORIGINS = [
   'https://disruptivaa.lovable.app',
@@ -72,11 +73,14 @@ async function refreshGoogleToken(
     const data = await response.json();
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
 
-    // Update database with new token
+    // Encrypt the new access token before saving
+    const encryptedNewToken = await encryptToken(data.access_token);
+    
+    // Update database with new encrypted token
     const { error: updateError } = await supabaseAdmin
       .from("user_integrations")
       .update({
-        access_token: data.access_token,
+        access_token: encryptedNewToken,
         token_expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -260,18 +264,19 @@ serve(async (req) => {
     }
 
     // Check if token is expired (with 5 min buffer)
-    let accessToken = integration.access_token;
+    let accessToken = await decryptToken(integration.access_token);
     
     if (integration.token_expires_at && integration.refresh_token) {
+      const decryptedRefreshToken = await decryptToken(integration.refresh_token);
       const expiresAt = new Date(integration.token_expires_at);
-      const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
+      const bufferMs = 5 * 60 * 1000;
       
       if (Date.now() >= expiresAt.getTime() - bufferMs) {
         console.log("🔄 Token expired or expiring soon, refreshing...");
         const refreshed = await refreshGoogleToken(
           supabaseAdmin,
           userId,
-          integration.refresh_token
+          decryptedRefreshToken
         );
         
         if (refreshed) {

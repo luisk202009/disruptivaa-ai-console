@@ -108,56 +108,45 @@ export const useIntegrations = () => {
     }
   };
 
-  // Connect Meta Ads with user-provided token (multi-tenant)
+  // Connect Meta Ads - validates and saves token server-side (encrypted)
   const connectMetaAds = async (accessToken: string): Promise<ConnectionResult> => {
     if (!user) return { success: false, error: 'Usuario no autenticado' };
 
     setConnecting('meta_ads');
 
     try {
-      // 1. Validate token against Meta API
-      const validationResult = await validateMetaConnection(accessToken);
-      
-      if (!validationResult.success) {
-        setLastConnectionResult(validationResult);
-        return validationResult;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        return { success: false, error: 'Sesión no válida' };
       }
 
-      // 2. Save token and connection info to database (protected by RLS)
-      const accountName = validationResult.accountsCount 
-        ? `${validationResult.accountsCount} cuenta(s) de anuncios`
-        : 'Meta Ads';
+      // Validate and save token via edge function (token is encrypted server-side)
+      const response = await fetch(EDGE_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ access_token: accessToken, save: true }),
+      });
 
-      const existingIntegration = integrations.find(i => i.platform === 'meta_ads');
+      const data = await response.json();
 
-      const integrationData = {
-        user_id: user.id,
-        platform: 'meta_ads',
-        status: 'connected',
-        connected_at: new Date().toISOString(),
-        account_name: accountName,
-        access_token: accessToken,
-        account_ids: validationResult.accountIds || [],
-      };
-
-      if (existingIntegration) {
-        const { error } = await supabase
-          .from('user_integrations')
-          .update(integrationData)
-          .eq('id', existingIntegration.id);
-
-        if (error) throw error;
+      if (data.success) {
+        await fetchIntegrations();
+        const result: ConnectionResult = {
+          success: true,
+          accountsCount: data.accounts,
+          accountDetails: data.accountDetails,
+          accountIds: data.accountIds,
+        };
+        setLastConnectionResult(result);
+        return result;
       } else {
-        const { error } = await supabase
-          .from('user_integrations')
-          .insert(integrationData);
-
-        if (error) throw error;
+        const result: ConnectionResult = { success: false, error: data.error };
+        setLastConnectionResult(result);
+        return result;
       }
-
-      await fetchIntegrations();
-      setLastConnectionResult(validationResult);
-      return validationResult;
     } catch (error) {
       console.error('Error connecting Meta Ads:', error);
       const result = { success: false, error: 'Error al guardar la conexión' };

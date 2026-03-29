@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { encryptToken } from "../_shared/crypto.ts";
 
 const ALLOWED_ORIGINS = [
   'https://disruptivaa.lovable.app',
@@ -99,6 +100,7 @@ serve(async (req) => {
     }
 
     const accessToken = tokenData.data.access_token;
+    const encryptedAccessToken = await encryptToken(accessToken);
     const advertiserIds = tokenData.data.advertiser_ids || [];
 
     console.log(`✅ Got access_token, ${advertiserIds.length} advertiser(s)`);
@@ -112,7 +114,7 @@ serve(async (req) => {
         {
           user_id: userId,
           platform: "tiktok_ads",
-          access_token: accessToken,
+          access_token: encryptedAccessToken,
           account_ids: advertiserIds.map(String),
           account_name: advertiserIds.length > 0 ? `TikTok Ads (${advertiserIds.length} accounts)` : "TikTok Ads",
           status: "connected",

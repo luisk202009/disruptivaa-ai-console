@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decryptToken } from "../_shared/crypto.ts";
 
 // Allowed origins for CORS - restrict to known domains
 const ALLOWED_ORIGINS = [
@@ -101,17 +102,19 @@ async function validateMetaToken(accessToken: string): Promise<boolean> {
 async function getMetaIntegration(supabaseAdmin: any, userId: string): Promise<{ access_token: string; account_ids: string[] } | null> {
   const { data, error } = await supabaseAdmin
     .from("user_integrations")
-    .select("*")
+    .select("access_token, account_ids")
     .eq("user_id", userId)
     .eq("platform", "meta_ads")
     .eq("status", "connected")
     .single();
 
-  if (error || !data) {
+  if (error || !data || !data.access_token) {
     return null;
   }
 
-  return data as { access_token: string; account_ids: string[] };
+  // Decrypt the access token
+  const decryptedToken = await decryptToken(data.access_token);
+  return { access_token: decryptedToken, account_ids: data.account_ids || [] };
 }
 
 // Get all connected integrations for omnichannel analysis
@@ -122,7 +125,7 @@ async function getAllIntegrations(supabaseAdmin: any, userId: string): Promise<{
 }> {
   const { data, error } = await supabaseAdmin
     .from("user_integrations")
-    .select("*")
+    .select("platform, access_token, account_ids")
     .eq("user_id", userId)
     .eq("status", "connected");
 
@@ -130,10 +133,20 @@ async function getAllIntegrations(supabaseAdmin: any, userId: string): Promise<{
     return { meta: null, google: null, tiktok: null };
   }
 
+  const decryptIntegration = async (item: any) => {
+    if (!item?.access_token) return null;
+    const decryptedToken = await decryptToken(item.access_token);
+    return { access_token: decryptedToken, account_ids: item.account_ids || [] };
+  };
+
+  const metaRaw = data.find((i: { platform: string }) => i.platform === 'meta_ads');
+  const googleRaw = data.find((i: { platform: string }) => i.platform === 'google_ads');
+  const tiktokRaw = data.find((i: { platform: string }) => i.platform === 'tiktok_ads');
+
   return {
-    meta: data.find((i: { platform: string }) => i.platform === 'meta_ads') || null,
-    google: data.find((i: { platform: string }) => i.platform === 'google_ads') || null,
-    tiktok: data.find((i: { platform: string }) => i.platform === 'tiktok_ads') || null,
+    meta: await decryptIntegration(metaRaw),
+    google: await decryptIntegration(googleRaw),
+    tiktok: await decryptIntegration(tiktokRaw),
   };
 }
 

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encryptToken } from "../_shared/crypto.ts";
 
 const ALLOWED_ORIGINS = [
   'https://lovable.dev',
@@ -201,13 +202,15 @@ serve(async (req) => {
       .eq("platform", "meta_ads")
       .maybeSingle();
 
+    const encryptedToken = await encryptToken(longLivedToken);
+
     const integrationData = {
       user_id: userId,
       platform: "meta_ads",
       status: "connected",
       connected_at: new Date().toISOString(),
       account_name: accountName,
-      access_token: longLivedToken,
+      access_token: encryptedToken,
       token_expires_at: tokenExpiresAt,
       account_ids: accountIds,
       meta_app_id: META_APP_ID,

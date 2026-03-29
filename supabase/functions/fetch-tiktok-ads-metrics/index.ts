@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { decryptToken } from "../_shared/crypto.ts";
 
 const ALLOWED_ORIGINS = [
   'https://disruptivaa.lovable.app',
@@ -294,6 +295,7 @@ serve(async (req) => {
     }
 
     const targetAccountId = account_id || integration.account_ids[0];
+    const decryptedAccessToken = await decryptToken(integration.access_token);
     const dateRanges = calculateDateRanges(date_preset);
 
     console.log(`📊 Fetching real TikTok data for account ${targetAccountId}`);
@@ -302,7 +304,7 @@ serve(async (req) => {
     let currentTotals: Record<string, number>;
     try {
       currentTotals = await fetchTikTokReport(
-        integration.access_token,
+        decryptedAccessToken,
         targetAccountId,
         dateRanges.current.since,
         dateRanges.current.until
@@ -334,7 +336,7 @@ serve(async (req) => {
     if (comparison) {
       try {
         const previousTotals = await fetchTikTokReport(
-          integration.access_token,
+          decryptedAccessToken,
           targetAccountId,
           dateRanges.previous.since,
           dateRanges.previous.until

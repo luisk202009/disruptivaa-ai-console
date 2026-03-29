@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { decryptToken } from "../_shared/crypto.ts";
 
 const ALLOWED_ORIGINS = [
   'https://disruptivaa.lovable.app',
@@ -92,6 +93,8 @@ serve(async (req) => {
       );
     }
 
+    const decryptedToken = await decryptToken(integration.access_token);
+
     // Normalize all account IDs for comparison
     const normalizedRequestIds = account_ids.map(normalizeAccountId);
     const normalizedUserAccounts = (integration.account_ids || []).map(normalizeAccountId);
@@ -109,7 +112,7 @@ serve(async (req) => {
         try {
           // Use normalized ID with act_ prefix for API call
           const response = await fetch(
-            `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name,account_status&access_token=${integration.access_token}`
+            `https://graph.facebook.com/v21.0/act_${cleanAccountId}?fields=name,account_status&access_token=${decryptedToken}`
           );
           const data = await response.json();
 
