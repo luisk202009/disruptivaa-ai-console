@@ -125,7 +125,7 @@ async function getAllIntegrations(supabaseAdmin: any, userId: string): Promise<{
 }> {
   const { data, error } = await supabaseAdmin
     .from("user_integrations")
-    .select("*")
+    .select("platform, access_token, account_ids")
     .eq("user_id", userId)
     .eq("status", "connected");
 
@@ -133,10 +133,20 @@ async function getAllIntegrations(supabaseAdmin: any, userId: string): Promise<{
     return { meta: null, google: null, tiktok: null };
   }
 
+  const decryptIntegration = async (item: any) => {
+    if (!item?.access_token) return null;
+    const decryptedToken = await decryptToken(item.access_token);
+    return { access_token: decryptedToken, account_ids: item.account_ids || [] };
+  };
+
+  const metaRaw = data.find((i: { platform: string }) => i.platform === 'meta_ads');
+  const googleRaw = data.find((i: { platform: string }) => i.platform === 'google_ads');
+  const tiktokRaw = data.find((i: { platform: string }) => i.platform === 'tiktok_ads');
+
   return {
-    meta: data.find((i: { platform: string }) => i.platform === 'meta_ads') || null,
-    google: data.find((i: { platform: string }) => i.platform === 'google_ads') || null,
-    tiktok: data.find((i: { platform: string }) => i.platform === 'tiktok_ads') || null,
+    meta: await decryptIntegration(metaRaw),
+    google: await decryptIntegration(googleRaw),
+    tiktok: await decryptIntegration(tiktokRaw),
   };
 }
 
