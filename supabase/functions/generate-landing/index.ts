@@ -1,10 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  'https://disruptivaa.lovable.app',
+  'https://agentes.disruptivaa.com',
+];
+
+function getCorsHeaders(requestOrigin: string | null): Record<string, string> {
+  const origin = requestOrigin && (
+    ALLOWED_ORIGINS.includes(requestOrigin) ||
+    requestOrigin.endsWith('.lovable.app') ||
+    requestOrigin.endsWith('.lovable.dev') ||
+    requestOrigin.endsWith('.lovableproject.com') ||
+    requestOrigin.endsWith('.disruptivaa.com') ||
+    requestOrigin === 'http://localhost:5173' ||
+    requestOrigin === 'http://localhost:3000'
+  ) ? requestOrigin : ALLOWED_ORIGINS[0];
+
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
