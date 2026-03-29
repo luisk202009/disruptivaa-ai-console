@@ -100,6 +100,7 @@ serve(async (req) => {
     }
 
     const accessToken = tokenData.data.access_token;
+    const encryptedAccessToken = await encryptToken(accessToken);
     const advertiserIds = tokenData.data.advertiser_ids || [];
 
     console.log(`✅ Got access_token, ${advertiserIds.length} advertiser(s)`);
