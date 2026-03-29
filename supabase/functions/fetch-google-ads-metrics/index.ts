@@ -265,14 +265,15 @@ serve(async (req) => {
     
     if (integration.token_expires_at && integration.refresh_token) {
       const decryptedRefreshToken = await decryptToken(integration.refresh_token);
-      const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
+      const expiresAt = new Date(integration.token_expires_at);
+      const bufferMs = 5 * 60 * 1000;
       
       if (Date.now() >= expiresAt.getTime() - bufferMs) {
         console.log("🔄 Token expired or expiring soon, refreshing...");
         const refreshed = await refreshGoogleToken(
           supabaseAdmin,
           userId,
-          integration.refresh_token
+          decryptedRefreshToken
         );
         
         if (refreshed) {
