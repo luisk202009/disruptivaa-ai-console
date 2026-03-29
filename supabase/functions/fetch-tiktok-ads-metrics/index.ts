@@ -295,6 +295,7 @@ serve(async (req) => {
     }
 
     const targetAccountId = account_id || integration.account_ids[0];
+    const decryptedAccessToken = await decryptToken(integration.access_token);
     const dateRanges = calculateDateRanges(date_preset);
 
     console.log(`📊 Fetching real TikTok data for account ${targetAccountId}`);
