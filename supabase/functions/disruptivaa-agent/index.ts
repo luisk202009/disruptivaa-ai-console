@@ -102,17 +102,19 @@ async function validateMetaToken(accessToken: string): Promise<boolean> {
 async function getMetaIntegration(supabaseAdmin: any, userId: string): Promise<{ access_token: string; account_ids: string[] } | null> {
   const { data, error } = await supabaseAdmin
     .from("user_integrations")
-    .select("*")
+    .select("access_token, account_ids")
     .eq("user_id", userId)
     .eq("platform", "meta_ads")
     .eq("status", "connected")
     .single();
 
-  if (error || !data) {
+  if (error || !data || !data.access_token) {
     return null;
   }
 
-  return data as { access_token: string; account_ids: string[] };
+  // Decrypt the access token
+  const decryptedToken = await decryptToken(data.access_token);
+  return { access_token: decryptedToken, account_ids: data.account_ids || [] };
 }
 
 // Get all connected integrations for omnichannel analysis
