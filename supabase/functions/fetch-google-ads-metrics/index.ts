@@ -261,7 +261,7 @@ serve(async (req) => {
     }
 
     // Check if token is expired (with 5 min buffer)
-    let accessToken = integration.access_token;
+    let accessToken = await decryptToken(integration.access_token);
     
     if (integration.token_expires_at && integration.refresh_token) {
       const expiresAt = new Date(integration.token_expires_at);
