@@ -209,6 +209,8 @@ function generateDemoDataPoints(datePreset: string, metric: string): { date: str
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req.headers.get('origin'));
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
