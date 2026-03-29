@@ -264,7 +264,7 @@ serve(async (req) => {
     let accessToken = await decryptToken(integration.access_token);
     
     if (integration.token_expires_at && integration.refresh_token) {
-      const expiresAt = new Date(integration.token_expires_at);
+      const decryptedRefreshToken = await decryptToken(integration.refresh_token);
       const bufferMs = 5 * 60 * 1000; // 5 minutes buffer
       
       if (Date.now() >= expiresAt.getTime() - bufferMs) {
