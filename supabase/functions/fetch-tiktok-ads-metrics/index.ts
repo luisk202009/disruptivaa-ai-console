@@ -304,7 +304,7 @@ serve(async (req) => {
     let currentTotals: Record<string, number>;
     try {
       currentTotals = await fetchTikTokReport(
-        integration.access_token,
+        decryptedAccessToken,
         targetAccountId,
         dateRanges.current.since,
         dateRanges.current.until
