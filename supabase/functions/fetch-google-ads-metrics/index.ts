@@ -73,11 +73,14 @@ async function refreshGoogleToken(
     const data = await response.json();
     const expiresAt = new Date(Date.now() + data.expires_in * 1000);
 
-    // Update database with new token
+    // Encrypt the new access token before saving
+    const encryptedNewToken = await encryptToken(data.access_token);
+    
+    // Update database with new encrypted token
     const { error: updateError } = await supabaseAdmin
       .from("user_integrations")
       .update({
-        access_token: data.access_token,
+        access_token: encryptedNewToken,
         token_expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
       })
