@@ -10,7 +10,11 @@ import logoKuppel from "@/assets/clients/kuppel.png";
 import logoAlbus from "@/assets/clients/albus.png";
 import logoAsuclean from "@/assets/clients/asuclean.png";
 import logoAlatra from "@/assets/clients/alatra.png";
-import logoClient7 from "@/assets/clients/image-19.png";
+import logoClient8 from "@/assets/clients/img-5631.png";
+import logoImagotipo from "@/assets/clients/imagotipo-2022.png";
+import logoPolaPerola from "@/assets/clients/pola-perola.png";
+import logoSuma from "@/assets/clients/suma.png";
+import logoHypeGoods from "@/assets/clients/hypegoods.png";
 
 const clients = [
   { name: "Acontapp", logo: logoAcontapp },
@@ -19,7 +23,11 @@ const clients = [
   { name: "Albus", logo: logoAlbus },
   { name: "Asuclean", logo: logoAsuclean },
   { name: "Alatra", logo: logoAlatra },
-  { name: "Cliente", logo: logoClient7 },
+  { name: "Cliente", logo: logoClient8 },
+  { name: "Imagotipo", logo: logoImagotipo },
+  { name: "Pola Perola", logo: logoPolaPerola },
+  { name: "SUMA", logo: logoSuma },
+  { name: "Hype Goods", logo: logoHypeGoods },
 ];
 
 const services = [
