@@ -93,6 +93,8 @@ serve(async (req) => {
       );
     }
 
+    const decryptedToken = await decryptToken(integration.access_token);
+
     // Normalize all account IDs for comparison
     const normalizedRequestIds = account_ids.map(normalizeAccountId);
     const normalizedUserAccounts = (integration.account_ids || []).map(normalizeAccountId);
