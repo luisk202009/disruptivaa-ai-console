@@ -1,44 +1,78 @@
 
 
-## Plan: Automatic Expired Token Detection with Re-authentication Alert
+## Plan: Sistema de Gestión de Propuestas HTML
 
-### Problem
-When OAuth tokens expire (Meta, Google, TikTok), widgets show a generic "Conexión requerida" message with no actionable way to fix it directly from the dashboard. Users must manually navigate to the Connections page.
+### Resumen
 
-### Solution
-1. **Enhance edge functions** to return a structured `token_expired` flag alongside `is_demo` when the failure is specifically due to an expired/invalid token (vs. no integration at all).
+Crear un módulo completo para gestionar propuestas comerciales HTML desde el panel de administración, con visualización pública mediante slug.
 
-2. **Enhance `useIntegrations` hook** to also fetch `token_expires_at` from the database, exposing a helper `getExpiredPlatforms()` that returns platforms with tokens expired or expiring within 24 hours.
+### 1. Migración de Base de Datos
 
-3. **Create an `ExpiredTokenBanner` component** — a prominent alert bar rendered at the top of the `DashboardView` page. It shows which platform(s) have expired tokens and includes direct "Reconectar" buttons that link to `/connections` (or trigger the OAuth flow directly for each platform).
+Crear tabla `proposals`:
 
-4. **Update `DashboardWidget` error handling** — distinguish between `token_expired` errors and generic `no_integration` errors. When `token_expired`, show a red alert (not amber) with text like "Token expirado" and a "Reconectar" button linking to `/connections`.
+```sql
+CREATE TABLE public.proposals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id uuid REFERENCES public.leads(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  html_content text NOT NULL DEFAULT '',
+  status text NOT NULL DEFAULT 'draft',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
-5. **Add i18n keys** for expired token messages in `es`, `en`, and `pt` locale files.
+ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 
-### Files to modify
+-- Lectura pública (para la URL /propuesta/slug)
+CREATE POLICY "Public can view sent proposals"
+  ON public.proposals FOR SELECT TO anon, authenticated
+  USING (status IN ('sent', 'viewed'));
 
-| File | Change |
-|------|--------|
-| `supabase/functions/fetch-meta-metrics/index.ts` | Detect Meta API "expired session" errors → return `{ token_expired: true, is_demo: true }` |
-| `supabase/functions/fetch-google-ads-metrics/index.ts` | Detect token refresh failure → return `{ token_expired: true, is_demo: true }` |
-| `supabase/functions/fetch-tiktok-ads-metrics/index.ts` | Detect invalid token responses → return `{ token_expired: true, is_demo: true }` |
-| `src/hooks/useIntegrations.ts` | Fetch `token_expires_at`, expose `getExpiredPlatforms()` |
-| `src/components/dashboards/widgets/DashboardWidget.tsx` | Handle `token_expired` error state with red alert + "Reconectar" button |
-| `src/components/dashboards/ExpiredTokenBanner.tsx` | **New** — banner component for the dashboard header |
-| `src/pages/DashboardView.tsx` | Render `ExpiredTokenBanner` above the canvas |
-| `src/i18n/locales/es/common.json` | Add `widget.tokenExpired`, `widget.tokenExpiredDesc`, `widget.reconnect` keys |
-| `src/i18n/locales/en/common.json` | Same keys in English |
-| `src/i18n/locales/pt/common.json` | Same keys in Portuguese |
+-- Admin tiene acceso total
+CREATE POLICY "Admins have full access to proposals"
+  ON public.proposals FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'));
 
-### Technical details
+-- Trigger para updated_at
+CREATE TRIGGER update_proposals_updated_at
+  BEFORE UPDATE ON public.proposals
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+```
 
-**Edge function error detection**: Each metrics edge function already catches API errors. The change adds pattern matching:
-- Meta: check for `OAuthException` or error code 190 in the Graph API response
-- Google: detect when `refreshAccessToken` fails (already returns `is_demo: true` with error "Token refresh failed" — add `token_expired: true`)
-- TikTok: detect HTML responses or auth error codes → add `token_expired: true`
+### 2. Nuevos Archivos
 
-**Client-side flow**: `DashboardWidget.loadData()` already checks `is_demo`. It will additionally check `(result.data as any).token_expired` and set error to `"token_expired"` instead of `"no_integration"`. The `renderContent()` switch will show a distinct UI with a red icon, specific message, and a `<Link to="/connections">` button.
+| Archivo | Descripción |
+|---------|-------------|
+| `src/pages/admin/AdminProposals.tsx` | Lista de propuestas con tabla, filtros por status, y botón "Nueva Propuesta" |
+| `src/components/admin/ProposalEditor.tsx` | Diálogo/formulario con inputs para title, slug (auto-generado desde title), textarea grande con monospace para HTML, selector de lead opcional, y botón guardar |
+| `src/pages/ProposalView.tsx` | Página pública `/propuesta/:slug` que renderiza el HTML con `dangerouslySetInnerHTML` dentro de un iframe sandboxed para seguridad |
+| `src/hooks/useProposals.ts` | Hook con queries para CRUD de propuestas |
 
-**Banner component**: Uses `useIntegrations` to check `token_expires_at` for all connected platforms. If any are expired or within 24h of expiry, renders a dismissible alert with platform-specific reconnect links.
+### 3. Archivos a Modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `src/App.tsx` | Agregar rutas: `/admin/proposals` (protegida con AdminLayout) y `/propuesta/:slug` (pública) |
+| `src/components/admin/AdminLayout.tsx` | Agregar item "Propuestas" al menú de navegación con icono `FileText` |
+
+### 4. Detalles Técnicos
+
+**AdminProposals.tsx**: Tabla con columnas Title, Lead, Status (badge con colores), Fecha, Acciones. Botón para abrir el editor. Al guardar, genera y muestra el enlace copiable.
+
+**ProposalEditor.tsx**: Dialog con formulario react-hook-form + zod. El slug se auto-genera desde el título (slugify). Textarea con `font-mono` y altura amplia para pegar HTML. Selector opcional de lead vinculado. Botones: Guardar como borrador, Marcar como enviada.
+
+**ProposalView.tsx**: Ruta pública. Fetch por slug con `.eq('slug', slug)`. Renderiza el HTML dentro de un `<iframe srcDoc={html_content} sandbox="allow-same-origin" />` para aislar estilos y scripts. Al abrir, actualiza el status a `viewed` si estaba en `sent` (via edge function o RPC para evitar necesidad de auth).
+
+**Actualización de status a "viewed"**: Se creará una función de base de datos `mark_proposal_viewed(slug text)` con `SECURITY DEFINER` que actualice el status solo si está en `sent`, permitiendo la llamada desde el cliente anónimo via `.rpc()`.
+
+### 5. Flujo del Usuario Admin
+
+1. Va a Admin → Propuestas
+2. Clic en "Nueva Propuesta"
+3. Escribe título, se auto-genera slug
+4. Opcionalmente vincula un lead
+5. Pega el código HTML en el textarea
+6. Guarda → se muestra el enlace público copiable
+7. Cambia status a "Enviada" cuando comparte el enlace
 
