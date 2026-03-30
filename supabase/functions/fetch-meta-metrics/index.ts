@@ -381,7 +381,15 @@ async function fetchInsightsWithDailyBreakdown(
 
     if (data.error) {
       console.error("❌ Meta API error:", data.error);
-      return { error: data.error.message };
+      // Detect expired/invalid token errors
+      const isTokenExpired = data.error.type === "OAuthException" || 
+        data.error.code === 190 || 
+        (data.error.message && (
+          data.error.message.includes("Session has expired") ||
+          data.error.message.includes("session has been invalidated") ||
+          data.error.message.includes("access token")
+        ));
+      return { error: data.error.message, token_expired: isTokenExpired };
     }
 
     // Normalize Meta response to our format
