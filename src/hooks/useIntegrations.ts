@@ -14,6 +14,7 @@ export interface Integration {
   status: 'connected' | 'disconnected';
   connected_at: string | null;
   account_name: string | null;
+  token_expires_at: string | null;
   accountsCount?: number;
   accountDetails?: MetaAccountDetail[];
 }
