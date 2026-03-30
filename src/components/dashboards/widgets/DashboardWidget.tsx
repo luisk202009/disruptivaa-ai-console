@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { MoreVertical, GripVertical, Pencil, Trash2, RefreshCw, AlertCircle, Settings, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { MoreVertical, GripVertical, Pencil, Trash2, RefreshCw, AlertCircle, Settings, AlertTriangle, Unplug } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ export const DashboardWidget = ({
   onDelete,
 }: DashboardWidgetProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [data, setData] = useState<MetricData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,11 @@ export const DashboardWidget = ({
       setError(result.error);
       setData(null);
     } else if (result.data) {
-      if ((result.data as any).is_demo) {
+      if ((result.data as any).token_expired) {
+        setIsDemo(true);
+        setData(null);
+        setError("token_expired");
+      } else if ((result.data as any).is_demo) {
         setIsDemo(true);
         setData(null);
         setError("no_integration");
@@ -103,6 +109,26 @@ export const DashboardWidget = ({
           <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
             <Settings size={14} />
             {t("common.configure")}
+          </Button>
+        </div>
+      );
+    }
+
+    if (error === "token_expired") {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Unplug size={24} className="text-destructive" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-destructive">🔴 {t("widget.tokenExpired")}</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              {t("widget.tokenExpiredDesc")}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate("/connections")} className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10">
+            <RefreshCw size={14} />
+            {t("widget.reconnect")}
           </Button>
         </div>
       );

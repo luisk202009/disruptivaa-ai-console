@@ -400,7 +400,13 @@
     "panelName": "Nombre",
     "panelNamePlaceholder": "Mi panel de métricas",
     "panelDescLabel": "Descripción (opcional)",
-    "panelDescPlaceholder": "Panel para monitorear el rendimiento de campañas..."
+    "panelDescPlaceholder": "Panel para monitorear el rendimiento de campañas...",
+    "tokenExpired": "Token expirado",
+    "tokenExpiredDesc": "Tu conexión ha expirado. Reconecta tu cuenta para ver datos reales.",
+    "reconnect": "Reconectar",
+    "expiredBannerTitle": "Conexiones expiradas",
+    "expiredBannerDesc": "Las siguientes plataformas requieren re-autenticación:",
+    "expiredBannerAction": "Ir a Conexiones"
   },
   "smartAlerts": {
     "title": "Centro de Alertas",

@@ -10,6 +10,7 @@ import Sidebar from "@/components/Sidebar";
 import { useDashboards } from "@/hooks/useDashboards";
 import { useWidgets, Widget, GridSettings, DatePreset, DataSource } from "@/hooks/useWidgets";
 import { useIntegrations, MetaAccountDetail } from "@/hooks/useIntegrations";
+import { ExpiredTokenBanner } from "@/components/dashboards/ExpiredTokenBanner";
 import { DashboardCanvas } from "@/components/dashboards/DashboardCanvas";
 import { WidgetSelector } from "@/components/dashboards/WidgetSelector";
 import { WidgetSettings } from "@/components/dashboards/WidgetSettings";
@@ -34,7 +35,7 @@ const DashboardView = () => {
   const { widgets, loading: widgetsLoading, addWidget, updateWidget, updateWidgetPositions, removeWidget } = useWidgets({
     dashboardId,
   });
-  const { getAccountDetailsByPlatform } = useIntegrations();
+  const { getAccountDetailsByPlatform, getExpiredPlatforms } = useIntegrations();
   
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
@@ -241,6 +242,9 @@ const DashboardView = () => {
             </Sheet>
           </div>
         </header>
+
+        {/* Expired Token Banner */}
+        <ExpiredTokenBanner expiredPlatforms={getExpiredPlatforms()} />
 
         {/* Canvas */}
         <div className="flex-1 p-6 overflow-auto relative">

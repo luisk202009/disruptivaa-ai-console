@@ -288,6 +288,7 @@ serve(async (req) => {
             JSON.stringify({ 
               error: "Token refresh failed",
               is_demo: true,
+              token_expired: true,
               value: generateDemoValue(metric),
               previous_value: generateDemoValue(metric) * 0.9,
               change_percent: 10,

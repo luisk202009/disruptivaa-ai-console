@@ -14,6 +14,7 @@ export interface Integration {
   status: 'connected' | 'disconnected';
   connected_at: string | null;
   account_name: string | null;
+  token_expires_at: string | null;
   accountsCount?: number;
   accountDetails?: MetaAccountDetail[];
 }
@@ -51,7 +52,7 @@ export const useIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('user_integrations')
-        .select('id, platform, status, connected_at, account_name, account_ids')
+        .select('id, platform, status, connected_at, account_name, account_ids, token_expires_at')
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -62,6 +63,7 @@ export const useIntegrations = () => {
         status: item.status as 'connected' | 'disconnected',
         connected_at: item.connected_at,
         account_name: item.account_name,
+        token_expires_at: item.token_expires_at,
       })) || []);
     } catch (error) {
       console.error('Error fetching integrations:', error);
@@ -257,6 +259,16 @@ export const useIntegrations = () => {
     return integrations.filter(i => i.status === 'connected');
   };
 
+  // Returns platforms with tokens expired or expiring within 24 hours
+  const getExpiredPlatforms = () => {
+    const now = Date.now();
+    const buffer24h = 24 * 60 * 60 * 1000;
+    return integrations.filter(i => {
+      if (i.status !== 'connected' || !i.token_expires_at) return false;
+      return new Date(i.token_expires_at).getTime() - now < buffer24h;
+    });
+  };
+
   useEffect(() => {
     fetchIntegrations();
   }, [user]);
@@ -358,6 +370,7 @@ export const useIntegrations = () => {
     disconnectPlatform,
     getIntegration,
     getConnectedPlatforms,
+    getExpiredPlatforms,
     getMetaAccountDetails,
     getAccountDetailsByPlatform,
   };
