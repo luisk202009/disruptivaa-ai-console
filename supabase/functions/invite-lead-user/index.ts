@@ -76,9 +76,9 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Lead not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Invite user by email
+    // Invite user by email (idempotent — skip if already registered)
     const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(lead.email);
-    if (inviteError) {
+    if (inviteError && !/already been registered/i.test(inviteError.message)) {
       return new Response(JSON.stringify({ error: inviteError.message }), { status: 500, headers: corsHeaders });
     }
 
