@@ -259,6 +259,16 @@ export const useIntegrations = () => {
     return integrations.filter(i => i.status === 'connected');
   };
 
+  // Returns platforms with tokens expired or expiring within 24 hours
+  const getExpiredPlatforms = () => {
+    const now = Date.now();
+    const buffer24h = 24 * 60 * 60 * 1000;
+    return integrations.filter(i => {
+      if (i.status !== 'connected' || !i.token_expires_at) return false;
+      return new Date(i.token_expires_at).getTime() - now < buffer24h;
+    });
+  };
+
   useEffect(() => {
     fetchIntegrations();
   }, [user]);
