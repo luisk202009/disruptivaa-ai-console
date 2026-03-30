@@ -536,6 +536,47 @@ export type Database = {
         }
         Relationships: []
       }
+      proposals: {
+        Row: {
+          created_at: string | null
+          html_content: string
+          id: string
+          lead_id: string | null
+          slug: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          html_content?: string
+          id?: string
+          lead_id?: string | null
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          html_content?: string
+          id?: string
+          lead_id?: string | null
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           billing_cycle: string
@@ -725,6 +766,7 @@ export type Database = {
         Args: { _notification_id: string }
         Returns: undefined
       }
+      mark_proposal_viewed: { Args: { _slug: string }; Returns: undefined }
       upsert_lead_and_brief: {
         Args: {
           _answers: Json
