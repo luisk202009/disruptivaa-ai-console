@@ -35,7 +35,7 @@ const DashboardView = () => {
   const { widgets, loading: widgetsLoading, addWidget, updateWidget, updateWidgetPositions, removeWidget } = useWidgets({
     dashboardId,
   });
-  const { getAccountDetailsByPlatform } = useIntegrations();
+  const { getAccountDetailsByPlatform, getExpiredPlatforms } = useIntegrations();
   
   const [showWidgetSelector, setShowWidgetSelector] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
