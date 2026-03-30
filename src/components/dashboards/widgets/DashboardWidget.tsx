@@ -65,7 +65,11 @@ export const DashboardWidget = ({
       setError(result.error);
       setData(null);
     } else if (result.data) {
-      if ((result.data as any).is_demo) {
+      if ((result.data as any).token_expired) {
+        setIsDemo(true);
+        setData(null);
+        setError("token_expired");
+      } else if ((result.data as any).is_demo) {
         setIsDemo(true);
         setData(null);
         setError("no_integration");
