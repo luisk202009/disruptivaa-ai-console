@@ -243,6 +243,9 @@ const DashboardView = () => {
           </div>
         </header>
 
+        {/* Expired Token Banner */}
+        <ExpiredTokenBanner expiredPlatforms={getExpiredPlatforms()} />
+
         {/* Canvas */}
         <div className="flex-1 p-6 overflow-auto relative">
           {lastUpdated && (
