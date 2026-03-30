@@ -114,6 +114,26 @@ export const DashboardWidget = ({
       );
     }
 
+    if (error === "token_expired") {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+          <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Unplug size={24} className="text-destructive" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-destructive">🔴 {t("widget.tokenExpired")}</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
+              {t("widget.tokenExpiredDesc")}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => navigate("/connections")} className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10">
+            <RefreshCw size={14} />
+            {t("widget.reconnect")}
+          </Button>
+        </div>
+      );
+    }
+
     if (error === "no_integration" || isDemo) {
       return (
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">

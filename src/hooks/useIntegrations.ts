@@ -370,6 +370,7 @@ export const useIntegrations = () => {
     disconnectPlatform,
     getIntegration,
     getConnectedPlatforms,
+    getExpiredPlatforms,
     getMetaAccountDetails,
     getAccountDetailsByPlatform,
   };

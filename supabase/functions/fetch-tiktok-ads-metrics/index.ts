@@ -311,6 +311,10 @@ serve(async (req) => {
       );
     } catch (e) {
       console.warn("⚠️ Failed to fetch TikTok current period, returning demo data:", e.message);
+      const isTokenExpired = e.message?.includes("Token may be expired") || 
+        e.message?.includes("non-JSON response") ||
+        e.message?.includes("auth") ||
+        e.message?.includes("unauthorized");
       const demoValue = generateDemoValue(metric);
       return new Response(
         JSON.stringify({
@@ -320,6 +324,7 @@ serve(async (req) => {
           trend: "up",
           data_points: generateDemoDataPoints(date_preset, metric),
           is_demo: true,
+          token_expired: isTokenExpired,
           platform: "tiktok_ads",
           error_message: e.message,
         }),

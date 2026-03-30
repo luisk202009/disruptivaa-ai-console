@@ -262,6 +262,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           error: currentDataPoints.error,
+          token_expired: !!(currentDataPoints as any).token_expired,
+          is_demo: !!(currentDataPoints as any).token_expired,
           value: 0,
           data_points: []
         }),
