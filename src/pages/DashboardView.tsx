@@ -10,6 +10,7 @@ import Sidebar from "@/components/Sidebar";
 import { useDashboards } from "@/hooks/useDashboards";
 import { useWidgets, Widget, GridSettings, DatePreset, DataSource } from "@/hooks/useWidgets";
 import { useIntegrations, MetaAccountDetail } from "@/hooks/useIntegrations";
+import { ExpiredTokenBanner } from "@/components/dashboards/ExpiredTokenBanner";
 import { DashboardCanvas } from "@/components/dashboards/DashboardCanvas";
 import { WidgetSelector } from "@/components/dashboards/WidgetSelector";
 import { WidgetSettings } from "@/components/dashboards/WidgetSettings";
