@@ -35,6 +35,7 @@ export const DashboardWidget = ({
   onDelete,
 }: DashboardWidgetProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [data, setData] = useState<MetricData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
