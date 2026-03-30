@@ -1,5 +1,5 @@
 import { 
-  Users, Building2, UserCog, CreditCard, Bell, Mail,
+  Users, Building2, UserCog, CreditCard, Bell, Mail, FileText,
   ChevronLeft, ChevronRight, ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
@@ -54,6 +54,7 @@ const adminNavItems = [
   { id: "subscriptions", icon: <CreditCard size={18} strokeWidth={1.5} />, label: "Suscripciones", path: "/admin/subscriptions" },
   { id: "notifications", icon: <Bell size={18} strokeWidth={1.5} />, label: "Notificaciones", path: "/admin/notifications" },
   { id: "emails", icon: <Mail size={18} strokeWidth={1.5} />, label: "Email", path: "/admin/emails" },
+  { id: "proposals", icon: <FileText size={18} strokeWidth={1.5} />, label: "Propuestas", path: "/admin/proposals" },
 ];
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {

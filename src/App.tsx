@@ -34,7 +34,9 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions"));
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
+const AdminProposals = lazy(() => import("./pages/admin/AdminProposals"));
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
+const ProposalView = lazy(() => import("./pages/ProposalView"));
 const Brief = lazy(() => import("./pages/Brief"));
 
 // Páginas de servicios
@@ -98,6 +100,7 @@ const App = () => (
               <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
               <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
               <Route path="/nosotros" element={<Lazy><Nosotros /></Lazy>} />
+              <Route path="/propuesta/:slug" element={<Lazy><ProposalView /></Lazy>} />
 
               {/* Brief público */}
               <Route path="/brief" element={<Lazy><Brief /></Lazy>} />
@@ -123,6 +126,7 @@ const App = () => (
               <Route path="/admin/subscriptions" element={<ProtectedRoute><Lazy><AdminLayout><AdminSubscriptions /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/notifications" element={<ProtectedRoute><Lazy><AdminLayout><AdminNotifications /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/emails" element={<ProtectedRoute><Lazy><AdminLayout><AdminEmails /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/proposals" element={<ProtectedRoute><Lazy><AdminLayout><AdminProposals /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
               <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
 
