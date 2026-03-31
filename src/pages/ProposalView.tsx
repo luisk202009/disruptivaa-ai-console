@@ -17,7 +17,7 @@ const ProposalView = () => {
       // 1. Fetch proposal from DB
       const { data, error } = await supabase
         .from("proposals" as any)
-        .select("company_name, status")
+        .select("company_name, status, cta_primary_url, cta_secondary_url")
         .eq("slug", slug)
         .single();
 
