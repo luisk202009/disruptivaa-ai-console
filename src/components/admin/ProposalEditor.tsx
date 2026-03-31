@@ -94,7 +94,10 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
     try {
       const res = await fetch("/proposal-template.html");
       const template = await res.text();
-      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName.trim());
+      const finalHtml = template
+        .split("{{COMPANY_NAME}}").join(companyName.trim())
+        .split("{{CTA_PRIMARY_URL}}").join(ctaPrimaryUrl || "#")
+        .split("{{CTA_SECONDARY_URL}}").join(ctaSecondaryUrl || "https://www.disruptivaa.com");
       setPreviewHtml(finalHtml);
       setShowPreview(true);
     } catch {
