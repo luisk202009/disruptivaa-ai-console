@@ -9,6 +9,8 @@ export interface Proposal {
   company_name: string;
   html_content: string;
   status: string;
+  cta_primary_url: string;
+  cta_secondary_url: string;
   created_at: string;
   updated_at: string;
   lead?: { id: string; name: string; email: string; company: string | null } | null;
@@ -30,7 +32,7 @@ export const useProposals = () => {
   });
 
   const createProposal = useMutation({
-    mutationFn: async (proposal: { title: string; slug: string; company_name: string; lead_id?: string | null; status?: string }) => {
+    mutationFn: async (proposal: { title: string; slug: string; company_name: string; lead_id?: string | null; status?: string; cta_primary_url?: string; cta_secondary_url?: string }) => {
       const { data, error } = await supabase
         .from("proposals")
         .insert({ ...proposal, html_content: "" } as any)
@@ -43,7 +45,7 @@ export const useProposals = () => {
   });
 
   const updateProposal = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; company_name?: string; lead_id?: string | null; status?: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; company_name?: string; lead_id?: string | null; status?: string; cta_primary_url?: string; cta_secondary_url?: string }) => {
       const { data, error } = await supabase
         .from("proposals")
         .update(updates as any)

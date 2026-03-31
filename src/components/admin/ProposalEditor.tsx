@@ -33,6 +33,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
   const [companyName, setCompanyName] = useState("");
   const [leadId, setLeadId] = useState<string>("none");
   const [status, setStatus] = useState("draft");
+  const [ctaPrimaryUrl, setCtaPrimaryUrl] = useState("");
+  const [ctaSecondaryUrl, setCtaSecondaryUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -56,6 +58,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setCompanyName(proposal.company_name || "");
         setLeadId(proposal.lead_id ?? "none");
         setStatus(proposal.status);
+        setCtaPrimaryUrl(proposal.cta_primary_url || "");
+        setCtaSecondaryUrl(proposal.cta_secondary_url || "");
         setSavedSlug(proposal.slug);
       } else {
         setTitle("");
@@ -64,6 +68,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setCompanyName("");
         setLeadId("none");
         setStatus("draft");
+        setCtaPrimaryUrl("");
+        setCtaSecondaryUrl("");
         setSavedSlug(null);
       }
       setCopied(false);
@@ -88,7 +94,10 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
     try {
       const res = await fetch("/proposal-template.html");
       const template = await res.text();
-      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName.trim());
+      const finalHtml = template
+        .split("{{COMPANY_NAME}}").join(companyName.trim())
+        .split("{{CTA_PRIMARY_URL}}").join(ctaPrimaryUrl || "#")
+        .split("{{CTA_SECONDARY_URL}}").join(ctaSecondaryUrl || "https://www.disruptivaa.com");
       setPreviewHtml(finalHtml);
       setShowPreview(true);
     } catch {
@@ -113,6 +122,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         company_name: companyName.trim(),
         lead_id: leadId === "none" ? null : leadId,
         status: overrideStatus || status,
+        cta_primary_url: ctaPrimaryUrl.trim(),
+        cta_secondary_url: ctaSecondaryUrl.trim(),
       };
 
       if (proposal) {
@@ -239,6 +250,27 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
                   <SelectItem value="rejected">Rechazada</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>URL "Agendar reunión" (CTA principal)</Label>
+              <Input
+                value={ctaPrimaryUrl}
+                onChange={(e) => setCtaPrimaryUrl(e.target.value)}
+                placeholder="https://calendly.com/tu-empresa/reunion"
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>URL "Ver nuestro trabajo" (CTA secundario)</Label>
+              <Input
+                value={ctaSecondaryUrl}
+                onChange={(e) => setCtaSecondaryUrl(e.target.value)}
+                placeholder="https://www.disruptivaa.com"
+                className="font-mono text-sm"
+              />
             </div>
           </div>
 

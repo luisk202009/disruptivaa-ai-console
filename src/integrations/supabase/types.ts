@@ -540,6 +540,8 @@ export type Database = {
         Row: {
           company_name: string
           created_at: string | null
+          cta_primary_url: string | null
+          cta_secondary_url: string | null
           html_content: string
           id: string
           lead_id: string | null
@@ -551,6 +553,8 @@ export type Database = {
         Insert: {
           company_name?: string
           created_at?: string | null
+          cta_primary_url?: string | null
+          cta_secondary_url?: string | null
           html_content?: string
           id?: string
           lead_id?: string | null
@@ -562,6 +566,8 @@ export type Database = {
         Update: {
           company_name?: string
           created_at?: string | null
+          cta_primary_url?: string | null
+          cta_secondary_url?: string | null
           html_content?: string
           id?: string
           lead_id?: string | null
