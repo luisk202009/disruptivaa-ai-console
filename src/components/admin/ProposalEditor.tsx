@@ -88,7 +88,7 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
     try {
       const res = await fetch("/proposal-template.html");
       const template = await res.text();
-      const finalHtml = template.replaceAll("{{COMPANY_NAME}}", companyName.trim());
+      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName.trim());
       setPreviewHtml(finalHtml);
       setShowPreview(true);
     } catch {

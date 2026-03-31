@@ -39,7 +39,7 @@ const ProposalView = () => {
       const template = await res.text();
 
       // 3. Inject company name
-      const finalHtml = template.replaceAll("{{COMPANY_NAME}}", companyName);
+      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName);
       setHtml(finalHtml);
       setLoading(false);
 
