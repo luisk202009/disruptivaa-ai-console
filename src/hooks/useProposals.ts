@@ -32,7 +32,7 @@ export const useProposals = () => {
   });
 
   const createProposal = useMutation({
-    mutationFn: async (proposal: { title: string; slug: string; company_name: string; lead_id?: string | null; status?: string }) => {
+    mutationFn: async (proposal: { title: string; slug: string; company_name: string; lead_id?: string | null; status?: string; cta_primary_url?: string; cta_secondary_url?: string }) => {
       const { data, error } = await supabase
         .from("proposals")
         .insert({ ...proposal, html_content: "" } as any)
