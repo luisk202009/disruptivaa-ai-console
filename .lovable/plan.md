@@ -1,71 +1,51 @@
 
 
-## Plan: Actualizar Módulo de Propuestas con Plantilla Fija y Vista Previa
+## Plan: Corregir OAuth y Nombres de Cuentas TikTok
 
-El problema es que la migración de DB y los cambios de código del plan anterior nunca se aplicaron. Los archivos siguen usando el esquema viejo (`html_content`, sin `company_name`). Hay que ejecutar todo ahora.
+### Diagnóstico
 
-### 1. Migración de Base de Datos
+Hay 3 problemas distintos:
 
-Agregar `company_name` a la tabla `proposals` y actualizar la política RLS para incluir los nuevos estados:
+1. **Meta OAuth — "URL bloqueada"**: El código usa `window.location.origin` para el redirect URI, lo cual es correcto. Pero en la configuración de tu Meta App (developers.facebook.com), las URIs autorizadas probablemente solo tienen `app.disruptivaa.com`, no `www.disruptivaa.com`.
 
-```sql
-ALTER TABLE public.proposals ADD COLUMN IF NOT EXISTS company_name text NOT NULL DEFAULT '';
--- Actualizar RLS para nuevos estados
-DROP POLICY IF EXISTS "Public can view sent proposals" ON public.proposals;
-CREATE POLICY "Public can view sent proposals"
-  ON public.proposals FOR SELECT TO anon, authenticated
-  USING (status IN ('sent', 'viewed', 'accepted', 'rejected'));
-```
+2. **Google OAuth — "redirect_uri_mismatch"**: Mismo problema. En Google Cloud Console, la URI de redirección autorizada no incluye `https://www.disruptivaa.com/auth/google/callback`.
 
-Nota: se mantiene `html_content` en la DB por compatibilidad con propuestas existentes, pero el editor ya no lo usara.
+3. **TikTok OAuth — redirect hardcodeado**: El botón tiene `https://app.disruptivaa.com/auth/tiktok/callback` hardcodeado en el código. Debe cambiarse a `www.disruptivaa.com`.
 
-### 2. `src/hooks/useProposals.ts`
+4. **TikTok — cuentas sin nombre**: El exchange function guarda los advertiser IDs pero nunca consulta sus nombres. El frontend muestra IDs crudos.
 
-- Agregar `company_name` al tipo `Proposal`
-- Actualizar mutaciones create/update para incluir `company_name`
-- Agregar mutacion `duplicateProposal` que copia titulo, company_name, lead_id con slug + `-copia` y status `draft`
+---
 
-### 3. `src/components/admin/ProposalEditor.tsx` — Rediseño completo
+### Acciones que TÚ debes hacer en las consolas externas
 
-Reemplazar el textarea de HTML por:
-- Campo **Titulo** (auto-genera slug)
-- Campo **Slug** (editable)
-- Campo **Nombre de la empresa** (nuevo, requerido) — este valor reemplaza `{{COMPANY_NAME}}` en la plantilla
-- Selector **Lead vinculado** (opcional)
-- Selector **Estado** (draft, sent, accepted, rejected)
-- Boton **"Vista previa"** — abre `/p/:slug` en nueva pestana (o muestra iframe inline con la plantilla + company_name inyectado)
-- Boton **"Generar propuesta"** — guarda y cierra el dialog
+**Meta (developers.facebook.com → tu App → Settings → Basic + Facebook Login → Settings):**
+- Agregar `https://www.disruptivaa.com` en "App Domains"
+- En "Valid OAuth Redirect URIs" agregar: `https://www.disruptivaa.com/auth/meta/callback`
+- Puedes mantener `app.disruptivaa.com` también si lo usas como alias
 
-La vista previa inline: fetch de `/proposal-template.html`, reemplaza `{{COMPANY_NAME}}` con el valor del campo, y muestra un iframe dentro del dialog.
+**Google (console.cloud.google.com → Credentials → tu OAuth Client ID):**
+- En "Authorized JavaScript origins" agregar: `https://www.disruptivaa.com`
+- En "Authorized redirect URIs" agregar: `https://www.disruptivaa.com/auth/google/callback`
 
-### 4. `src/pages/admin/AdminProposals.tsx`
+**TikTok (business-api.tiktok.com → tu App):**
+- En "Redirect URI" agregar: `https://www.disruptivaa.com/auth/tiktok/callback`
 
-- Agregar columna "Empresa" a la tabla
-- Agregar boton **Duplicar** (icono Copy) en acciones
-- Actualizar badges con nuevos estados: `accepted` (verde), `rejected` (rojo)
-- Cambiar URLs de `/propuesta/` a `/p/`
-- Agregar filtros para los nuevos estados
+---
 
-### 5. `src/pages/ProposalView.tsx`
-
-- En vez de leer `html_content` de la DB, hacer fetch de `/proposal-template.html`
-- Leer `company_name` de la propuesta
-- Reemplazar `{{COMPANY_NAME}}` en el template con `company_name`
-- Renderizar en iframe con `srcDoc`
-
-### 6. `src/App.tsx`
-
-- Agregar ruta `/p/:slug` apuntando a `ProposalView`
-- Mantener `/propuesta/:slug` como redirect o alias
-
-### Archivos a modificar
+### Cambios de código
 
 | Archivo | Cambio |
 |---------|--------|
-| Nueva migración SQL | Agregar `company_name`, actualizar RLS |
-| `src/hooks/useProposals.ts` | Tipo + duplicateProposal |
-| `src/components/admin/ProposalEditor.tsx` | Reescribir: quitar textarea HTML, agregar company_name, estado, vista previa |
-| `src/pages/admin/AdminProposals.tsx` | Columna empresa, duplicar, nuevos badges, URLs `/p/` |
-| `src/pages/ProposalView.tsx` | Usar template + company_name en vez de html_content |
-| `src/App.tsx` | Agregar ruta `/p/:slug` |
+| `src/components/TikTokOAuthButton.tsx` | Cambiar redirect URI hardcodeado de `app.disruptivaa.com` a usar `window.location.origin` (consistente con Meta y Google) |
+| `supabase/functions/tiktok-oauth-exchange/index.ts` | Después de obtener el access_token, hacer un fetch a la TikTok API (`/advertiser/info/`) para obtener los nombres reales de cada advertiser_id y guardarlos como `account_names` JSON |
+| `src/hooks/useIntegrations.ts` | En `getAccountDetailsByPlatform` para TikTok, usar los nombres guardados en vez de genéricos |
+
+### Detalle del fix de nombres TikTok
+
+En la edge function `tiktok-oauth-exchange`, después de obtener `advertiser_ids`:
+1. Hacer GET a `https://business-api.tiktok.com/open_api/v1.3/advertiser/info/` con `advertiser_ids` como parámetro
+2. Extraer el `advertiser_name` de cada respuesta
+3. Guardar un JSON `account_names` (map de id→nombre) en la columna `account_ids` o en una nueva columna
+
+En `useIntegrations.ts`, leer esos nombres y mostrarlos en el selector de cuentas.
 
