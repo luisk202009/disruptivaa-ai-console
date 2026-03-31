@@ -45,7 +45,7 @@ export const useProposals = () => {
   });
 
   const updateProposal = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; company_name?: string; lead_id?: string | null; status?: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; company_name?: string; lead_id?: string | null; status?: string; cta_primary_url?: string; cta_secondary_url?: string }) => {
       const { data, error } = await supabase
         .from("proposals")
         .update(updates as any)

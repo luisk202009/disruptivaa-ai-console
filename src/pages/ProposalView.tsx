@@ -38,8 +38,13 @@ const ProposalView = () => {
       }
       const template = await res.text();
 
-      // 3. Inject company name
-      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName);
+      // 3. Inject company name and CTA URLs
+      const ctaPrimary = (data as any).cta_primary_url || "#";
+      const ctaSecondary = (data as any).cta_secondary_url || "https://www.disruptivaa.com";
+      const finalHtml = template
+        .split("{{COMPANY_NAME}}").join(companyName)
+        .split("{{CTA_PRIMARY_URL}}").join(ctaPrimary)
+        .split("{{CTA_SECONDARY_URL}}").join(ctaSecondary);
       setHtml(finalHtml);
       setLoading(false);
 
