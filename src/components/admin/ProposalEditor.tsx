@@ -274,6 +274,7 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
             </div>
           </div>
 
+          {savedSlug && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
               <span className="text-xs text-muted-foreground truncate flex-1 font-mono">
                 {`${window.location.origin}/p/${savedSlug}`}
