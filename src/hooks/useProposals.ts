@@ -9,6 +9,8 @@ export interface Proposal {
   company_name: string;
   html_content: string;
   status: string;
+  cta_primary_url: string;
+  cta_secondary_url: string;
   created_at: string;
   updated_at: string;
   lead?: { id: string; name: string; email: string; company: string | null } | null;
