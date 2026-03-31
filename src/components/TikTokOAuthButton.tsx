@@ -19,7 +19,7 @@ const TikTokOAuthButton = ({ isConnecting, disabled }: TikTokOAuthButtonProps) =
     const state = crypto.randomUUID();
     sessionStorage.setItem("tiktok_oauth_state", state);
 
-    const redirectUri = encodeURIComponent("https://app.disruptivaa.com/auth/tiktok/callback");
+    const redirectUri = encodeURIComponent(`${window.location.origin}/auth/tiktok/callback`);
 
     const authUrl = `https://business-api.tiktok.com/portal/auth?app_id=${TIKTOK_APP_ID}&state=${state}&redirect_uri=${redirectUri}`;
 

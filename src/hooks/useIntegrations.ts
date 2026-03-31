@@ -348,10 +348,22 @@ export const useIntegrations = () => {
         return result.accounts || [];
       }
 
-      // For Google/TikTok, return stored IDs with generic names
+      // For Google/TikTok, try to parse stored names JSON
+      let nameMap: Record<string, string> = {};
+      if (data.account_name) {
+        try {
+          const parsed = JSON.parse(data.account_name);
+          if (typeof parsed === 'object' && parsed !== null) {
+            nameMap = parsed;
+          }
+        } catch {
+          // Not JSON, use as-is for all accounts
+        }
+      }
+
       return data.account_ids.map((id: string, index: number) => ({
         id,
-        name: data.account_name || `${platform === 'google_ads' ? 'Google' : 'TikTok'} Account ${index + 1}`,
+        name: nameMap[id] || data.account_name || `${platform === 'google_ads' ? 'Google' : 'TikTok'} Account ${index + 1}`,
         status: "active",
       }));
     } catch (error) {

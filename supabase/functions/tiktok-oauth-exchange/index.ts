@@ -101,9 +101,38 @@ serve(async (req) => {
 
     const accessToken = tokenData.data.access_token;
     const encryptedAccessToken = await encryptToken(accessToken);
-    const advertiserIds = tokenData.data.advertiser_ids || [];
+    const advertiserIds: string[] = (tokenData.data.advertiser_ids || []).map(String);
 
     console.log(`✅ Got access_token, ${advertiserIds.length} advertiser(s)`);
+
+    // Fetch advertiser names from TikTok API
+    let advertiserNames: Record<string, string> = {};
+    if (advertiserIds.length > 0) {
+      try {
+        const idsParam = encodeURIComponent(JSON.stringify(advertiserIds));
+        const infoUrl = `https://business-api.tiktok.com/open_api/v1.3/advertiser/info/?advertiser_ids=${idsParam}`;
+        const infoResp = await fetch(infoUrl, {
+          method: "GET",
+          headers: {
+            "Access-Token": accessToken,
+            "Content-Type": "application/json",
+          },
+        });
+        const infoData = await infoResp.json();
+        console.log("📦 Advertiser info response code:", infoData.code);
+        if (infoData.code === 0 && infoData.data?.list) {
+          for (const adv of infoData.data.list) {
+            advertiserNames[String(adv.advertiser_id)] = adv.advertiser_name || `Account ${adv.advertiser_id}`;
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not fetch advertiser names:", e);
+      }
+    }
+
+    const accountNameSummary = Object.values(advertiserNames).length > 0
+      ? Object.values(advertiserNames).join(", ")
+      : advertiserIds.length > 0 ? `TikTok Ads (${advertiserIds.length} accounts)` : "TikTok Ads";
 
     // Save to user_integrations
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -115,8 +144,8 @@ serve(async (req) => {
           user_id: userId,
           platform: "tiktok_ads",
           access_token: encryptedAccessToken,
-          account_ids: advertiserIds.map(String),
-          account_name: advertiserIds.length > 0 ? `TikTok Ads (${advertiserIds.length} accounts)` : "TikTok Ads",
+          account_ids: advertiserIds,
+          account_name: JSON.stringify(advertiserNames),
           status: "connected",
           connected_at: new Date().toISOString(),
         },
