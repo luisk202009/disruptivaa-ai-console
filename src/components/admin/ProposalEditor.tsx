@@ -122,6 +122,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         company_name: companyName.trim(),
         lead_id: leadId === "none" ? null : leadId,
         status: overrideStatus || status,
+        cta_primary_url: ctaPrimaryUrl.trim(),
+        cta_secondary_url: ctaSecondaryUrl.trim(),
       };
 
       if (proposal) {
