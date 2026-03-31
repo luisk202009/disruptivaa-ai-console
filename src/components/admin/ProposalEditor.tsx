@@ -253,7 +253,27 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
             </div>
           </div>
 
-          {savedSlug && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>URL "Agendar reunión" (CTA principal)</Label>
+              <Input
+                value={ctaPrimaryUrl}
+                onChange={(e) => setCtaPrimaryUrl(e.target.value)}
+                placeholder="https://calendly.com/tu-empresa/reunion"
+                className="font-mono text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>URL "Ver nuestro trabajo" (CTA secundario)</Label>
+              <Input
+                value={ctaSecondaryUrl}
+                onChange={(e) => setCtaSecondaryUrl(e.target.value)}
+                placeholder="https://www.disruptivaa.com"
+                className="font-mono text-sm"
+              />
+            </div>
+          </div>
+
             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
               <span className="text-xs text-muted-foreground truncate flex-1 font-mono">
                 {`${window.location.origin}/p/${savedSlug}`}
