@@ -58,6 +58,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setCompanyName(proposal.company_name || "");
         setLeadId(proposal.lead_id ?? "none");
         setStatus(proposal.status);
+        setCtaPrimaryUrl(proposal.cta_primary_url || "");
+        setCtaSecondaryUrl(proposal.cta_secondary_url || "");
         setSavedSlug(proposal.slug);
       } else {
         setTitle("");
@@ -66,6 +68,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setCompanyName("");
         setLeadId("none");
         setStatus("draft");
+        setCtaPrimaryUrl("");
+        setCtaSecondaryUrl("");
         setSavedSlug(null);
       }
       setCopied(false);
