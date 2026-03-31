@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Pencil, Trash2, Copy, ExternalLink, FileText } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Copy, ExternalLink, FileText, Files } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -14,17 +14,21 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const statusColors: Record<string, string> = {
   draft: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
   sent: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  viewed: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  viewed: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  accepted: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  rejected: "bg-red-500/20 text-red-400 border-red-500/30",
 };
 
 const statusLabels: Record<string, string> = {
   draft: "Borrador",
   sent: "Enviada",
   viewed: "Vista",
+  accepted: "Aceptada",
+  rejected: "Rechazada",
 };
 
 const AdminProposals = () => {
-  const { proposalsQuery, deleteProposal } = useProposals();
+  const { proposalsQuery, deleteProposal, duplicateProposal } = useProposals();
   const [statusFilter, setStatusFilter] = useState("all");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
@@ -51,8 +55,17 @@ const AdminProposals = () => {
     }
   };
 
+  const handleDuplicate = async (p: Proposal) => {
+    try {
+      await duplicateProposal.mutateAsync(p);
+      toast.success("Propuesta duplicada");
+    } catch (e: any) {
+      toast.error("Error al duplicar: " + e.message);
+    }
+  };
+
   const copyLink = (slug: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/propuesta/${slug}`);
+    navigator.clipboard.writeText(`${window.location.origin}/p/${slug}`);
     toast.success("Enlace copiado");
   };
 
@@ -64,7 +77,7 @@ const AdminProposals = () => {
             <FileText size={24} /> Propuestas
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Gestiona propuestas comerciales HTML personalizadas
+            Gestiona propuestas comerciales personalizadas
           </p>
         </div>
         <Button onClick={handleNew} className="gap-2">
@@ -82,6 +95,8 @@ const AdminProposals = () => {
             <SelectItem value="draft">Borrador</SelectItem>
             <SelectItem value="sent">Enviada</SelectItem>
             <SelectItem value="viewed">Vista</SelectItem>
+            <SelectItem value="accepted">Aceptada</SelectItem>
+            <SelectItem value="rejected">Rechazada</SelectItem>
           </SelectContent>
         </Select>
         <span className="text-sm text-muted-foreground">
@@ -103,6 +118,7 @@ const AdminProposals = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Título</TableHead>
+                <TableHead>Empresa</TableHead>
                 <TableHead>Lead</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Fecha</TableHead>
@@ -113,6 +129,7 @@ const AdminProposals = () => {
               {filtered.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.title}</TableCell>
+                  <TableCell className="text-sm">{p.company_name || "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {p.lead ? `${p.lead.name} (${p.lead.company || p.lead.email})` : "—"}
                   </TableCell>
@@ -130,9 +147,12 @@ const AdminProposals = () => {
                         <Copy size={14} />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Ver propuesta">
-                        <a href={`/propuesta/${p.slug}`} target="_blank" rel="noopener noreferrer">
+                        <a href={`/p/${p.slug}`} target="_blank" rel="noopener noreferrer">
                           <ExternalLink size={14} />
                         </a>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDuplicate(p)} title="Duplicar">
+                        <Files size={14} />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(p)} title="Editar">
                         <Pencil size={14} />

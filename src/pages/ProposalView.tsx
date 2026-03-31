@@ -13,10 +13,11 @@ const ProposalView = () => {
   useEffect(() => {
     if (!slug) return;
 
-    const fetch = async () => {
+    const load = async () => {
+      // 1. Fetch proposal from DB
       const { data, error } = await supabase
         .from("proposals" as any)
-        .select("html_content, status")
+        .select("company_name, status")
         .eq("slug", slug)
         .single();
 
@@ -26,19 +27,31 @@ const ProposalView = () => {
         return;
       }
 
-      setHtml((data as any).html_content);
+      const companyName = (data as any).company_name || "";
+
+      // 2. Fetch template
+      const res = await fetch("/proposal-template.html");
+      if (!res.ok) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      const template = await res.text();
+
+      // 3. Inject company name
+      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName);
+      setHtml(finalHtml);
       setLoading(false);
 
-      // Mark as viewed
+      // 4. Mark as viewed
       if ((data as any).status === "sent") {
-        await supabase.rpc("mark_proposal_viewed" as any, { _slug: slug });
+        await supabase.rpc("mark_proposal_viewed", { _slug: slug });
       }
     };
 
-    fetch();
+    load();
   }, [slug]);
 
-  // Auto-resize iframe
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe || !html) return;

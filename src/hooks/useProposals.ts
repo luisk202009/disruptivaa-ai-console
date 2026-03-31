@@ -6,6 +6,7 @@ export interface Proposal {
   lead_id: string | null;
   title: string;
   slug: string;
+  company_name: string;
   html_content: string;
   status: string;
   created_at: string;
@@ -20,7 +21,7 @@ export const useProposals = () => {
     queryKey: ["proposals"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("proposals" as any)
+        .from("proposals")
         .select("*, lead:leads(id, name, email, company)")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -29,10 +30,10 @@ export const useProposals = () => {
   });
 
   const createProposal = useMutation({
-    mutationFn: async (proposal: { title: string; slug: string; html_content: string; lead_id?: string | null; status?: string }) => {
+    mutationFn: async (proposal: { title: string; slug: string; company_name: string; lead_id?: string | null; status?: string }) => {
       const { data, error } = await supabase
-        .from("proposals" as any)
-        .insert(proposal as any)
+        .from("proposals")
+        .insert({ ...proposal, html_content: "" } as any)
         .select()
         .single();
       if (error) throw error;
@@ -42,9 +43,9 @@ export const useProposals = () => {
   });
 
   const updateProposal = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; html_content?: string; lead_id?: string | null; status?: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; company_name?: string; lead_id?: string | null; status?: string }) => {
       const { data, error } = await supabase
-        .from("proposals" as any)
+        .from("proposals")
         .update(updates as any)
         .eq("id", id)
         .select()
@@ -58,7 +59,7 @@ export const useProposals = () => {
   const deleteProposal = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("proposals" as any)
+        .from("proposals")
         .delete()
         .eq("id", id);
       if (error) throw error;
@@ -66,5 +67,25 @@ export const useProposals = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["proposals"] }),
   });
 
-  return { proposalsQuery, createProposal, updateProposal, deleteProposal };
+  const duplicateProposal = useMutation({
+    mutationFn: async (source: Proposal) => {
+      const { data, error } = await supabase
+        .from("proposals")
+        .insert({
+          title: `${source.title} (copia)`,
+          slug: `${source.slug}-copia`,
+          company_name: source.company_name,
+          lead_id: source.lead_id,
+          status: "draft",
+          html_content: "",
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["proposals"] }),
+  });
+
+  return { proposalsQuery, createProposal, updateProposal, deleteProposal, duplicateProposal };
 };

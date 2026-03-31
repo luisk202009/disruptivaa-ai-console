@@ -538,6 +538,7 @@ export type Database = {
       }
       proposals: {
         Row: {
+          company_name: string
           created_at: string | null
           html_content: string
           id: string
@@ -548,6 +549,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          company_name?: string
           created_at?: string | null
           html_content?: string
           id?: string
@@ -558,6 +560,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          company_name?: string
           created_at?: string | null
           html_content?: string
           id?: string

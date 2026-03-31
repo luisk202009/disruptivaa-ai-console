@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useProposals, type Proposal } from "@/hooks/useProposals";
 import { useQuery } from "@tanstack/react-query";
@@ -31,10 +30,14 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugManual, setSlugManual] = useState(false);
-  const [htmlContent, setHtmlContent] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [leadId, setLeadId] = useState<string>("none");
+  const [status, setStatus] = useState("draft");
   const [copied, setCopied] = useState(false);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const leadsQuery = useQuery({
     queryKey: ["leads-list"],
@@ -50,18 +53,22 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setTitle(proposal.title);
         setSlug(proposal.slug);
         setSlugManual(true);
-        setHtmlContent(proposal.html_content);
+        setCompanyName(proposal.company_name || "");
         setLeadId(proposal.lead_id ?? "none");
+        setStatus(proposal.status);
         setSavedSlug(proposal.slug);
       } else {
         setTitle("");
         setSlug("");
         setSlugManual(false);
-        setHtmlContent("");
+        setCompanyName("");
         setLeadId("none");
+        setStatus("draft");
         setSavedSlug(null);
       }
       setCopied(false);
+      setShowPreview(false);
+      setPreviewHtml(null);
     }
   }, [open, proposal]);
 
@@ -71,11 +78,31 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
     }
   }, [title, slugManual]);
 
-  const publicUrl = `${window.location.origin}/propuesta/${slug}`;
+  const publicUrl = `${window.location.origin}/p/${slug}`;
 
-  const handleSave = async (status?: string) => {
+  const handlePreview = async () => {
+    if (!companyName.trim()) {
+      toast.error("Ingresa el nombre de la empresa para ver la vista previa");
+      return;
+    }
+    try {
+      const res = await fetch("/proposal-template.html");
+      const template = await res.text();
+      const finalHtml = template.split("{{COMPANY_NAME}}").join(companyName.trim());
+      setPreviewHtml(finalHtml);
+      setShowPreview(true);
+    } catch {
+      toast.error("Error al cargar la plantilla");
+    }
+  };
+
+  const handleSave = async (overrideStatus?: string) => {
     if (!title.trim() || !slug.trim()) {
       toast.error("Título y slug son requeridos");
+      return;
+    }
+    if (!companyName.trim()) {
+      toast.error("El nombre de la empresa es requerido");
       return;
     }
 
@@ -83,20 +110,20 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
       const payload: any = {
         title: title.trim(),
         slug: slug.trim(),
-        html_content: htmlContent,
+        company_name: companyName.trim(),
         lead_id: leadId === "none" ? null : leadId,
+        status: overrideStatus || status,
       };
-      if (status) payload.status = status;
 
       if (proposal) {
         await updateProposal.mutateAsync({ id: proposal.id, ...payload });
         toast.success("Propuesta actualizada");
       } else {
-        if (status) payload.status = status;
         await createProposal.mutateAsync(payload);
         toast.success("Propuesta creada");
       }
       setSavedSlug(slug.trim());
+      if (overrideStatus) setStatus(overrideStatus);
     } catch (e: any) {
       if (e.message?.includes("duplicate key") || e.message?.includes("unique")) {
         toast.error("El slug ya existe. Elige uno diferente.");
@@ -115,9 +142,35 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
 
   const isLoading = createProposal.isPending || updateProposal.isPending;
 
+  if (showPreview && previewHtml) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle className="flex items-center justify-between">
+              <span>Vista previa — {companyName}</span>
+              <Button variant="outline" size="sm" onClick={() => setShowPreview(false)}>
+                Volver al editor
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden px-2 pb-2">
+            <iframe
+              ref={iframeRef}
+              srcDoc={previewHtml}
+              sandbox="allow-same-origin"
+              className="w-full h-full min-h-[70vh] border rounded-lg"
+              title="Vista previa propuesta"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{proposal ? "Editar Propuesta" : "Nueva Propuesta"}</DialogTitle>
         </DialogHeader>
@@ -129,7 +182,7 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Propuesta Deco Struktura - Marzo"
+                placeholder="Propuesta Empresa X - Marzo"
               />
             </div>
             <div className="space-y-2">
@@ -137,68 +190,92 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
               <Input
                 value={slug}
                 onChange={(e) => { setSlug(e.target.value); setSlugManual(true); }}
-                placeholder="deco-struktura-2025"
+                placeholder="empresa-x-2025"
                 className="font-mono text-sm"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Lead vinculado (opcional)</Label>
-            <Select value={leadId} onValueChange={setLeadId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sin lead vinculado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sin lead vinculado</SelectItem>
-                {leadsQuery.data?.map((lead) => (
-                  <SelectItem key={lead.id} value={lead.id}>
-                    {lead.name} — {lead.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Nombre de la empresa (destinatario) *</Label>
+            <Input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Ej: Deco Struktura, Grupo Axo..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Este nombre reemplazará {"{{COMPANY_NAME}}"} en la plantilla de la propuesta.
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label>Código HTML de la Propuesta</Label>
-            <Textarea
-              value={htmlContent}
-              onChange={(e) => setHtmlContent(e.target.value)}
-              placeholder="Pega aquí el código HTML completo de la propuesta..."
-              className="font-mono text-xs min-h-[300px] leading-relaxed"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Lead vinculado (opcional)</Label>
+              <Select value={leadId} onValueChange={setLeadId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin lead vinculado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin lead vinculado</SelectItem>
+                  {leadsQuery.data?.map((lead) => (
+                    <SelectItem key={lead.id} value={lead.id}>
+                      {lead.name} — {lead.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Estado</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Borrador</SelectItem>
+                  <SelectItem value="sent">Enviada</SelectItem>
+                  <SelectItem value="viewed">Vista</SelectItem>
+                  <SelectItem value="accepted">Aceptada</SelectItem>
+                  <SelectItem value="rejected">Rechazada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {savedSlug && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border">
               <span className="text-xs text-muted-foreground truncate flex-1 font-mono">
-                {`${window.location.origin}/propuesta/${savedSlug}`}
+                {`${window.location.origin}/p/${savedSlug}`}
               </span>
               <Button variant="ghost" size="sm" onClick={copyLink} className="gap-1.5 shrink-0">
                 {copied ? <Check size={14} /> : <Copy size={14} />}
                 {copied ? "Copiado" : "Copiar"}
               </Button>
               <Button variant="ghost" size="sm" asChild className="shrink-0">
-                <a href={`/propuesta/${savedSlug}`} target="_blank" rel="noopener noreferrer">
+                <a href={`/p/${savedSlug}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink size={14} />
                 </a>
               </Button>
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Cancelar
+          <div className="flex justify-between pt-2">
+            <Button variant="outline" onClick={handlePreview} className="gap-2">
+              <Eye size={14} /> Vista previa
             </Button>
-            <Button variant="secondary" onClick={() => handleSave()} disabled={isLoading}>
-              {isLoading && <Loader2 size={14} className="animate-spin" />}
-              Guardar borrador
-            </Button>
-            <Button onClick={() => handleSave("sent")} disabled={isLoading}>
-              {isLoading && <Loader2 size={14} className="animate-spin" />}
-              Guardar y marcar enviada
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+                Cancelar
+              </Button>
+              <Button variant="secondary" onClick={() => handleSave()} disabled={isLoading}>
+                {isLoading && <Loader2 size={14} className="animate-spin" />}
+                Guardar
+              </Button>
+              <Button onClick={() => handleSave("sent")} disabled={isLoading}>
+                {isLoading && <Loader2 size={14} className="animate-spin" />}
+                Guardar y enviar
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
