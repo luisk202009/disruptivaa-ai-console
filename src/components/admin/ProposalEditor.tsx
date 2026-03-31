@@ -33,6 +33,8 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
   const [companyName, setCompanyName] = useState("");
   const [leadId, setLeadId] = useState<string>("none");
   const [status, setStatus] = useState("draft");
+  const [ctaPrimaryUrl, setCtaPrimaryUrl] = useState("");
+  const [ctaSecondaryUrl, setCtaSecondaryUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
