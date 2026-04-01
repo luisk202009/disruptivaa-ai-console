@@ -1,33 +1,92 @@
 
 
-## Plan: Agregar Sección "Inversión Estratégica" a la Plantilla de Propuestas
+## Plan: Sistema de Plantillas por Servicio y Campos Dinámicos en Propuestas
 
 ### Resumen
 
-Insertar una nueva sección "06 — Inversión Estratégica" en `public/proposal-template.html` justo antes de "Próximos Pasos", con dos tarjetas de precio en grid responsive. Se renumerarán las secciones posteriores.
+Transformar el sistema actual (1 plantilla fija) a un sistema multi-plantilla donde cada servicio tiene su propio template HTML. Al crear una propuesta, el admin selecciona el servicio y se carga la plantilla correspondiente. Se agregan campos dinámicos: fecha, precio, tipo de pago y términos y condiciones.
 
-### Cambios en `public/proposal-template.html`
+### Arquitectura
 
-**1. CSS nuevo** — Agregar estilos para el grid de pricing:
-- `.pricing-grid`: `display: grid; grid-template-columns: 1fr 1fr; gap: 2px;` con media query para 1 columna en móvil
-- `.pricing-card`: fondo `var(--dark3)`, padding, borde sutil dorado para la tarjeta principal
-- `.pricing-amount`: tipografía Barlow Condensed grande con color dorado
-- `.pricing-note`: texto secundario para la nota del plan anual
+```text
+proposal_templates (nueva tabla)
+├── id, name, service_type, html_content, created_at
+│
+proposals (columnas nuevas)
+├── service_type, price, payment_type, terms_conditions, proposal_date
+```
 
-**2. HTML de la sección** — Insertar antes de "Próximos Pasos" (línea 1145):
+### 1. Migración SQL — Nueva tabla + columnas
 
-| Elemento | Contenido |
-|----------|-----------|
-| Section header | `05 — Inversión Estratégica` |
-| Tarjeta 1 | Tag: "Pago Único", Precio: "1,200 USD", Desc + 3 items (propiedad código, instalación servidores, documentación) |
-| Tarjeta 2 | Tag: "Soporte", Precio: "99 USD / mes", Nota: "ó 1,000 USD / año", 3 items (monitoreo, seguridad, soporte prioritario) |
+**Tabla `proposal_templates`**: almacena el HTML de cada plantilla por servicio.
 
-**3. Renumeración** — Las secciones posteriores se ajustan:
-- "Próximos Pasos" pasa de `05` → `06`
-- La sección CTA y footer no tienen número, no cambian
+| Columna | Tipo | Default |
+|---------|------|---------|
+| id | uuid | gen_random_uuid() |
+| name | text | — |
+| service_type | text (unique) | — |
+| html_content | text | '' |
+| created_at | timestamptz | now() |
 
-### Notas
-- Se reutilizan las clases existentes: `section`, `alt`, `section-header`, `section-num`, `tag`, `deliverables`
-- Los valores (1,200 USD, 99 USD/mes) quedan hardcodeados en la plantilla — si en el futuro se necesitan dinámicos, se pueden convertir a placeholders `{{...}}`
-- No se requiere migración SQL ni cambios en el editor
+RLS: solo admins pueden CRUD; anon/authenticated pueden SELECT (para renderizar la propuesta pública).
+
+**Columnas nuevas en `proposals`**:
+
+| Columna | Tipo | Default |
+|---------|------|---------|
+| service_type | text | '' |
+| price | text | '' |
+| payment_type | text | 'one_time' |
+| terms_conditions | text | '' |
+| proposal_date | date | CURRENT_DATE |
+
+**Seed**: Insertar la plantilla actual (`public/proposal-template.html`) como template base con `service_type = 'digital_30_dias'`. Se pueden crear templates adicionales después desde el admin.
+
+### 2. Plantilla HTML — Nuevos placeholders
+
+Agregar al template HTML existente (y a futuros templates):
+
+- `{{PROPOSAL_DATE}}` — en el date-badge del hero
+- `{{PRICE}}` — en la sección de inversión
+- `{{PAYMENT_TYPE_LABEL}}` — etiqueta del tipo de pago (Pago Único, Mensual, etc.)
+- `{{TERMS_CONDITIONS}}` — bloque de términos al final, antes del CTA
+
+### 3. Editor (`ProposalEditor.tsx`) — Campos nuevos
+
+Agregar al formulario:
+
+- **Servicio** (select): carga opciones desde `proposal_templates`. Al seleccionar, guarda `service_type`.
+- **Fecha de propuesta** (input date): default hoy.
+- **Precio** (input text): ej. "1,200 USD".
+- **Tipo de pago** (select): Pago Único / Mensual / Anual / Acuerdo de pago.
+- **Términos y condiciones** (textarea): texto libre.
+
+La **vista previa** ahora obtiene el `html_content` de `proposal_templates` según el `service_type` seleccionado (en vez del archivo estático) e inyecta todos los placeholders.
+
+### 4. Vista pública (`ProposalView.tsx`)
+
+- Leer `service_type`, `price`, `payment_type`, `terms_conditions`, `proposal_date` del registro de la propuesta.
+- Obtener el `html_content` desde `proposal_templates` filtrado por `service_type`.
+- Inyectar todos los placeholders y renderizar.
+
+### 5. Hook (`useProposals.ts`)
+
+- Actualizar interface `Proposal` con los nuevos campos.
+- Nuevo hook `useProposalTemplates()` para listar/CRUD templates.
+
+### 6. Admin de Templates (futuro, opcional)
+
+Se puede agregar una página `/admin/proposal-templates` para editar el HTML de cada plantilla directamente desde el panel. Por ahora, las plantillas se gestionan vía seed SQL o editor de Supabase.
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| Migración SQL | Crear tabla `proposal_templates`, agregar columnas a `proposals`, seed del template actual |
+| `public/proposal-template.html` | Agregar placeholders `{{PROPOSAL_DATE}}`, `{{PRICE}}`, `{{PAYMENT_TYPE_LABEL}}`, `{{TERMS_CONDITIONS}}` |
+| `src/hooks/useProposals.ts` | Nuevos campos en interface y mutaciones |
+| `src/hooks/useProposalTemplates.ts` | **Nuevo** — hook para listar templates |
+| `src/components/admin/ProposalEditor.tsx` | Campos de servicio, fecha, precio, tipo de pago, términos; preview desde DB |
+| `src/pages/ProposalView.tsx` | Obtener template desde DB en vez de archivo estático |
+| `src/integrations/supabase/types.ts` | Se actualiza automáticamente |
 
