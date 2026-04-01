@@ -55,6 +55,7 @@ const adminNavItems = [
   { id: "notifications", icon: <Bell size={18} strokeWidth={1.5} />, label: "Notificaciones", path: "/admin/notifications" },
   { id: "emails", icon: <Mail size={18} strokeWidth={1.5} />, label: "Email", path: "/admin/emails" },
   { id: "proposals", icon: <FileText size={18} strokeWidth={1.5} />, label: "Propuestas", path: "/admin/proposals" },
+  { id: "proposal-templates", icon: <Code size={18} strokeWidth={1.5} />, label: "Plantillas", path: "/admin/proposal-templates" },
 ];
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
