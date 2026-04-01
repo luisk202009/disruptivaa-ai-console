@@ -244,9 +244,7 @@ serve(async (req) => {
     // Use normalized ID for API calls (without act_ prefix - we add it ourselves)
     const cleanAccountId = normalizedTargetId;
 
-    console.log(`📊 Fetching ${metric} (field: ${field}) for account act_${cleanAccountId}`);
-    console.log(`📅 Current period: ${dateRanges.current.since} to ${dateRanges.current.until}`);
-    console.log(`📅 Previous period: ${dateRanges.previous.since} to ${dateRanges.previous.until}`);
+    console.log(`📊 Fetching ${metric} (field: ${field})`);
 
     // Fetch current period data with daily breakdown
     const currentDataPoints = await fetchInsightsWithDailyBreakdown(
