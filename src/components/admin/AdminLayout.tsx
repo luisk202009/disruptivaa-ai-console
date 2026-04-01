@@ -1,5 +1,5 @@
 import { 
-  Users, Building2, UserCog, CreditCard, Bell, Mail, FileText,
+  Users, Building2, UserCog, CreditCard, Bell, Mail, FileText, Code,
   ChevronLeft, ChevronRight, ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
