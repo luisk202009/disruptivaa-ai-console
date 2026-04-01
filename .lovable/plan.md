@@ -1,55 +1,40 @@
 
 
-## Plan: Generar plantillas de propuesta por servicio y guardarlas en Supabase
+## Plan: Página Admin para Editar Plantillas de Propuestas
 
-### Situación actual
+### Resumen
 
-- Existe **1 registro** en `proposal_templates` con `service_type = 'digital_30_dias'` pero con `html_content` **vacío**.
-- El HTML real (1330 líneas) vive en `public/proposal-template.html` y se usa como fallback cuando el template en DB está vacío.
-- El editor cae al archivo estático si no encuentra contenido en la DB.
+Crear `/admin/proposal-templates` con una lista de plantillas existentes y un editor split-view (código HTML a la izquierda, vista previa en iframe a la derecha) para editar cada plantilla en tiempo real.
 
-### Servicios a crear (basados en las páginas de servicios del sitio)
+### Archivos a crear/modificar
 
-| service_type | Nombre | Descripción |
-|---|---|---|
-| `digital_30_dias` | Ecosistema Digital 30 Días | Ya existe — hay que llenar su `html_content` |
-| `crm_hubspot` | CRM & HubSpot | Implementación CRM, pipeline, automatizaciones |
-| `marketing_ads` | Marketing & Pauta Digital | Meta Ads, Google Ads, estrategia de pauta |
-| `websites_landings` | Websites & Landing Pages | Desarrollo web, landing pages de conversión |
-| `shopify` | Shopify & E-commerce | Tienda online, pasarelas de pago |
-| `mvp_aplicaciones` | MVP & Aplicaciones | Desarrollo de producto mínimo viable |
+**1. `src/pages/admin/AdminProposalTemplates.tsx`** — Página nueva
 
-### Estrategia de generación
+- Lista todas las plantillas de `proposal_templates` en tarjetas/tabla con nombre y `service_type`
+- Al hacer clic en "Editar", abre un editor split-view:
+  - Panel izquierdo: `<textarea>` con monospace font para editar `html_content`, más campos para `name` y `service_type`
+  - Panel derecho: `<iframe srcDoc={htmlContent}>` que se actualiza en tiempo real con debounce (~500ms)
+- Botón "Guardar" que hace UPDATE vía Supabase
+- Botón "Volver a la lista" para salir del editor
+- Usa el hook `useProposalTemplates` existente para leer, y agrega una mutación de update
 
-Cada plantilla comparte el **mismo CSS** (variables de marca, clases de layout) pero tiene **contenido diferente** en las secciones del body (hero, diagnóstico, alcance, diferenciadores). Las secciones comunes que permanecen iguales con placeholders son:
+**2. `src/hooks/useProposalTemplates.ts`** — Agregar mutación
 
-- Hero con `{{COMPANY_NAME}}` y `{{PROPOSAL_DATE}}`
-- Inversión con `{{PRICE}}` y `{{PAYMENT_TYPE_LABEL}}`
-- Términos con `{{TERMS_CONDITIONS}}`
-- CTAs con `{{CTA_PRIMARY_URL}}` y `{{CTA_SECONDARY_URL}}`
-- Footer con datos dinámicos
+- Agregar `updateTemplate` mutation que hace `supabase.from("proposal_templates").update({ name, service_type, html_content }).eq("id", id)`
+- Invalidar queryKey `["proposal-templates"]` on success
 
-### Implementación (3 pasos)
+**3. `src/components/admin/AdminLayout.tsx`** — Agregar nav item
 
-**Paso 1 — Actualizar `digital_30_dias`**: Copiar el HTML actual de `public/proposal-template.html` completo al campo `html_content` del registro existente vía INSERT/UPDATE.
+- Agregar entrada `{ id: "proposal-templates", icon: <Code size={18} />, label: "Plantillas", path: "/admin/proposal-templates" }` al array `adminNavItems`
 
-**Paso 2 — Crear 5 plantillas nuevas**: Para cada servicio, generar un HTML completo que:
-- Reutilice el mismo bloque `<style>` (CSS idéntico)
-- Adapte el contenido del hero (headline, descripción, stats)
-- Tenga secciones de diagnóstico y alcance específicas al servicio
-- Mantenga la sección de inversión, próximos pasos, términos y CTA con placeholders
-- Inserte en `proposal_templates` vía la herramienta de datos
+**4. `src/App.tsx`** — Agregar ruta
 
-**Paso 3 — Verificar desde el editor**: Confirmar que el select de "Servicio (plantilla)" muestra las 6 opciones y que la vista previa carga el HTML correcto desde la DB.
+- Agregar ruta protegida `/admin/proposal-templates` con `AdminLayout` wrapping `AdminProposalTemplates`
 
-### Archivos a modificar
+### Detalles del editor
 
-| Archivo | Cambio |
-|---|---|
-| Supabase data (insert tool) | UPDATE `digital_30_dias` con HTML completo; INSERT 5 registros nuevos |
-| Ningún archivo de código | El editor y la vista pública ya soportan el flujo — solo faltan los datos |
-
-### Nota sobre tamaño
-
-Cada plantilla HTML es ~40-60KB de texto. Se insertarán vía la herramienta de datos de Supabase. El CSS compartido (~800 líneas) se repite en cada plantilla para que sean independientes (no requieren archivo externo).
+- El textarea usa `font-family: monospace`, `white-space: pre`, `tab-size: 2`
+- La vista previa usa iframe con `sandbox="allow-same-origin"` y `srcDoc` que se actualiza con debounce
+- Layout responsive: en desktop split 50/50 horizontal, en mobile stacked vertical
+- Se inyectan placeholders de ejemplo (`{{COMPANY_NAME}}` → "Empresa Demo", etc.) en la vista previa para que se vea realista
 
