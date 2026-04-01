@@ -141,7 +141,7 @@ serve(async (req) => {
     const shortTokenData = await shortTokenResponse.json();
 
     if (!shortTokenResponse.ok || shortTokenData.error) {
-      console.error("Short token exchange failed:", shortTokenData);
+      console.error("Short token exchange failed");
       return new Response(
         JSON.stringify({ 
           success: false, 
