@@ -189,7 +189,7 @@ serve(async (req) => {
       ? `${adAccounts.length} cuenta(s) de anuncios`
       : "Meta Ads";
 
-    console.info(`Found ${adAccounts.length} ad account(s)`);
+    console.info("Ad accounts fetched successfully");
 
     // Step 4: Save to database using service role (bypasses RLS for upsert)
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

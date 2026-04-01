@@ -373,7 +373,7 @@ async function fetchInsightsWithDailyBreakdown(
   insightsUrl.searchParams.append("time_range", JSON.stringify({ since, until }));
   insightsUrl.searchParams.append("time_increment", "1"); // Daily breakdown
 
-  console.log(`🔗 Fetching from Meta API: ${insightsUrl.toString().replace(accessToken, "***")}`);
+  console.log("🔗 Fetching insights from Meta API");
 
   try {
     const response = await fetch(insightsUrl.toString());
