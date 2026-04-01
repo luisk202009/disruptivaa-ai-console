@@ -180,7 +180,7 @@ serve(async (req) => {
     const expiresIn = longTokenData.expires_in || 5184000;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    console.info(`Long-lived token obtained. Expires in ${Math.round(expiresIn / 86400)} days`);
+    console.info("Long-lived token obtained successfully");
 
     // Step 3: Fetch ad accounts
     const adAccounts = await fetchAdAccounts(longLivedToken);
