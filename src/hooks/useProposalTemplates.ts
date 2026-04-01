@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ProposalTemplate {
@@ -10,7 +10,9 @@ export interface ProposalTemplate {
 }
 
 export const useProposalTemplates = () => {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: ["proposal-templates"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -21,4 +23,19 @@ export const useProposalTemplates = () => {
       return data as unknown as ProposalTemplate[];
     },
   });
+
+  const updateTemplate = useMutation({
+    mutationFn: async ({ id, name, service_type, html_content }: { id: string; name: string; service_type: string; html_content: string }) => {
+      const { error } = await supabase
+        .from("proposal_templates")
+        .update({ name, service_type, html_content } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["proposal-templates"] });
+    },
+  });
+
+  return { ...query, updateTemplate };
 };
