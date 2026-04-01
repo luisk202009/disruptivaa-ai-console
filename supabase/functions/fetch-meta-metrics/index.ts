@@ -155,7 +155,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`👤 User authenticated: ${userId}`);
+    console.log("👤 User authenticated successfully");
 
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
