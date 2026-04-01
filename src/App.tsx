@@ -35,6 +35,7 @@ const AdminSubscriptions = lazy(() => import("./pages/admin/AdminSubscriptions")
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
 const AdminProposals = lazy(() => import("./pages/admin/AdminProposals"));
+const AdminProposalTemplates = lazy(() => import("./pages/admin/AdminProposalTemplates"));
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const ProposalView = lazy(() => import("./pages/ProposalView"));
 const Brief = lazy(() => import("./pages/Brief"));
@@ -128,6 +129,7 @@ const App = () => (
               <Route path="/admin/notifications" element={<ProtectedRoute><Lazy><AdminLayout><AdminNotifications /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/emails" element={<ProtectedRoute><Lazy><AdminLayout><AdminEmails /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/proposals" element={<ProtectedRoute><Lazy><AdminLayout><AdminProposals /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/proposal-templates" element={<ProtectedRoute><Lazy><AdminLayout><AdminProposalTemplates /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
               <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
 
