@@ -320,7 +320,7 @@ serve(async (req) => {
       console.warn("⚠️ Could not fetch account name/currency:", e);
     }
 
-    console.log(`✅ Successfully fetched metrics for ${accountName}`);
+    console.log("✅ Metrics fetched successfully");
 
     const responsePayload = {
       value: currentValue,
