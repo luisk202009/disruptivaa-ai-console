@@ -102,7 +102,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseUserClient.auth.getUser(token);
     
     if (userError || !userData?.user?.id) {
-      console.error("Auth error:", userError?.message);
+      console.error("Authentication failed");
       return new Response(
         JSON.stringify({ success: false, error: "Token inválido" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -128,7 +128,7 @@ serve(async (req) => {
       );
     }
 
-    console.info(`Processing OAuth exchange for user ${userId}`);
+    console.info("Processing OAuth exchange");
 
     // Step 1: Exchange code for short-lived token
     const tokenUrl = new URL("https://graph.facebook.com/v18.0/oauth/access_token");
@@ -141,7 +141,7 @@ serve(async (req) => {
     const shortTokenData = await shortTokenResponse.json();
 
     if (!shortTokenResponse.ok || shortTokenData.error) {
-      console.error("Short token exchange failed:", shortTokenData);
+      console.error("Short token exchange failed");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -165,7 +165,7 @@ serve(async (req) => {
     const longTokenData = await longTokenResponse.json();
 
     if (!longTokenResponse.ok || longTokenData.error) {
-      console.error("Long token exchange failed:", longTokenData);
+      console.error("Long token exchange failed");
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -180,7 +180,7 @@ serve(async (req) => {
     const expiresIn = longTokenData.expires_in || 5184000;
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    console.info(`Long-lived token obtained. Expires in ${Math.round(expiresIn / 86400)} days`);
+    console.info("Long-lived token obtained successfully");
 
     // Step 3: Fetch ad accounts
     const adAccounts = await fetchAdAccounts(longLivedToken);
@@ -189,7 +189,7 @@ serve(async (req) => {
       ? `${adAccounts.length} cuenta(s) de anuncios`
       : "Meta Ads";
 
-    console.info(`Found ${adAccounts.length} ad account(s)`);
+    console.info("Ad accounts fetched successfully");
 
     // Step 4: Save to database using service role (bypasses RLS for upsert)
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

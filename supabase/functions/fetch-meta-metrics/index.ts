@@ -155,12 +155,12 @@ serve(async (req) => {
       );
     }
 
-    console.log(`👤 User authenticated: ${userId}`);
+    console.log("👤 User authenticated successfully");
 
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
 
-    console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
+    console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}`);
 
     // --- Cache check ---
     const cacheKey = `meta_ads:${metric}:${date_preset}:${account_id || "default"}`;
@@ -220,7 +220,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Found integration with ${integration.account_ids.length} accounts`);
+    console.log("✅ Integration found");
 
     // Validate account_id is owned by user
     const targetAccountId = account_id || integration.account_ids[0];
@@ -230,7 +230,7 @@ serve(async (req) => {
     const normalizedUserAccounts = integration.account_ids.map(normalizeAccountId);
     
     if (!normalizedUserAccounts.includes(normalizedTargetId)) {
-      console.error(`❌ Account ${targetAccountId} not in user's accounts: ${integration.account_ids.join(", ")}`);
+      console.error("❌ Account not in user's authorized accounts");
       return new Response(
         JSON.stringify({ error: "Invalid account ID" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -244,9 +244,7 @@ serve(async (req) => {
     // Use normalized ID for API calls (without act_ prefix - we add it ourselves)
     const cleanAccountId = normalizedTargetId;
 
-    console.log(`📊 Fetching ${metric} (field: ${field}) for account act_${cleanAccountId}`);
-    console.log(`📅 Current period: ${dateRanges.current.since} to ${dateRanges.current.until}`);
-    console.log(`📅 Previous period: ${dateRanges.previous.since} to ${dateRanges.previous.until}`);
+    console.log(`📊 Fetching ${metric} (field: ${field})`);
 
     // Fetch current period data with daily breakdown
     const currentDataPoints = await fetchInsightsWithDailyBreakdown(
@@ -322,7 +320,7 @@ serve(async (req) => {
       console.warn("⚠️ Could not fetch account name/currency:", e);
     }
 
-    console.log(`✅ Successfully fetched metrics for ${accountName}`);
+    console.log("✅ Metrics fetched successfully");
 
     const responsePayload = {
       value: currentValue,
@@ -375,7 +373,7 @@ async function fetchInsightsWithDailyBreakdown(
   insightsUrl.searchParams.append("time_range", JSON.stringify({ since, until }));
   insightsUrl.searchParams.append("time_increment", "1"); // Daily breakdown
 
-  console.log(`🔗 Fetching from Meta API: ${insightsUrl.toString().replace(accessToken, "***")}`);
+  console.log("🔗 Fetching insights from Meta API");
 
   try {
     const response = await fetch(insightsUrl.toString());
