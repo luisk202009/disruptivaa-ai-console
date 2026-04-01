@@ -230,7 +230,7 @@ serve(async (req) => {
     const normalizedUserAccounts = integration.account_ids.map(normalizeAccountId);
     
     if (!normalizedUserAccounts.includes(normalizedTargetId)) {
-      console.error(`❌ Account ${targetAccountId} not in user's accounts: ${integration.account_ids.join(", ")}`);
+      console.error("❌ Account not in user's authorized accounts");
       return new Response(
         JSON.stringify({ error: "Invalid account ID" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
