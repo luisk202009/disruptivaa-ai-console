@@ -220,7 +220,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Found integration with ${integration.account_ids.length} accounts`);
+    console.log("✅ Integration found");
 
     // Validate account_id is owned by user
     const targetAccountId = account_id || integration.account_ids[0];
