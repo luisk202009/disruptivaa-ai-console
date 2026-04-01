@@ -536,6 +536,30 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_templates: {
+        Row: {
+          created_at: string
+          html_content: string
+          id: string
+          name: string
+          service_type: string
+        }
+        Insert: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          name: string
+          service_type: string
+        }
+        Update: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          name?: string
+          service_type?: string
+        }
+        Relationships: []
+      }
       proposals: {
         Row: {
           company_name: string
@@ -545,8 +569,13 @@ export type Database = {
           html_content: string
           id: string
           lead_id: string | null
+          payment_type: string
+          price: string
+          proposal_date: string
+          service_type: string
           slug: string
           status: string
+          terms_conditions: string
           title: string
           updated_at: string | null
         }
@@ -558,8 +587,13 @@ export type Database = {
           html_content?: string
           id?: string
           lead_id?: string | null
+          payment_type?: string
+          price?: string
+          proposal_date?: string
+          service_type?: string
           slug: string
           status?: string
+          terms_conditions?: string
           title: string
           updated_at?: string | null
         }
@@ -571,8 +605,13 @@ export type Database = {
           html_content?: string
           id?: string
           lead_id?: string | null
+          payment_type?: string
+          price?: string
+          proposal_date?: string
+          service_type?: string
           slug?: string
           status?: string
+          terms_conditions?: string
           title?: string
           updated_at?: string | null
         }
