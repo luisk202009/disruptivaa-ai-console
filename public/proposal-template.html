@@ -852,7 +852,7 @@
 <!-- ── HERO ── -->
 <section class="hero">
   <nav class="hero-nav">
-    <div class="date-badge">Propuesta Comercial · 2026</div>
+    <div class="date-badge">Propuesta Comercial · {{PROPOSAL_DATE}}</div>
   </nav>
 
   <div class="hero-body">
@@ -1228,8 +1228,8 @@
 
   <div class="pricing-grid">
     <div class="pricing-card featured">
-      <span class="pricing-tag">Pago Único</span>
-      <div class="pricing-amount">1,200 USD</div>
+      <span class="pricing-tag">{{PAYMENT_TYPE_LABEL}}</span>
+      <div class="pricing-amount">{{PRICE}}</div>
       <p class="pricing-desc">Todo el ecosistema digital integrado y funcionando en 30 días.</p>
       <ul class="pricing-items">
         <li>Propiedad total del código</li>
@@ -1302,6 +1302,14 @@
   </div>
 </section>
 
+<!-- ── TÉRMINOS Y CONDICIONES ── -->
+<section class="section" id="terms" style="display:{{TERMS_DISPLAY}}">
+  <div class="section-header">
+    <h2 style="font-size:1.4rem;">Términos y <em>Condiciones</em></h2>
+  </div>
+  <div style="max-width:800px;color:rgba(253,252,250,0.7);font-size:14px;line-height:1.9;white-space:pre-line;">{{TERMS_CONDITIONS}}</div>
+</section>
+
 <!-- ── CTA ── -->
 <section class="cta-section">
   <h2>¿Comenzamos a<br><em>construirlo juntos</em>?</h2>
@@ -1314,7 +1322,7 @@
 
 <footer class="footer-bar">
   <!-- {{company_name}} -->
-  <p>Propuesta para {{COMPANY_NAME}} · Pereira, Colombia · 2026</p>
+  <p>Propuesta para {{COMPANY_NAME}} · Pereira, Colombia · {{PROPOSAL_DATE}}</p>
   <p style="font-size: 12px; color: var(--muted);">Propuesta válida por 30 días</p>
 </footer>
 
