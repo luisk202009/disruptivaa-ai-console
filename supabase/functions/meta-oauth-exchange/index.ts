@@ -165,7 +165,7 @@ serve(async (req) => {
     const longTokenData = await longTokenResponse.json();
 
     if (!longTokenResponse.ok || longTokenData.error) {
-      console.error("Long token exchange failed:", longTokenData);
+      console.error("Long token exchange failed");
       return new Response(
         JSON.stringify({ 
           success: false, 
