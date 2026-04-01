@@ -128,7 +128,7 @@ serve(async (req) => {
       );
     }
 
-    console.info(`Processing OAuth exchange for user ${userId}`);
+    console.info("Processing OAuth exchange");
 
     // Step 1: Exchange code for short-lived token
     const tokenUrl = new URL("https://graph.facebook.com/v18.0/oauth/access_token");
