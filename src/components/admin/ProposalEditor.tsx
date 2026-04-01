@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Copy, Check, ExternalLink, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useProposals, type Proposal } from "@/hooks/useProposals";
+import { useProposalTemplates } from "@/hooks/useProposalTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,6 +21,13 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
+const paymentTypeLabels: Record<string, string> = {
+  one_time: "Pago Único",
+  monthly: "Mensual",
+  annual: "Anual",
+  custom: "Acuerdo de pago",
+};
+
 interface ProposalEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,6 +36,7 @@ interface ProposalEditorProps {
 
 const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) => {
   const { createProposal, updateProposal } = useProposals();
+  const templatesQuery = useProposalTemplates();
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [slugManual, setSlugManual] = useState(false);
@@ -35,6 +45,11 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
   const [status, setStatus] = useState("draft");
   const [ctaPrimaryUrl, setCtaPrimaryUrl] = useState("");
   const [ctaSecondaryUrl, setCtaSecondaryUrl] = useState("");
+  const [serviceType, setServiceType] = useState("");
+  const [price, setPrice] = useState("");
+  const [paymentType, setPaymentType] = useState("one_time");
+  const [termsConditions, setTermsConditions] = useState("");
+  const [proposalDate, setProposalDate] = useState(new Date().toISOString().slice(0, 10));
   const [copied, setCopied] = useState(false);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -60,6 +75,11 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setStatus(proposal.status);
         setCtaPrimaryUrl(proposal.cta_primary_url || "");
         setCtaSecondaryUrl(proposal.cta_secondary_url || "");
+        setServiceType(proposal.service_type || "");
+        setPrice(proposal.price || "");
+        setPaymentType(proposal.payment_type || "one_time");
+        setTermsConditions(proposal.terms_conditions || "");
+        setProposalDate(proposal.proposal_date || new Date().toISOString().slice(0, 10));
         setSavedSlug(proposal.slug);
       } else {
         setTitle("");
@@ -70,6 +90,11 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         setStatus("draft");
         setCtaPrimaryUrl("");
         setCtaSecondaryUrl("");
+        setServiceType("");
+        setPrice("");
+        setPaymentType("one_time");
+        setTermsConditions("");
+        setProposalDate(new Date().toISOString().slice(0, 10));
         setSavedSlug(null);
       }
       setCopied(false);
@@ -86,19 +111,45 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
 
   const publicUrl = `${window.location.origin}/p/${slug}`;
 
+  const injectPlaceholders = (template: string) => {
+    const dateFormatted = proposalDate
+      ? new Date(proposalDate + "T12:00:00").toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+      : "2026";
+
+    return template
+      .split("{{COMPANY_NAME}}").join(companyName.trim() || "Empresa")
+      .split("{{CTA_PRIMARY_URL}}").join(ctaPrimaryUrl || "#")
+      .split("{{CTA_SECONDARY_URL}}").join(ctaSecondaryUrl || "https://www.disruptivaa.com")
+      .split("{{PROPOSAL_DATE}}").join(dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1))
+      .split("{{PRICE}}").join(price || "—")
+      .split("{{PAYMENT_TYPE_LABEL}}").join(paymentTypeLabels[paymentType] || "Pago Único")
+      .split("{{TERMS_CONDITIONS}}").join(termsConditions || "")
+      .split("{{TERMS_DISPLAY}}").join(termsConditions.trim() ? "block" : "none");
+  };
+
   const handlePreview = async () => {
     if (!companyName.trim()) {
       toast.error("Ingresa el nombre de la empresa para ver la vista previa");
       return;
     }
     try {
-      const res = await fetch("/proposal-template.html");
-      const template = await res.text();
-      const finalHtml = template
-        .split("{{COMPANY_NAME}}").join(companyName.trim())
-        .split("{{CTA_PRIMARY_URL}}").join(ctaPrimaryUrl || "#")
-        .split("{{CTA_SECONDARY_URL}}").join(ctaSecondaryUrl || "https://www.disruptivaa.com");
-      setPreviewHtml(finalHtml);
+      let template: string;
+      // Try to get template from DB based on service_type
+      if (serviceType) {
+        const selected = templatesQuery.data?.find((t) => t.service_type === serviceType);
+        if (selected && selected.html_content.trim()) {
+          template = selected.html_content;
+        } else {
+          // Fallback to static file
+          const res = await fetch("/proposal-template.html");
+          template = await res.text();
+        }
+      } else {
+        const res = await fetch("/proposal-template.html");
+        template = await res.text();
+      }
+
+      setPreviewHtml(injectPlaceholders(template));
       setShowPreview(true);
     } catch {
       toast.error("Error al cargar la plantilla");
@@ -124,6 +175,11 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         status: overrideStatus || status,
         cta_primary_url: ctaPrimaryUrl.trim(),
         cta_secondary_url: ctaSecondaryUrl.trim(),
+        service_type: serviceType,
+        price: price.trim(),
+        payment_type: paymentType,
+        terms_conditions: termsConditions.trim(),
+        proposal_date: proposalDate,
       };
 
       if (proposal) {
@@ -187,6 +243,7 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
+          {/* Row 1: Title + Slug */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Título</Label>
@@ -207,6 +264,7 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
             </div>
           </div>
 
+          {/* Row 2: Company name */}
           <div className="space-y-2">
             <Label>Nombre de la empresa (destinatario) *</Label>
             <Input
@@ -214,11 +272,63 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Ej: Deco Struktura, Grupo Axo..."
             />
-            <p className="text-xs text-muted-foreground">
-              Este nombre reemplazará {"{{COMPANY_NAME}}"} en la plantilla de la propuesta.
-            </p>
           </div>
 
+          {/* Row 3: Service + Date */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Servicio (plantilla)</Label>
+              <Select value={serviceType || "none"} onValueChange={(v) => setServiceType(v === "none" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un servicio" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Plantilla por defecto —</SelectItem>
+                  {templatesQuery.data?.map((t) => (
+                    <SelectItem key={t.id} value={t.service_type}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Fecha de propuesta</Label>
+              <Input
+                type="date"
+                value={proposalDate}
+                onChange={(e) => setProposalDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Price + Payment Type */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Precio</Label>
+              <Input
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Ej: 1,200 USD"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de pago</Label>
+              <Select value={paymentType} onValueChange={setPaymentType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="one_time">Pago Único</SelectItem>
+                  <SelectItem value="monthly">Mensual</SelectItem>
+                  <SelectItem value="annual">Anual</SelectItem>
+                  <SelectItem value="custom">Acuerdo de pago</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Row 5: Lead + Status */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Lead vinculado (opcional)</Label>
@@ -253,6 +363,7 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
             </div>
           </div>
 
+          {/* Row 6: CTAs */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>URL "Agendar reunión" (CTA principal)</Label>
@@ -272,6 +383,17 @@ const ProposalEditor = ({ open, onOpenChange, proposal }: ProposalEditorProps) =
                 className="font-mono text-sm"
               />
             </div>
+          </div>
+
+          {/* Row 7: Terms */}
+          <div className="space-y-2">
+            <Label>Términos y condiciones (opcional)</Label>
+            <Textarea
+              value={termsConditions}
+              onChange={(e) => setTermsConditions(e.target.value)}
+              placeholder="Ej: Esta propuesta es válida por 30 días. Los precios no incluyen IVA..."
+              rows={4}
+            />
           </div>
 
           {savedSlug && (

@@ -11,6 +11,11 @@ export interface Proposal {
   status: string;
   cta_primary_url: string;
   cta_secondary_url: string;
+  service_type: string;
+  price: string;
+  payment_type: string;
+  terms_conditions: string;
+  proposal_date: string;
   created_at: string;
   updated_at: string;
   lead?: { id: string; name: string; email: string; company: string | null } | null;
@@ -32,7 +37,20 @@ export const useProposals = () => {
   });
 
   const createProposal = useMutation({
-    mutationFn: async (proposal: { title: string; slug: string; company_name: string; lead_id?: string | null; status?: string; cta_primary_url?: string; cta_secondary_url?: string }) => {
+    mutationFn: async (proposal: {
+      title: string;
+      slug: string;
+      company_name: string;
+      lead_id?: string | null;
+      status?: string;
+      cta_primary_url?: string;
+      cta_secondary_url?: string;
+      service_type?: string;
+      price?: string;
+      payment_type?: string;
+      terms_conditions?: string;
+      proposal_date?: string;
+    }) => {
       const { data, error } = await supabase
         .from("proposals")
         .insert({ ...proposal, html_content: "" } as any)
@@ -45,7 +63,21 @@ export const useProposals = () => {
   });
 
   const updateProposal = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; title?: string; slug?: string; company_name?: string; lead_id?: string | null; status?: string; cta_primary_url?: string; cta_secondary_url?: string }) => {
+    mutationFn: async ({ id, ...updates }: {
+      id: string;
+      title?: string;
+      slug?: string;
+      company_name?: string;
+      lead_id?: string | null;
+      status?: string;
+      cta_primary_url?: string;
+      cta_secondary_url?: string;
+      service_type?: string;
+      price?: string;
+      payment_type?: string;
+      terms_conditions?: string;
+      proposal_date?: string;
+    }) => {
       const { data, error } = await supabase
         .from("proposals")
         .update(updates as any)
@@ -80,6 +112,11 @@ export const useProposals = () => {
           lead_id: source.lead_id,
           status: "draft",
           html_content: "",
+          service_type: source.service_type,
+          price: source.price,
+          payment_type: source.payment_type,
+          terms_conditions: source.terms_conditions,
+          proposal_date: source.proposal_date,
         } as any)
         .select()
         .single();

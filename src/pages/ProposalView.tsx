@@ -3,6 +3,13 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
+const paymentTypeLabels: Record<string, string> = {
+  one_time: "Pago Único",
+  monthly: "Mensual",
+  annual: "Anual",
+  custom: "Acuerdo de pago",
+};
+
 const ProposalView = () => {
   const { slug } = useParams<{ slug: string }>();
   const [html, setHtml] = useState<string | null>(null);
@@ -17,7 +24,7 @@ const ProposalView = () => {
       // 1. Fetch proposal from DB
       const { data, error } = await supabase
         .from("proposals" as any)
-        .select("company_name, status, cta_primary_url, cta_secondary_url")
+        .select("company_name, status, cta_primary_url, cta_secondary_url, service_type, price, payment_type, terms_conditions, proposal_date")
         .eq("slug", slug)
         .single();
 
@@ -27,29 +34,58 @@ const ProposalView = () => {
         return;
       }
 
-      const companyName = (data as any).company_name || "";
+      const d = data as any;
+      const companyName = d.company_name || "";
+      const serviceType = d.service_type || "";
 
-      // 2. Fetch template
-      const res = await fetch("/proposal-template.html");
-      if (!res.ok) {
-        setNotFound(true);
-        setLoading(false);
-        return;
+      // 2. Try to get template from DB
+      let template: string | null = null;
+      if (serviceType) {
+        const { data: tplData } = await supabase
+          .from("proposal_templates" as any)
+          .select("html_content")
+          .eq("service_type", serviceType)
+          .single();
+        if (tplData && (tplData as any).html_content?.trim()) {
+          template = (tplData as any).html_content;
+        }
       }
-      const template = await res.text();
 
-      // 3. Inject company name and CTA URLs
-      const ctaPrimary = (data as any).cta_primary_url || "#";
-      const ctaSecondary = (data as any).cta_secondary_url || "https://www.disruptivaa.com";
+      // 3. Fallback to static file
+      if (!template) {
+        const res = await fetch("/proposal-template.html");
+        if (!res.ok) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+        template = await res.text();
+      }
+
+      // 4. Format date
+      const dateFormatted = d.proposal_date
+        ? new Date(d.proposal_date + "T12:00:00").toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+        : "2026";
+      const dateCapitalized = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+
+      // 5. Inject placeholders
+      const ctaPrimary = d.cta_primary_url || "#";
+      const ctaSecondary = d.cta_secondary_url || "https://www.disruptivaa.com";
       const finalHtml = template
         .split("{{COMPANY_NAME}}").join(companyName)
         .split("{{CTA_PRIMARY_URL}}").join(ctaPrimary)
-        .split("{{CTA_SECONDARY_URL}}").join(ctaSecondary);
+        .split("{{CTA_SECONDARY_URL}}").join(ctaSecondary)
+        .split("{{PROPOSAL_DATE}}").join(dateCapitalized)
+        .split("{{PRICE}}").join(d.price || "—")
+        .split("{{PAYMENT_TYPE_LABEL}}").join(paymentTypeLabels[d.payment_type] || "Pago Único")
+        .split("{{TERMS_CONDITIONS}}").join(d.terms_conditions || "")
+        .split("{{TERMS_DISPLAY}}").join((d.terms_conditions || "").trim() ? "block" : "none");
+
       setHtml(finalHtml);
       setLoading(false);
 
-      // 4. Mark as viewed
-      if ((data as any).status === "sent") {
+      // 6. Mark as viewed
+      if (d.status === "sent") {
         await supabase.rpc("mark_proposal_viewed", { _slug: slug });
       }
     };
