@@ -160,7 +160,7 @@ serve(async (req) => {
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
 
-    console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}, account_id=${account_id}`);
+    console.log(`📊 Request: metric=${metric}, date_preset=${date_preset}`);
 
     // --- Cache check ---
     const cacheKey = `meta_ads:${metric}:${date_preset}:${account_id || "default"}`;
