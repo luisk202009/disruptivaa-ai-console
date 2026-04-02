@@ -131,6 +131,7 @@ const App = () => (
               <Route path="/admin/emails" element={<ProtectedRoute><Lazy><AdminLayout><AdminEmails /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/proposals" element={<ProtectedRoute><Lazy><AdminLayout><AdminProposals /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/proposal-templates" element={<ProtectedRoute><Lazy><AdminLayout><AdminProposalTemplates /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute><Lazy><AdminLayout><AdminSettings /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
               <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
 
