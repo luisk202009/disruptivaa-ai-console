@@ -36,6 +36,7 @@ const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications")
 const AdminEmails = lazy(() => import("./pages/admin/AdminEmails"));
 const AdminProposals = lazy(() => import("./pages/admin/AdminProposals"));
 const AdminProposalTemplates = lazy(() => import("./pages/admin/AdminProposalTemplates"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const ProposalView = lazy(() => import("./pages/ProposalView"));
 const Brief = lazy(() => import("./pages/Brief"));
