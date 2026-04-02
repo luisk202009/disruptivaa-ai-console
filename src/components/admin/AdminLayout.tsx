@@ -1,5 +1,5 @@
 import { 
-  Users, Building2, UserCog, CreditCard, Bell, Mail, FileText, Code,
+  Users, Building2, UserCog, CreditCard, Bell, Mail, FileText, Settings,
   ChevronLeft, ChevronRight, ArrowLeft
 } from "lucide-react";
 import { useState } from "react";
@@ -47,16 +47,44 @@ const NavItem = ({ icon, label, active, collapsed, onClick }: NavItemProps) => (
   </button>
 );
 
-const adminNavItems = [
-  { id: "leads", icon: <Users size={18} strokeWidth={1.5} />, label: "Leads CRM", path: "/admin/leads" },
-  { id: "companies", icon: <Building2 size={18} strokeWidth={1.5} />, label: "Empresas", path: "/admin/companies" },
-  { id: "users", icon: <UserCog size={18} strokeWidth={1.5} />, label: "Usuarios", path: "/admin/users" },
-  { id: "subscriptions", icon: <CreditCard size={18} strokeWidth={1.5} />, label: "Suscripciones", path: "/admin/subscriptions" },
-  { id: "notifications", icon: <Bell size={18} strokeWidth={1.5} />, label: "Notificaciones", path: "/admin/notifications" },
-  { id: "emails", icon: <Mail size={18} strokeWidth={1.5} />, label: "Email", path: "/admin/emails" },
-  { id: "proposals", icon: <FileText size={18} strokeWidth={1.5} />, label: "Propuestas", path: "/admin/proposals" },
-  { id: "proposal-templates", icon: <Code size={18} strokeWidth={1.5} />, label: "Plantillas", path: "/admin/proposal-templates" },
+const SectionLabel = ({ label, collapsed }: { label: string; collapsed: boolean }) => {
+  if (collapsed) return null;
+  return (
+    <p className="text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500 px-3 mb-2 mt-4 first:mt-0">
+      {label}
+    </p>
+  );
+};
+
+const adminSections = [
+  {
+    label: "Administración",
+    items: [
+      { id: "companies", icon: <Building2 size={18} strokeWidth={1.5} />, label: "Empresas", path: "/admin/companies" },
+      { id: "users", icon: <UserCog size={18} strokeWidth={1.5} />, label: "Usuarios", path: "/admin/users" },
+      { id: "subscriptions", icon: <CreditCard size={18} strokeWidth={1.5} />, label: "Suscripciones", path: "/admin/subscriptions" },
+    ],
+  },
+  {
+    label: "CRM",
+    items: [
+      { id: "leads", icon: <Users size={18} strokeWidth={1.5} />, label: "Leads", path: "/admin/leads" },
+      { id: "proposals", icon: <FileText size={18} strokeWidth={1.5} />, label: "Propuestas", path: "/admin/proposals" },
+    ],
+  },
+  {
+    label: "Ajustes",
+    items: [
+      { id: "settings", icon: <Settings size={18} strokeWidth={1.5} />, label: "Ajustes", path: "/admin/settings" },
+    ],
+  },
 ];
+
+const bottomItems = [
+  { id: "notifications", icon: <Bell size={18} strokeWidth={1.5} />, label: "Notificaciones", path: "/admin/notifications" },
+];
+
+const allNavItems = [...adminSections.flatMap(s => s.items), ...bottomItems];
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -77,10 +105,14 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   const getActiveItem = () => {
-    for (const item of adminNavItems) {
+    for (const item of allNavItems) {
       if (location.pathname === item.path || location.pathname.startsWith(item.path + "/")) {
         return item.id;
       }
+    }
+    // Also match sub-pages of settings
+    if (location.pathname.startsWith("/admin/emails") || location.pathname.startsWith("/admin/proposal-templates")) {
+      return "settings";
     }
     return "";
   };
@@ -125,12 +157,26 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex-1 overflow-hidden relative min-h-0">
           <div className="h-full overflow-y-auto scrollbar-minimal">
             <nav className="px-4 py-4 space-y-1">
-              {!collapsed && (
-                <p className="text-[10px] font-bold font-['Fira_Sans'] uppercase tracking-[0.2em] text-zinc-500 px-3 mb-2">
-                  Administración
-                </p>
-              )}
-              {adminNavItems.map((item) => (
+              {adminSections.map((section) => (
+                <div key={section.label}>
+                  <SectionLabel label={section.label} collapsed={collapsed} />
+                  {section.items.map((item) => (
+                    <NavItem
+                      key={item.id}
+                      icon={item.icon}
+                      label={item.label}
+                      active={getActiveItem() === item.id}
+                      collapsed={collapsed}
+                      onClick={() => navigate(item.path)}
+                    />
+                  ))}
+                </div>
+              ))}
+
+              {/* Separator */}
+              <div className="my-3 border-t border-white/[0.06]" />
+
+              {bottomItems.map((item) => (
                 <NavItem
                   key={item.id}
                   icon={item.icon}
