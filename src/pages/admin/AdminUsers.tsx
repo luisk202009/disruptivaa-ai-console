@@ -7,7 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 
 interface AdminProfile {
   id: string;
@@ -16,6 +16,7 @@ interface AdminProfile {
   language: string | null;
   full_name: string | null;
   created_at: string | null;
+  email: string | null;
 }
 
 const AdminUsers = () => {
@@ -36,7 +37,7 @@ const AdminUsers = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, role, company_id, language, full_name, created_at")
+        .select("id, role, company_id, language, full_name, created_at, email")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as AdminProfile[];
@@ -79,7 +80,7 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <h1 className="text-2xl font-semibold text-foreground tracking-wide mb-1">Usuarios</h1>
       <p className="text-sm text-muted-foreground mb-8">Gestiona los usuarios y permisos de administración.</p>
 
@@ -93,19 +94,30 @@ const AdminUsers = () => {
             <TableHeader>
               <TableRow className="border-white/[0.06] hover:bg-transparent">
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.userName")}</TableHead>
+                <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">Email</TableHead>
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.role")}</TableHead>
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">{t("admin.company")}</TableHead>
+                <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-center">Onboarding</TableHead>
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-right">Admin</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {allProfiles.map((profile) => {
                 const isAlreadyAdmin = adminUserIds.has(profile.id);
+                const onboardingComplete = !!profile.company_id;
                 return (
                   <TableRow key={profile.id} className="border-white/[0.06]">
                     <TableCell className="text-foreground font-medium">{profile.full_name || profile.id.slice(0, 8) + "…"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{profile.email || "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs border-white/10">{profile.role || "client"}</Badge></TableCell>
                     <TableCell className="text-muted-foreground text-sm">{profile.company_id ? (companyMap.get(profile.company_id) || profile.company_id.slice(0, 8)) : "—"}</TableCell>
+                    <TableCell className="text-center">
+                      {onboardingComplete ? (
+                        <CheckCircle2 size={16} className="inline-block text-emerald-500" />
+                      ) : (
+                        <XCircle size={16} className="inline-block text-zinc-600" />
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Switch checked={isAlreadyAdmin} onCheckedChange={() => handleToggleAdmin(profile.id, isAlreadyAdmin)} disabled={promoteToAdmin.isPending || revokeAdmin.isPending} />
                     </TableCell>
