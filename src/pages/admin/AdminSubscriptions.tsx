@@ -20,10 +20,9 @@ import { Loader2, Plus, CreditCard, Link2, Copy, ChevronDown } from "lucide-reac
 interface Subscription {
   id: string; company_id: string; plan_name: string; billing_cycle: string;
   price: number; currency: string | null; status: string; starts_at: string;
-  expires_at: string | null; stripe_link: string | null;
+  expires_at: string | null; stripe_link: string | null; plan_id: string | null;
 }
 
-const PLAN_OPTIONS = ["Starter", "Growth", "Enterprise"] as const;
 const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
 
 const statusBadgeClass: Record<string, string> = {
@@ -41,6 +40,15 @@ const AdminSubscriptions = () => {
   const [subCycle, setSubCycle] = useState("");
   const [subPrice, setSubPrice] = useState("");
   const [subStartDate, setSubStartDate] = useState("");
+
+  const { data: plans } = useQuery({
+    queryKey: ["admin_plans_active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("plans").select("id, name").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const { data: companies } = useQuery({
     queryKey: ["admin_companies"],
@@ -64,8 +72,9 @@ const AdminSubscriptions = () => {
 
   const createSubscription = useMutation({
     mutationFn: async () => {
+      const selectedPlan = plans?.find(p => p.id === subPlan);
       const { error } = await supabase.from("subscriptions").insert({
-        company_id: subCompany, plan_name: subPlan, billing_cycle: subCycle || "monthly",
+        company_id: subCompany, plan_name: selectedPlan?.name || "", plan_id: subPlan, billing_cycle: subCycle || "monthly",
         price: parseFloat(subPrice), status: "pending", starts_at: subStartDate || new Date().toISOString(),
       });
       if (error) throw error;
@@ -168,8 +177,8 @@ const AdminSubscriptions = () => {
               <SelectContent>{companies?.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
             </Select>
             <Select value={subPlan} onValueChange={setSubPlan}>
-              <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder={t("admin.selectPlan")} /></SelectTrigger>
-              <SelectContent>{PLAN_OPTIONS.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}</SelectContent>
+              <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger>
+              <SelectContent>{plans?.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
             </Select>
             <Select value={subCycle} onValueChange={setSubCycle}>
               <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder={t("admin.billingCycle")} /></SelectTrigger>

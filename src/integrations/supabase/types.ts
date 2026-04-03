@@ -383,6 +383,45 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          max_ai_agents: number | null
+          max_dashboards: number | null
+          max_goals_per_project: number | null
+          max_integrations: number | null
+          max_projects: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_ai_agents?: number | null
+          max_dashboards?: number | null
+          max_goals_per_project?: number | null
+          max_integrations?: number | null
+          max_projects?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_ai_agents?: number | null
+          max_dashboards?: number | null
+          max_goals_per_project?: number | null
+          max_integrations?: number | null
+          max_projects?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_id: string | null
@@ -636,6 +675,7 @@ export type Database = {
           currency: string | null
           expires_at: string | null
           id: string
+          plan_id: string | null
           plan_name: string
           price: number
           starts_at: string
@@ -652,6 +692,7 @@ export type Database = {
           currency?: string | null
           expires_at?: string | null
           id?: string
+          plan_id?: string | null
           plan_name: string
           price: number
           starts_at?: string
@@ -668,6 +709,7 @@ export type Database = {
           currency?: string | null
           expires_at?: string | null
           id?: string
+          plan_id?: string | null
           plan_name?: string
           price?: number
           starts_at?: string
@@ -683,6 +725,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]

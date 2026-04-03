@@ -1,6 +1,6 @@
 import { 
   Users, Building2, UserCog, CreditCard, Bell, Mail, FileText, Settings,
-  ChevronLeft, ChevronRight, ArrowLeft
+  ChevronLeft, ChevronRight, ArrowLeft, Crown
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
@@ -63,6 +63,7 @@ const adminSections = [
       { id: "companies", icon: <Building2 size={18} strokeWidth={1.5} />, label: "Empresas", path: "/admin/companies" },
       { id: "users", icon: <UserCog size={18} strokeWidth={1.5} />, label: "Usuarios", path: "/admin/users" },
       { id: "subscriptions", icon: <CreditCard size={18} strokeWidth={1.5} />, label: "Suscripciones", path: "/admin/subscriptions" },
+      { id: "plans", icon: <Crown size={18} strokeWidth={1.5} />, label: "Planes", path: "/admin/plans" },
     ],
   },
   {
