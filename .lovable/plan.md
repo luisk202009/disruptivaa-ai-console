@@ -1,115 +1,66 @@
 
 
-## Plan: Módulo de Planes con Límites de Funcionalidades
+## Plan: Precio en planes + flujo de pago para usuarios
 
-### Contexto actual
+### Situación actual
 
-Actualmente los planes son solo strings hardcodeados ("Starter", "Growth", "Enterprise") en `AdminSubscriptions.tsx`. No existe una tabla de planes ni límites de funcionalidades. Stripe está integrado vía webhook para procesar pagos y activar suscripciones, y esa lógica se mantiene — los planes definen **qué puede hacer** cada empresa, y las suscripciones vinculan una empresa a un plan.
+- El precio se define manualmente al crear una suscripción en el admin. La tabla `plans` no tiene campo de precio.
+- La única forma de crear suscripciones es manualmente desde `/admin/subscriptions`.
+- El `generateStripeLink` actual genera un link falso (placeholder), no usa la API real de Stripe.
+- El webhook de Stripe ya maneja `checkout.session.completed` para activar suscripciones.
 
-### Arquitectura propuesta
+### Cambios propuestos
 
-```text
-┌──────────────┐       ┌──────────────────┐       ┌──────────────┐
-│    plans     │──────▶│  subscriptions   │◀──────│  companies   │
-│ (límites)    │  FK   │  (plan_id)       │  FK   │              │
-└──────────────┘       └──────────────────┘       └──────────────┘
-                              │
-                        useSubscription hook
-                              │
-                        usePlanLimits hook ← enforcement en frontend
-```
+#### 1. Migración SQL: Agregar precio al plan
 
-### 1. Migración SQL — Tabla `plans` + vincular a `subscriptions`
+Agregar columnas `price` (numeric) y `currency` (text, default 'USD') a la tabla `plans`.
 
-```sql
-CREATE TABLE public.plans (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  max_projects integer DEFAULT -1,        -- -1 = ilimitado
-  max_goals_per_project integer DEFAULT -1,
-  max_ai_agents integer DEFAULT -1,
-  max_dashboards integer DEFAULT -1,
-  max_integrations integer DEFAULT -1,
-  is_active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+#### 2. Actualizar `AdminPlans.tsx`
 
--- RLS: admins full access, authenticated users can read active plans
-ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins full access" ON plans FOR ALL TO authenticated
-  USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Anyone can view active plans" ON plans FOR SELECT TO authenticated
-  USING (is_active = true);
+Agregar campos de precio y moneda al formulario de creación/edición de planes. Mostrar precio en la tabla.
 
--- Add plan_id FK to subscriptions
-ALTER TABLE public.subscriptions ADD COLUMN plan_id uuid REFERENCES plans(id);
+#### 3. Actualizar `AdminSubscriptions.tsx`
 
--- Seed default plans
-INSERT INTO plans (name, max_projects, max_goals_per_project, max_ai_agents, max_dashboards, max_integrations)
-VALUES
-  ('Starter', 2, 3, 1, 1, 1),
-  ('Growth', 10, 10, 3, 5, 3),
-  ('Enterprise', -1, -1, -1, -1, -1);
-```
+Al seleccionar un plan, auto-rellenar el precio con el del plan. El admin puede editarlo antes de crear la suscripción. Cambio: hacer query de plans con `id, name, price, currency` y al hacer `onValueChange` del select de plan, setear `subPrice` automáticamente.
 
-### 2. Nueva página: `src/pages/admin/AdminPlans.tsx`
+#### 4. Flujo de pago para usuarios (Stripe Checkout)
 
-Tabla con todos los planes mostrando: nombre, límites por columna, estado activo/inactivo.
+Crear una página `/pricing` (o sección dentro del paywall `SubscriptionPending`) donde el usuario bloqueado vea los planes disponibles y pueda iniciar el pago:
 
-Formulario para crear/editar un plan con campos:
-- Nombre del plan
-- Máx. proyectos
-- Máx. metas por proyecto
-- Máx. agentes de IA
-- Máx. paneles (dashboards)
-- Máx. integraciones (fuentes conectadas)
-- Activo (switch)
+- **Nueva página/componente `PricingPlans.tsx`**: Muestra tarjetas con los planes activos, sus límites y precios. Cada plan tiene un botón "Suscribirse".
+- **Edge function `create-checkout-session`**: Recibe `plan_id` y `company_id`, crea una Stripe Checkout Session con el precio correspondiente, y devuelve la URL. Usa `client_reference_id = company_id` para que el webhook existente lo vincule.
+- Al hacer click en "Suscribirse", se crea una suscripción `pending` en la DB y se redirige al usuario a Stripe Checkout.
+- El webhook existente (`checkout.session.completed`) ya activa la suscripción automáticamente.
 
-Cada fila tiene botón "Editar" que abre el formulario con los valores pre-llenados.
+#### 5. Agregar `stripe_price_id` al plan (opcional pero recomendado)
 
-### 3. Modificar `AdminSubscriptions.tsx`
-
-- Reemplazar el `PLAN_OPTIONS` hardcodeado por un query a la tabla `plans`
-- Al crear suscripción, guardar también `plan_id` junto con `plan_name`
-- Mostrar el nombre del plan en la tabla de suscripciones
-
-### 4. Hook `usePlanLimits`
-
-Nuevo hook que:
-1. Lee la suscripción activa de la empresa (via `useSubscription`)
-2. Busca el plan asociado via `plan_id`
-3. Expone funciones como `canCreateProject()`, `canAddGoal(projectId)`, `canConnectIntegration()`, etc.
-4. Cuenta los recursos actuales del usuario y los compara con los límites del plan
-
-### 5. Modificar `AdminLayout.tsx`
-
-Agregar "Planes" al grupo "Administración":
-```
-{ id: "plans", icon: <Crown size={18} />, label: "Planes", path: "/admin/plans" }
-```
-
-### 6. Ruta en `App.tsx`
-
-Agregar `/admin/plans` → `AdminPlans` con `AdminLayout`.
-
-### 7. Modificar `useSubscription.ts`
-
-Extender el query para hacer join con `plans` y devolver los límites del plan activo junto con la suscripción.
+Para que la edge function pueda crear la sesión de Stripe, cada plan necesita un `stripe_price_id` que el admin configura desde el formulario de planes. Esto vincula el plan interno con un precio creado en el dashboard de Stripe.
 
 ### Archivos a crear/modificar
 
 | Archivo | Cambio |
 |---|---|
-| Migración SQL | Tabla `plans`, FK en `subscriptions`, seed data |
-| `src/pages/admin/AdminPlans.tsx` | Nueva página CRUD de planes |
-| `src/hooks/usePlanLimits.ts` | Hook de enforcement de límites |
-| `src/hooks/useSubscription.ts` | Join con `plans` para traer límites |
-| `src/pages/admin/AdminSubscriptions.tsx` | Usar planes dinámicos en vez de hardcoded |
-| `src/components/admin/AdminLayout.tsx` | Agregar "Planes" al nav |
-| `src/App.tsx` | Agregar ruta `/admin/plans` |
+| Migración SQL | `price`, `currency`, `stripe_price_id` en tabla `plans` |
+| `AdminPlans.tsx` | Campos precio, moneda y stripe_price_id en formulario |
+| `AdminSubscriptions.tsx` | Auto-fill precio al seleccionar plan |
+| `PricingPlans.tsx` | Nueva página con tarjetas de planes para usuarios |
+| `SubscriptionPending.tsx` | Integrar vista de planes en el paywall |
+| `create-checkout-session/index.ts` | Edge function para crear Stripe Checkout Session |
+| `App.tsx` | Ruta para pricing si es página separada |
+| `useSubscription.ts` | Tipos actualizados |
+
+### Flujo completo
+
+```text
+Admin crea plan (con precio + stripe_price_id)
+       │
+       ├─► Admin crea suscripción manual → precio auto-filled, editable
+       │
+       └─► Usuario ve paywall → selecciona plan → edge function crea
+           Stripe Checkout → usuario paga → webhook activa suscripción
+```
 
 ### Nota sobre Stripe
 
-La integración con Stripe se mantiene tal cual. Los planes en esta tabla son la **definición interna** de qué límites tiene cada nivel. Stripe sigue procesando el pago y activando la suscripción vía webhook. Opcionalmente en el futuro se puede vincular cada plan a un `stripe_price_id` para automatizar la generación de checkout links.
+Se necesita que cada plan tenga un `stripe_price_id` vinculado a un Product/Price en Stripe. El admin crea el producto en Stripe Dashboard y pega el price ID (`price_xxx`) en el formulario del plan. La edge function usa ese ID para crear la sesión de checkout.
 
