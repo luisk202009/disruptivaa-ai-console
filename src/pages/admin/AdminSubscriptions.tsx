@@ -75,8 +75,9 @@ const AdminSubscriptions = () => {
 
   const createSubscription = useMutation({
     mutationFn: async () => {
+      const selectedPlan = plans?.find(p => p.id === subPlan);
       const { error } = await supabase.from("subscriptions").insert({
-        company_id: subCompany, plan_name: subPlan, billing_cycle: subCycle || "monthly",
+        company_id: subCompany, plan_name: selectedPlan?.name || "", plan_id: subPlan, billing_cycle: subCycle || "monthly",
         price: parseFloat(subPrice), status: "pending", starts_at: subStartDate || new Date().toISOString(),
       });
       if (error) throw error;
