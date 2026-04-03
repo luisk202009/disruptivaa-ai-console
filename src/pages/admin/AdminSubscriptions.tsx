@@ -180,8 +180,8 @@ const AdminSubscriptions = () => {
               <SelectContent>{companies?.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
             </Select>
             <Select value={subPlan} onValueChange={setSubPlan}>
-              <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder={t("admin.selectPlan")} /></SelectTrigger>
-              <SelectContent>{PLAN_OPTIONS.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}</SelectContent>
+              <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger>
+              <SelectContent>{plans?.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
             </Select>
             <Select value={subCycle} onValueChange={setSubCycle}>
               <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder={t("admin.billingCycle")} /></SelectTrigger>
