@@ -20,10 +20,10 @@ import { Loader2, Plus, CreditCard, Link2, Copy, ChevronDown } from "lucide-reac
 interface Subscription {
   id: string; company_id: string; plan_name: string; billing_cycle: string;
   price: number; currency: string | null; status: string; starts_at: string;
-  expires_at: string | null; stripe_link: string | null;
+  expires_at: string | null; stripe_link: string | null; plan_id: string | null;
 }
 
-const PLAN_OPTIONS = ["Starter", "Growth", "Enterprise"] as const;
+const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
 const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
 
 const statusBadgeClass: Record<string, string> = {
