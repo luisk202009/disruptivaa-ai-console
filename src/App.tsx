@@ -50,6 +50,7 @@ const MarketingAds = lazy(() => import("./pages/servicios/MarketingAds"));
 const WebsitesLandings = lazy(() => import("./pages/servicios/WebsitesLandings"));
 const MvpAplicaciones = lazy(() => import("./pages/servicios/MvpAplicaciones"));
 const Nosotros = lazy(() => import("./pages/Nosotros"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
