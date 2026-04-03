@@ -13,7 +13,7 @@ export const useSubscription = () => {
       if (!profile?.company_id) return null;
       const { data, error } = await supabase
         .from('subscriptions')
-        .select('id, plan_name, status, billing_cycle, starts_at, expires_at, price, currency, created_at, updated_at, company_id')
+        .select('id, plan_name, status, billing_cycle, starts_at, expires_at, price, currency, created_at, updated_at, company_id, plan_id')
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false })
         .limit(1)
