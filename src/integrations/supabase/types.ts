@@ -386,6 +386,7 @@ export type Database = {
       plans: {
         Row: {
           created_at: string | null
+          currency: string | null
           id: string
           is_active: boolean | null
           max_ai_agents: number | null
@@ -394,10 +395,13 @@ export type Database = {
           max_integrations: number | null
           max_projects: number | null
           name: string
+          price: number | null
+          stripe_price_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          currency?: string | null
           id?: string
           is_active?: boolean | null
           max_ai_agents?: number | null
@@ -406,10 +410,13 @@ export type Database = {
           max_integrations?: number | null
           max_projects?: number | null
           name: string
+          price?: number | null
+          stripe_price_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          currency?: string | null
           id?: string
           is_active?: boolean | null
           max_ai_agents?: number | null
@@ -418,6 +425,8 @@ export type Database = {
           max_integrations?: number | null
           max_projects?: number | null
           name?: string
+          price?: number | null
+          stripe_price_id?: string | null
           updated_at?: string | null
         }
         Relationships: []

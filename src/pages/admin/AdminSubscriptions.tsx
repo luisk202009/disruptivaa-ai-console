@@ -23,6 +23,10 @@ interface Subscription {
   expires_at: string | null; stripe_link: string | null; plan_id: string | null;
 }
 
+interface PlanOption {
+  id: string; name: string; price: number; currency: string;
+}
+
 const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
 
 const statusBadgeClass: Record<string, string> = {
@@ -39,14 +43,19 @@ const AdminSubscriptions = () => {
   const [subPlan, setSubPlan] = useState("");
   const [subCycle, setSubCycle] = useState("");
   const [subPrice, setSubPrice] = useState("");
+  const [subCurrency, setSubCurrency] = useState("USD");
   const [subStartDate, setSubStartDate] = useState("");
 
   const { data: plans } = useQuery({
     queryKey: ["admin_plans_active"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("plans").select("id, name").eq("is_active", true).order("name");
+      const { data, error } = await supabase
+        .from("plans")
+        .select("id, name, price, currency")
+        .eq("is_active", true)
+        .order("name");
       if (error) throw error;
-      return data;
+      return data as PlanOption[];
     },
   });
 
@@ -70,18 +79,29 @@ const AdminSubscriptions = () => {
 
   const companyMap = new Map(companies?.map(c => [c.id, c.name]) ?? []);
 
+  const handlePlanChange = (planId: string) => {
+    setSubPlan(planId);
+    const selected = plans?.find(p => p.id === planId);
+    if (selected) {
+      setSubPrice(String(selected.price));
+      setSubCurrency(selected.currency || "USD");
+    }
+  };
+
   const createSubscription = useMutation({
     mutationFn: async () => {
       const selectedPlan = plans?.find(p => p.id === subPlan);
       const { error } = await supabase.from("subscriptions").insert({
-        company_id: subCompany, plan_name: selectedPlan?.name || "", plan_id: subPlan, billing_cycle: subCycle || "monthly",
-        price: parseFloat(subPrice), status: "pending", starts_at: subStartDate || new Date().toISOString(),
+        company_id: subCompany, plan_name: selectedPlan?.name || "", plan_id: subPlan,
+        billing_cycle: subCycle || "monthly", price: parseFloat(subPrice),
+        currency: subCurrency, status: "pending",
+        starts_at: subStartDate || new Date().toISOString(),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_subscriptions"] });
-      setSubCompany(""); setSubPlan(""); setSubCycle(""); setSubPrice(""); setSubStartDate("");
+      setSubCompany(""); setSubPlan(""); setSubCycle(""); setSubPrice(""); setSubCurrency("USD"); setSubStartDate("");
       toast.success(t("admin.subscriptionCreated"));
     },
     onError: () => toast.error(t("admin.websiteError")),
@@ -176,15 +196,18 @@ const AdminSubscriptions = () => {
               <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder={t("admin.selectCompany")} /></SelectTrigger>
               <SelectContent>{companies?.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
             </Select>
-            <Select value={subPlan} onValueChange={setSubPlan}>
+            <Select value={subPlan} onValueChange={handlePlanChange}>
               <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder="Seleccionar plan" /></SelectTrigger>
-              <SelectContent>{plans?.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+              <SelectContent>{plans?.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name} — {p.currency} {p.price}</SelectItem>))}</SelectContent>
             </Select>
             <Select value={subCycle} onValueChange={setSubCycle}>
               <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue placeholder={t("admin.billingCycle")} /></SelectTrigger>
               <SelectContent><SelectItem value="monthly">{t("admin.monthly")}</SelectItem><SelectItem value="annual">{t("admin.annual")}</SelectItem></SelectContent>
             </Select>
-            <Input type="number" value={subPrice} onChange={(e) => setSubPrice(e.target.value)} placeholder={t("admin.price")} className="bg-white/[0.03] border-white/[0.08]" />
+            <div className="relative">
+              <Input type="number" step="0.01" value={subPrice} onChange={(e) => setSubPrice(e.target.value)} placeholder={t("admin.price")} className="bg-white/[0.03] border-white/[0.08]" />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{subCurrency}</span>
+            </div>
             <Input type="date" value={subStartDate} onChange={(e) => setSubStartDate(e.target.value)} className="bg-white/[0.03] border-white/[0.08]" />
           </div>
           <Button onClick={() => createSubscription.mutate()} disabled={!subCompany || !subPlan || !subPrice || createSubscription.isPending} className="w-full">
