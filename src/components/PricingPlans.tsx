@@ -140,7 +140,13 @@ const PricingPlans = () => {
                 <LimitLabel value={plan.max_integrations} label="integraciones" />
               </ul>
               <Button
-                onClick={() => subscribe.mutate(plan)}
+                onClick={() => {
+                  if (!session) {
+                    navigate(`/auth?redirect=/dashboard&plan=${plan.id}`);
+                    return;
+                  }
+                  subscribe.mutate(plan);
+                }}
                 disabled={subscribe.isPending}
                 variant={isPopular ? "default" : "outline"}
                 className={`w-full ${isPopular ? "" : "border-white/10"}`}
@@ -150,7 +156,7 @@ const PricingPlans = () => {
                 ) : (
                   <Zap size={14} className="mr-2" />
                 )}
-                Suscribirse
+                {session ? "Suscribirse" : "Comenzar"}
               </Button>
             </div>
           );
