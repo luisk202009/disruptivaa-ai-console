@@ -49,8 +49,6 @@ const AdminSubscriptions = () => {
       return data;
     },
   });
-  const [subPrice, setSubPrice] = useState("");
-  const [subStartDate, setSubStartDate] = useState("");
 
   const { data: companies } = useQuery({
     queryKey: ["admin_companies"],
