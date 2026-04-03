@@ -42,6 +42,17 @@ const AdminSubscriptions = () => {
   const [subPrice, setSubPrice] = useState("");
   const [subStartDate, setSubStartDate] = useState("");
 
+  const { data: plans } = useQuery({
+    queryKey: ["admin_plans_active"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("plans").select("id, name").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+  const [subPrice, setSubPrice] = useState("");
+  const [subStartDate, setSubStartDate] = useState("");
+
   const { data: companies } = useQuery({
     queryKey: ["admin_companies"],
     queryFn: async () => {
