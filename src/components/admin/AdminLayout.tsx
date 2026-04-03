@@ -1,6 +1,6 @@
 import { 
   Users, Building2, UserCog, CreditCard, Bell, Mail, FileText, Settings,
-  ChevronLeft, ChevronRight, ArrowLeft
+  ChevronLeft, ChevronRight, ArrowLeft, Crown
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
