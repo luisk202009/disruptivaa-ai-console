@@ -38,6 +38,7 @@ const LimitLabel = ({ value, label }: { value: number; label: string }) => (
 const PricingPlans = () => {
   const { session } = useAuth();
   const { profile } = useUserProfile();
+  const navigate = useNavigate();
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ["active_plans"],
