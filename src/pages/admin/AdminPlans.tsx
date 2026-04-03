@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
@@ -20,12 +23,18 @@ interface Plan {
   max_dashboards: number;
   max_integrations: number;
   is_active: boolean;
+  price: number;
+  currency: string;
+  stripe_price_id: string | null;
 }
 
 const EMPTY_FORM = {
   name: "", max_projects: "-1", max_goals_per_project: "-1",
-  max_ai_agents: "-1", max_dashboards: "-1", max_integrations: "-1", is_active: true,
+  max_ai_agents: "-1", max_dashboards: "-1", max_integrations: "-1",
+  is_active: true, price: "0", currency: "USD", stripe_price_id: "",
 };
+
+const CURRENCIES = ["USD", "MXN", "EUR", "COP", "ARS", "CLP"];
 
 const LimitCell = ({ value }: { value: number }) => (
   <span className="text-muted-foreground">
@@ -58,6 +67,9 @@ const AdminPlans = () => {
         max_dashboards: parseInt(form.max_dashboards),
         max_integrations: parseInt(form.max_integrations),
         is_active: form.is_active,
+        price: parseFloat(form.price) || 0,
+        currency: form.currency,
+        stripe_price_id: form.stripe_price_id || null,
       };
       if (editingId) {
         const { error } = await supabase.from("plans").update(payload).eq("id", editingId);
@@ -69,6 +81,7 @@ const AdminPlans = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin_plans"] });
+      queryClient.invalidateQueries({ queryKey: ["admin_plans_active"] });
       resetForm();
       toast.success(editingId ? "Plan actualizado" : "Plan creado");
     },
@@ -90,9 +103,16 @@ const AdminPlans = () => {
       max_dashboards: String(plan.max_dashboards),
       max_integrations: String(plan.max_integrations),
       is_active: plan.is_active,
+      price: String(plan.price),
+      currency: plan.currency || "USD",
+      stripe_price_id: plan.stripe_price_id || "",
     });
     setEditingId(plan.id);
     setShowForm(true);
+  };
+
+  const formatPrice = (price: number, currency: string) => {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(price);
   };
 
   return (
@@ -100,7 +120,7 @@ const AdminPlans = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-foreground tracking-wide mb-1">Planes</h1>
-          <p className="text-sm text-muted-foreground">Define los límites de funcionalidades para cada nivel de suscripción.</p>
+          <p className="text-sm text-muted-foreground">Define los límites y precios para cada nivel de suscripción.</p>
         </div>
         {!showForm && (
           <Button onClick={() => { resetForm(); setShowForm(true); }} variant="outline" size="sm" className="border-white/10">
@@ -123,6 +143,21 @@ const AdminPlans = () => {
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Nombre</label>
               <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Ej: Starter" className="bg-white/[0.03] border-white/[0.08]" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Precio</label>
+              <Input type="number" step="0.01" value={form.price} onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))} placeholder="99.00" className="bg-white/[0.03] border-white/[0.08]" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Moneda</label>
+              <Select value={form.currency} onValueChange={(v) => setForm(f => ({ ...f, currency: v }))}>
+                <SelectTrigger className="bg-white/[0.03] border-white/[0.08]"><SelectValue /></SelectTrigger>
+                <SelectContent>{CURRENCIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Stripe Price ID</label>
+              <Input value={form.stripe_price_id} onChange={(e) => setForm(f => ({ ...f, stripe_price_id: e.target.value }))} placeholder="price_xxx" className="bg-white/[0.03] border-white/[0.08] font-mono text-xs" />
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">Máx. proyectos (-1 = ilimitado)</label>
@@ -169,6 +204,7 @@ const AdminPlans = () => {
             <TableHeader>
               <TableRow className="border-white/[0.06] hover:bg-transparent">
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">Plan</TableHead>
+                <TableHead className="text-zinc-400 text-xs uppercase tracking-wider">Precio</TableHead>
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-center">Proyectos</TableHead>
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-center">Metas</TableHead>
                 <TableHead className="text-zinc-400 text-xs uppercase tracking-wider text-center">Agentes IA</TableHead>
@@ -182,6 +218,7 @@ const AdminPlans = () => {
               {plans.map((plan) => (
                 <TableRow key={plan.id} className="border-white/[0.06]">
                   <TableCell className="text-foreground font-medium">{plan.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatPrice(plan.price, plan.currency || "USD")}</TableCell>
                   <TableCell className="text-center"><LimitCell value={plan.max_projects} /></TableCell>
                   <TableCell className="text-center"><LimitCell value={plan.max_goals_per_project} /></TableCell>
                   <TableCell className="text-center"><LimitCell value={plan.max_ai_agents} /></TableCell>
