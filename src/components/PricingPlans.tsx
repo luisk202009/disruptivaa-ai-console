@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -37,6 +38,7 @@ const LimitLabel = ({ value, label }: { value: number; label: string }) => (
 const PricingPlans = () => {
   const { session } = useAuth();
   const { profile } = useUserProfile();
+  const navigate = useNavigate();
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ["active_plans"],
@@ -138,7 +140,13 @@ const PricingPlans = () => {
                 <LimitLabel value={plan.max_integrations} label="integraciones" />
               </ul>
               <Button
-                onClick={() => subscribe.mutate(plan)}
+                onClick={() => {
+                  if (!session) {
+                    navigate(`/auth?redirect=/dashboard&plan=${plan.id}`);
+                    return;
+                  }
+                  subscribe.mutate(plan);
+                }}
                 disabled={subscribe.isPending}
                 variant={isPopular ? "default" : "outline"}
                 className={`w-full ${isPopular ? "" : "border-white/10"}`}
@@ -148,7 +156,7 @@ const PricingPlans = () => {
                 ) : (
                   <Zap size={14} className="mr-2" />
                 )}
-                Suscribirse
+                {session ? "Suscribirse" : "Comenzar"}
               </Button>
             </div>
           );

@@ -50,6 +50,7 @@ const MarketingAds = lazy(() => import("./pages/servicios/MarketingAds"));
 const WebsitesLandings = lazy(() => import("./pages/servicios/WebsitesLandings"));
 const MvpAplicaciones = lazy(() => import("./pages/servicios/MvpAplicaciones"));
 const Nosotros = lazy(() => import("./pages/Nosotros"));
+const Pricing = lazy(() => import("./pages/Pricing"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -103,6 +104,7 @@ const App = () => (
               <Route path="/servicios/websites-landings" element={<Lazy><WebsitesLandings /></Lazy>} />
               <Route path="/servicios/mvp-aplicaciones" element={<Lazy><MvpAplicaciones /></Lazy>} />
               <Route path="/nosotros" element={<Lazy><Nosotros /></Lazy>} />
+              <Route path="/pricing" element={<Lazy><Pricing /></Lazy>} />
               <Route path="/p/:slug" element={<Lazy><ProposalView /></Lazy>} />
               <Route path="/propuesta/:slug" element={<Lazy><ProposalView /></Lazy>} />
 
