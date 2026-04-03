@@ -24,7 +24,6 @@ interface Subscription {
 }
 
 const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
-const SUBSCRIPTION_STATES = ["pending", "active", "expired", "canceled"] as const;
 
 const statusBadgeClass: Record<string, string> = {
   active: "border-green-500/30 text-green-400",
