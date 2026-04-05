@@ -26,14 +26,6 @@ const Blog = () => {
     const fetchPosts = async () => {
       setLoading(true);
       setError(null);
-      const { data, error: fnError } = await supabase.functions.invoke("get-wp-posts", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        body: undefined,
-      });
-
-      // supabase.functions.invoke doesn't support query params natively,
-      // so we use the body approach — but for GET with params we'll call directly
       const url = `https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/get-wp-posts?page=${page}`;
       try {
         const res = await fetch(url, {
