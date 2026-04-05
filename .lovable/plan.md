@@ -1,34 +1,63 @@
 
 
-## Plan: Página pública de Pricing
+## Plan: Blog con WordPress vía Edge Function
 
-### Objetivo
+### Resumen
 
-Crear una ruta pública `/pricing` donde cualquier visitante (sin autenticación) pueda ver los planes disponibles con sus precios y límites. Al hacer clic en "Suscribirse", se le redirige a `/auth` para registrarse, y tras autenticarse, el flujo existente de `SubscriptionPending` + Stripe Checkout se activa automáticamente.
+Crear una Edge Function `get-wp-posts` que actúa como proxy al API REST de WordPress, y dos páginas frontend: `/blog` (índice con tarjetas) y `/blog/:slug` (detalle del post).
 
-### Cambios
+### 1. Edge Function `supabase/functions/get-wp-posts/index.ts`
 
-#### 1. Nueva página `src/pages/Pricing.tsx`
+- Lee `WP_URL` de `Deno.env`
+- Acepta query params `slug` y `page` desde la URL
+- Hace fetch a `${WP_URL}/wp-json/wp/v2/posts?_embed&per_page=12&page=${page}` (o filtra por slug)
+- No requiere autenticación (es contenido público)
+- CORS headers estándar del proyecto
+- Retorna el JSON de WordPress directamente
 
-- Usa `PublicLayout` (navbar + footer existentes)
-- Renderiza el componente `PricingPlans` existente pero adaptado: si el usuario no está autenticado, el botón redirige a `/auth?redirect=/dashboard&plan={plan_id}` en vez de llamar a Stripe
-- Si está autenticado, comportamiento actual (crear suscripción + checkout)
+### 2. Registrar en `supabase/config.toml`
 
-#### 2. Modificar `PricingPlans.tsx`
+Agregar `[functions.get-wp-posts]` con `verify_jwt = false` (contenido público).
 
-- Detectar si hay sesión activa (`useAuth`)
-- Sin sesión → botón redirige a `/auth`
-- Con sesión → comportamiento actual
+### 3. Página Blog Index: `src/pages/Blog.tsx`
 
-#### 3. Ruta en `App.tsx`
+- Usa `PublicLayout`
+- Invoca `supabase.functions.invoke('get-wp-posts')` al montar
+- Muestra grid de tarjetas con: imagen destacada, título (decodificado), extracto (sin HTML), fecha formateada
+- Skeleton loading con 6 tarjetas placeholder
+- Paginación si hay más posts
+- Estado de error con mensaje amigable
 
-- Agregar `/pricing` como ruta pública
+### 4. Página Blog Post: `src/pages/BlogPost.tsx`
 
-#### 4. Opcional: Link en Navbar
+- Ruta `/blog/:slug`
+- Invoca la edge function con query param `slug`
+- Renderiza `content.rendered` con prose styling (similar a `MarkdownMessage` pero para HTML con `dangerouslySetInnerHTML`)
+- Imágenes responsivas via CSS
+- Botón "Volver al Blog"
+- Skeleton loading para el contenido
+- Estado 404 si no se encuentra el post
 
-- Agregar "Planes" o "Pricing" al navbar público (`src/components/landing/Navbar.tsx`)
+### 5. Componentes auxiliares
 
-### URL resultante
+- `src/components/blog/BlogCard.tsx` — tarjeta individual con imagen, título, extracto, fecha
+- `src/components/blog/BlogPostContent.tsx` — renderizador del contenido HTML con prose styling
 
-`https://disruptivaa.lovable.app/pricing` (o `https://www.disruptivaa.com/pricing` con dominio custom)
+### 6. Routing y navegación
+
+- Agregar rutas `/blog` y `/blog/:slug` en `App.tsx` (públicas, lazy-loaded)
+- Agregar link "Blog" al navbar en `Navbar.tsx`
+
+### Archivos a crear/modificar
+
+| Archivo | Cambio |
+|---|---|
+| `supabase/functions/get-wp-posts/index.ts` | Nueva edge function |
+| `supabase/config.toml` | Registrar función |
+| `src/pages/Blog.tsx` | Página índice del blog |
+| `src/pages/BlogPost.tsx` | Página detalle del post |
+| `src/components/blog/BlogCard.tsx` | Componente tarjeta |
+| `src/components/blog/BlogPostContent.tsx` | Renderizador HTML |
+| `src/App.tsx` | Rutas `/blog` y `/blog/:slug` |
+| `src/components/landing/Navbar.tsx` | Link "Blog" en nav |
 
