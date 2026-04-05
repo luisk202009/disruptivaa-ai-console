@@ -18,6 +18,7 @@ const serviceLinks = [
 const navLinks = [
   { label: "Servicios", children: serviceLinks },
   { label: "Planes", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
   { label: "Nosotros", href: "/nosotros" },
 ];
 
