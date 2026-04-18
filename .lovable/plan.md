@@ -1,34 +1,65 @@
 
 
-## Plan: Migrar URLs cortas de WhatsApp al dominio propio
+## Diagnóstico: la ruta ya existe — el 404 viene de otro lado
 
-### Resumen
-Cambiar el dominio de los enlaces cortos de `qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/wa-redirect/{slug}` a `www.disruptivaa.com/wa/{slug}`, agregando una página intermedia que ejecute el redirect vía la Edge Function existente.
+### Estado actual verificado en `src/App.tsx`
 
-### Cambios
+```tsx
+// Línea 58 — import lazy
+const WaRedirect = lazy(() => import("./pages/WaRedirect"));
 
-**1. `src/lib/walink.ts`** — Agregar `WA_SHORT_BASE_URL = 'https://www.disruptivaa.com/wa'` y actualizar `buildShortLink` para usarlo. Mantener `WA_REDIRECT_BASE_URL` (lo usa la nueva página para llamar a la Edge Function).
+// Línea 119 — ruta pública, antes del catch-all
+<Route path="/wa/:slug" element={<Lazy><WaRedirect /></Lazy>} />
 
-**2. `src/pages/WaRedirect.tsx`** (nuevo) — Componente standalone (sin layout) que:
-- Lee `:slug` con `useParams`
-- En `useEffect` ejecuta `window.location.replace('https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/wa-redirect/{slug}')` para que el navegador siga el 302 hacia `wa.me` y la Edge Function registre el click
-- Muestra pantalla de carga: fondo blanco, ícono WhatsApp (Lucide `MessageCircle` color `#25D366`), texto "Redirigiendo..." y spinner sutil
-- Estado de error con botón a `https://www.disruptivaa.com/whatsapp-link` (timeout de seguridad de 5s)
+// Línea 156 — catch-all al final
+<Route path="*" element={<NotFound />} />
+```
 
-> Nota técnica: usar `window.location.replace` (no `fetch`) porque la Edge Function responde con `302 Location: https://wa.me/...` y `fetch` no abre WhatsApp. La redirección del navegador sí dispara el insert de click en la función y luego sigue al destino final.
+La ruta **sí está registrada correctamente**: es pública, lazy-loaded, sin `ProtectedRoute`, y precede al catch-all. No hay nada que modificar en el router.
 
-**3. `src/App.tsx`** — Agregar ruta pública `/wa/:slug` con lazy loading, ubicada antes del catch-all `*`. No usa `ProtectedRoute` ni `PublicLayout`.
+### Entonces, ¿por qué ves un 404?
 
-**4. `src/components/whatsapp/WhatsAppLinkForm.tsx`** — Cambiar el prefix visual del campo slug de la URL de Supabase a `www.disruptivaa.com/wa/`.
+El 404 que estás viendo casi seguro **no proviene de React Router**, sino de uno de estos dos puntos:
 
-### Archivos
-| Archivo | Acción |
+**Causa más probable — La Edge Function `wa-redirect` devuelve 404**
+
+El flujo real es:
+```text
+www.disruptivaa.com/wa/{slug}    ← React Router monta WaRedirect ✓
+        ↓ window.location.replace
+qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/wa-redirect/{slug}
+        ↓
+Edge Function busca el slug en whatsapp_links
+        ↓
+Si no existe / inactivo → 404 (mostrado por el navegador, no por la app)
+```
+
+Si pruebas con un slug que no creaste en la base de datos, verás el 404 de Supabase, no el de React Router.
+
+**Causa secundaria — Dominio custom en producción**
+
+`window.location.replace` te saca de la SPA y te lleva al dominio de Supabase. Si vienes de `www.disruptivaa.com/wa/abc`, eso funciona. Pero si el slug no existe, terminas en una URL `*.supabase.co/...` con 404.
+
+### Plan de verificación (sin tocar el router)
+
+1. **Confirmar el slug existe**: abrir la lista en `/dashboard/ecosistema/whatsapp-links` y copiar un slug real activo.
+2. **Probar la ruta SPA aislada**: visitar `/wa/{slug-real}` — debería mostrar la pantalla "Redirigiendo..." un instante.
+3. **Probar la Edge Function directa**: `curl -I https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/wa-redirect/{slug-real}` — debe devolver `302 Location: https://wa.me/...`.
+4. **Si la Edge Function devuelve 404**: revisar logs de la función `wa-redirect` para confirmar que está leyendo bien el slug (puede haber bug en el parseo de path o en la query a `whatsapp_links`).
+
+### Acciones propuestas (solo si el diagnóstico lo confirma)
+
+| Escenario | Acción |
 |---|---|
-| `src/lib/walink.ts` | Modificar |
-| `src/pages/WaRedirect.tsx` | Crear |
-| `src/App.tsx` | Modificar (nueva ruta) |
-| `src/components/whatsapp/WhatsAppLinkForm.tsx` | Modificar (prefix) |
+| Edge Function devuelve 404 con slug válido | Revisar y corregir `supabase/functions/wa-redirect/index.ts` |
+| Slug no existe en BD | Crear uno desde la UI y reprobar |
+| 404 viene de React Router (improbable) | Compartir la URL exacta para investigar |
 
-### Propagación automática
-Todos los consumidores (`WhatsAppLinkGenerator`, `WhatsAppLinksPage`, `WhatsAppQRModal`, `WhatsAppLinkAnalytics`, QR codes) ya usan `buildShortLink(slug)` → reflejan el cambio sin tocarlos.
+### Pregunta clave antes de modificar código
+
+¿Puedes confirmar **con qué URL exacta** ves el 404? Por ejemplo:
+- `https://www.disruptivaa.com/wa/abc123` (404 de la SPA → bug del router)
+- `https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/wa-redirect/abc123` (404 de Supabase → bug en la edge function o slug inexistente)
+
+Con ese dato puedo diagnosticar la causa real y proponer el fix correcto en lugar de tocar el router que ya está bien configurado.
 
