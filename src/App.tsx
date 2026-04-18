@@ -54,6 +54,7 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const WhatsAppLinkGenerator = lazy(() => import("./pages/WhatsAppLinkGenerator"));
+const WaRedirect = lazy(() => import("./pages/WaRedirect"));
 const WhatsAppLinksPage = lazy(() => import("./pages/dashboard/WhatsAppLinksPage"));
 const WhatsAppLinkNew = lazy(() => import("./pages/dashboard/WhatsAppLinkNew"));
 const WhatsAppLinkEdit = lazy(() => import("./pages/dashboard/WhatsAppLinkEdit"));
@@ -115,6 +116,7 @@ const App = () => (
               <Route path="/blog" element={<Lazy><Blog /></Lazy>} />
               <Route path="/blog/:slug" element={<Lazy><BlogPost /></Lazy>} />
               <Route path="/whatsapp-link" element={<Lazy><WhatsAppLinkGenerator /></Lazy>} />
+              <Route path="/wa/:slug" element={<Lazy><WaRedirect /></Lazy>} />
               <Route path="/p/:slug" element={<Lazy><ProposalView /></Lazy>} />
               <Route path="/propuesta/:slug" element={<Lazy><ProposalView /></Lazy>} />
 

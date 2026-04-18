@@ -1,8 +1,10 @@
 export const WA_REDIRECT_BASE_URL =
   'https://qtjwzfbinsrmnvlsgvtw.supabase.co/functions/v1/wa-redirect'
 
+export const WA_SHORT_BASE_URL = 'https://www.disruptivaa.com/wa'
+
 export const buildShortLink = (slug: string) =>
-  `${WA_REDIRECT_BASE_URL}/${slug}`
+  `${WA_SHORT_BASE_URL}/${slug}`
 
 export const buildWaUrl = (phone: string, message: string, type: string) => {
   if (type === 'catalog') return `https://wa.me/c/${phone}`

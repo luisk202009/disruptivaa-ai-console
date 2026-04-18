@@ -13,7 +13,7 @@ import { Loader2, Check, X, Copy } from "lucide-react";
 import CountryCodeSelector from "./CountryCodeSelector";
 import { DEFAULT_COUNTRY } from "@/lib/countryCodes";
 import {
-  WA_REDIRECT_BASE_URL,
+  WA_SHORT_BASE_URL,
   buildShortLink,
   generateSlug,
 } from "@/lib/walink";
@@ -193,15 +193,15 @@ const WhatsAppLinkForm = ({ initial, isEdit }: Props) => {
             {isEdit ? (
               <div className="flex items-center gap-2">
                 <code className="text-sm bg-muted px-3 py-2 rounded-md flex-1 break-all">
-                  {WA_REDIRECT_BASE_URL}/{slug}
+                  {WA_SHORT_BASE_URL}/{slug}
                 </code>
                 <Badge variant="secondary">No editable</Badge>
               </div>
             ) : (
               <>
                 <div className="flex items-stretch rounded-md border border-input overflow-hidden focus-within:ring-2 focus-within:ring-ring">
-                  <span className="bg-muted px-3 py-2 text-xs text-muted-foreground border-r border-input flex items-center break-all">
-                    {WA_REDIRECT_BASE_URL}/
+                  <span className="bg-muted px-3 py-2 text-xs text-muted-foreground border-r border-input flex items-center break-all whitespace-nowrap">
+                    www.disruptivaa.com/wa/
                   </span>
                   <input
                     type="text"
