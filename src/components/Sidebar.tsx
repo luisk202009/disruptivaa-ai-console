@@ -13,6 +13,7 @@ import {
   Globe,
   Wand2,
   FolderKanban,
+  MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -103,6 +104,7 @@ const Sidebar = () => {
     if (location.pathname.startsWith("/project/")) return "projects";
     if (location.pathname === "/websites") return "websites";
     if (location.pathname === "/connections") return "connections";
+    if (location.pathname.startsWith("/dashboard/ecosistema/whatsapp-links")) return "wa-links";
     if (location.pathname === "/dashboard") return "dashboard";
     return "";
   };
@@ -214,6 +216,13 @@ const Sidebar = () => {
               active={getActiveItem() === "connections"}
               collapsed={collapsed}
               onClick={() => navigate("/connections")}
+            />
+            <NavItem
+              icon={<MessageCircle size={18} strokeWidth={1.5} />}
+              label="WhatsApp Links"
+              active={getActiveItem() === "wa-links"}
+              collapsed={collapsed}
+              onClick={() => navigate("/dashboard/ecosistema/whatsapp-links")}
             />
           </div>
 
