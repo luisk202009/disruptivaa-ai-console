@@ -811,6 +811,87 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_link_clicks: {
+        Row: {
+          clicked_at: string
+          country: string | null
+          device_type: string | null
+          id: string
+          ip_hash: string | null
+          link_id: string
+          referrer: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_hash?: string | null
+          link_id: string
+          referrer?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          country?: string | null
+          device_type?: string | null
+          id?: string
+          ip_hash?: string | null
+          link_id?: string
+          referrer?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_link_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_link_analytics"
+            referencedColumns: ["link_id"]
+          },
+          {
+            foreignKeyName: "whatsapp_link_clicks_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_links: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          link_type: Database["public"]["Enums"]["whatsapp_link_type"]
+          message: string | null
+          phone: string
+          slug: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          link_type?: Database["public"]["Enums"]["whatsapp_link_type"]
+          message?: string | null
+          phone: string
+          slug: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          link_type?: Database["public"]["Enums"]["whatsapp_link_type"]
+          message?: string | null
+          phone?: string
+          slug?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       widgets: {
         Row: {
           created_at: string | null
@@ -857,9 +938,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      whatsapp_link_analytics: {
+        Row: {
+          created_at: string | null
+          is_active: boolean | null
+          last_click_at: string | null
+          link_id: string | null
+          link_type: Database["public"]["Enums"]["whatsapp_link_type"] | null
+          phone: string | null
+          slug: string | null
+          total_clicks: number | null
+          unique_clicks: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      check_slug_available: { Args: { p_slug: string }; Returns: boolean }
       create_company_for_user: {
         Args: { _branding_color?: string; _company_name: string }
         Returns: string
@@ -889,6 +985,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      whatsapp_link_type: "chat" | "catalog"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1017,6 +1114,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      whatsapp_link_type: ["chat", "catalog"],
     },
   },
 } as const
