@@ -53,6 +53,11 @@ const Nosotros = lazy(() => import("./pages/Nosotros"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
+const WhatsAppLinkGenerator = lazy(() => import("./pages/WhatsAppLinkGenerator"));
+const WhatsAppLinksPage = lazy(() => import("./pages/dashboard/WhatsAppLinksPage"));
+const WhatsAppLinkNew = lazy(() => import("./pages/dashboard/WhatsAppLinkNew"));
+const WhatsAppLinkEdit = lazy(() => import("./pages/dashboard/WhatsAppLinkEdit"));
+const WhatsAppLinkAnalytics = lazy(() => import("./pages/dashboard/WhatsAppLinkAnalytics"));
 
 const LazyFallback = () => (
   <div className="flex min-h-screen items-center justify-center bg-background">
@@ -109,6 +114,7 @@ const App = () => (
               <Route path="/pricing" element={<Lazy><Pricing /></Lazy>} />
               <Route path="/blog" element={<Lazy><Blog /></Lazy>} />
               <Route path="/blog/:slug" element={<Lazy><BlogPost /></Lazy>} />
+              <Route path="/whatsapp-link" element={<Lazy><WhatsAppLinkGenerator /></Lazy>} />
               <Route path="/p/:slug" element={<Lazy><ProposalView /></Lazy>} />
               <Route path="/propuesta/:slug" element={<Lazy><ProposalView /></Lazy>} />
 
@@ -142,6 +148,12 @@ const App = () => (
               <Route path="/admin/plans" element={<ProtectedRoute><Lazy><AdminLayout><AdminPlans /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
               <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
+
+              {/* WhatsApp Links (autenticado) */}
+              <Route path="/dashboard/ecosistema/whatsapp-links" element={<ProtectedRoute><Lazy><WhatsAppLinksPage /></Lazy></ProtectedRoute>} />
+              <Route path="/dashboard/ecosistema/whatsapp-links/nuevo" element={<ProtectedRoute><Lazy><WhatsAppLinkNew /></Lazy></ProtectedRoute>} />
+              <Route path="/dashboard/ecosistema/whatsapp-links/:id/editar" element={<ProtectedRoute><Lazy><WhatsAppLinkEdit /></Lazy></ProtectedRoute>} />
+              <Route path="/dashboard/ecosistema/whatsapp-links/:id/analitica" element={<ProtectedRoute><Lazy><WhatsAppLinkAnalytics /></Lazy></ProtectedRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
