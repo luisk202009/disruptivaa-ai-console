@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.get-wp-posts]
 verify_jwt = false
+
+[functions.wa-redirect]
+verify_jwt = false
