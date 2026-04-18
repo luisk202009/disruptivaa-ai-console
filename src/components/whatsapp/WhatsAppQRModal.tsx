@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import WhatsAppQRCode, { QRHandle } from "./WhatsAppQRCode";
 import { buildShortLink } from "@/lib/walink";
-import { useCompanyBranding } from "@/hooks/useCompanyBranding";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 interface Props {
   open: boolean;
@@ -20,7 +22,19 @@ interface Props {
 
 const WhatsAppQRModal = ({ open, onOpenChange, slug }: Props) => {
   const qrRef = useRef<QRHandle>(null);
-  const { logoUrl } = useCompanyBranding();
+  const { profile } = useUserProfile();
+  const { data: logoUrl } = useQuery({
+    queryKey: ["company-logo", profile?.company_id],
+    enabled: !!profile?.company_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("companies")
+        .select("logo_url")
+        .eq("id", profile!.company_id!)
+        .maybeSingle();
+      return data?.logo_url ?? null;
+    },
+  });
   const url = buildShortLink(slug);
 
   return (
