@@ -1,63 +1,80 @@
 
 
-## Plan: Blog con WordPress vía Edge Function
+## Plan: Módulo WhatsApp Link Generator
 
 ### Resumen
 
-Crear una Edge Function `get-wp-posts` que actúa como proxy al API REST de WordPress, y dos páginas frontend: `/blog` (índice con tarjetas) y `/blog/:slug` (detalle del post).
+Implementar un módulo completo con dos contextos: herramienta pública en `/whatsapp-link` y módulo autenticado en `/dashboard/ecosistema/whatsapp-links`. Las tablas Supabase ya existen (`whatsapp_links`, `whatsapp_link_clicks`), la vista `whatsapp_link_analytics` y la RPC `check_slug_available` también.
 
-### 1. Edge Function `supabase/functions/get-wp-posts/index.ts`
+### Verificaciones previas necesarias
 
-- Lee `WP_URL` de `Deno.env`
-- Acepta query params `slug` y `page` desde la URL
-- Hace fetch a `${WP_URL}/wp-json/wp/v2/posts?_embed&per_page=12&page=${page}` (o filtra por slug)
-- No requiere autenticación (es contenido público)
-- CORS headers estándar del proyecto
-- Retorna el JSON de WordPress directamente
+- Confirmar que existe la vista `whatsapp_link_analytics` en Supabase (revisar schema actual indica que no aparece en `<supabase-tables>`, solo las dos tablas base — habrá que crearla si falta)
+- Instalar `qrcode.react` (no está en el proyecto actual)
+- La Edge Function `wa-redirect` no existe aún — habrá que crearla para que los links cortos funcionen y registren clics
 
-### 2. Registrar en `supabase/config.toml`
+### Archivos a crear
 
-Agregar `[functions.get-wp-posts]` con `verify_jwt = false` (contenido público).
+| Archivo | Propósito |
+|---|---|
+| `src/lib/walink.ts` | Helpers de URLs y generación de slug (contenido exacto del prompt) |
+| `src/lib/countryCodes.ts` | Lista de países con bandera + código (Colombia +57 default) |
+| `src/hooks/useWhatsAppLinks.ts` | CRUD + queries con React Query sobre `whatsapp_links` y vista analytics |
+| `src/components/whatsapp/CountryCodeSelector.tsx` | Dropdown con banderas |
+| `src/components/whatsapp/WhatsAppPhonePreview.tsx` | Mockup móvil del chat |
+| `src/components/whatsapp/WhatsAppQRCode.tsx` | QR con color #25D366, descarga PNG/SVG, logo opcional |
+| `src/components/whatsapp/WhatsAppQRModal.tsx` | Modal envoltorio con descargas |
+| `src/components/whatsapp/WhatsAppLinkForm.tsx` | Formulario reutilizable crear/editar con validación de slug |
+| `src/pages/WhatsAppLinkGenerator.tsx` | Página pública `/whatsapp-link` |
+| `src/pages/dashboard/WhatsAppLinksPage.tsx` | Listado autenticado |
+| `src/pages/dashboard/WhatsAppLinkNew.tsx` | Wrapper crear |
+| `src/pages/dashboard/WhatsAppLinkEdit.tsx` | Wrapper editar |
+| `src/pages/dashboard/WhatsAppLinkAnalytics.tsx` | Vista analítica con gráfico recharts |
+| `supabase/functions/wa-redirect/index.ts` | Edge Function: lee slug de URL, registra click en `whatsapp_link_clicks`, redirige a `wa.me/...` |
 
-### 3. Página Blog Index: `src/pages/Blog.tsx`
-
-- Usa `PublicLayout`
-- Invoca `supabase.functions.invoke('get-wp-posts')` al montar
-- Muestra grid de tarjetas con: imagen destacada, título (decodificado), extracto (sin HTML), fecha formateada
-- Skeleton loading con 6 tarjetas placeholder
-- Paginación si hay más posts
-- Estado de error con mensaje amigable
-
-### 4. Página Blog Post: `src/pages/BlogPost.tsx`
-
-- Ruta `/blog/:slug`
-- Invoca la edge function con query param `slug`
-- Renderiza `content.rendered` con prose styling (similar a `MarkdownMessage` pero para HTML con `dangerouslySetInnerHTML`)
-- Imágenes responsivas via CSS
-- Botón "Volver al Blog"
-- Skeleton loading para el contenido
-- Estado 404 si no se encuentra el post
-
-### 5. Componentes auxiliares
-
-- `src/components/blog/BlogCard.tsx` — tarjeta individual con imagen, título, extracto, fecha
-- `src/components/blog/BlogPostContent.tsx` — renderizador del contenido HTML con prose styling
-
-### 6. Routing y navegación
-
-- Agregar rutas `/blog` y `/blog/:slug` en `App.tsx` (públicas, lazy-loaded)
-- Agregar link "Blog" al navbar en `Navbar.tsx`
-
-### Archivos a crear/modificar
+### Archivos a modificar
 
 | Archivo | Cambio |
 |---|---|
-| `supabase/functions/get-wp-posts/index.ts` | Nueva edge function |
-| `supabase/config.toml` | Registrar función |
-| `src/pages/Blog.tsx` | Página índice del blog |
-| `src/pages/BlogPost.tsx` | Página detalle del post |
-| `src/components/blog/BlogCard.tsx` | Componente tarjeta |
-| `src/components/blog/BlogPostContent.tsx` | Renderizador HTML |
-| `src/App.tsx` | Rutas `/blog` y `/blog/:slug` |
-| `src/components/landing/Navbar.tsx` | Link "Blog" en nav |
+| `src/App.tsx` | Agregar ruta pública `/whatsapp-link` y rutas protegidas bajo `/dashboard/ecosistema/whatsapp-links/*` |
+| `src/components/Sidebar.tsx` | Agregar sección "Ecosistema Digital" → "WhatsApp Links" |
+| `src/components/landing/Navbar.tsx` | (Opcional) Link a herramienta pública en sección Herramientas |
+| `supabase/config.toml` | Registrar `wa-redirect` con `verify_jwt = false` |
+| `package.json` | Añadir dependencia `qrcode.react` |
+
+### Cambios en base de datos (migración)
+
+1. **Crear vista `whatsapp_link_analytics`** (si no existe): join de `whatsapp_links` con conteo de `whatsapp_link_clicks` (total + únicos por `ip_hash` + último click). Vista con `security_invoker` para respetar RLS de origen.
+2. **Permitir INSERT público en `whatsapp_link_clicks`** (actualmente bloqueado): política que permita a `anon` y `authenticated` insertar (lo hará la edge function con service role, pero por seguridad limitar a inserts vía service role o desde la función misma — usar service role en la edge function evita necesidad de policy adicional).
+3. **Permitir INSERT con `user_id = null` en `whatsapp_links`**: las políticas actuales requieren `auth.uid() = user_id`. Añadir política que permita a `anon` insertar links anónimos (`user_id IS NULL`), y restringir UPDATE/DELETE de esos links.
+
+### Flujo de la Edge Function `wa-redirect`
+
+```text
+GET /wa-redirect/{slug}
+  ↓
+SELECT phone, message, link_type, is_active FROM whatsapp_links WHERE slug=?
+  ↓
+si no existe o inactivo → 404
+  ↓
+INSERT en whatsapp_link_clicks (link_id, referrer, device_type desde UA, ip_hash desde SHA256(IP))
+  ↓
+302 redirect a buildWaUrl(phone, message, link_type)
+```
+
+### Detalles UI clave
+
+- **Página pública**: 2 columnas desktop (form izq | preview móvil der), banner inferior con CTA a registro
+- **Validación slug**: debounce 500ms, RPC `check_slug_available`, indicador visual verde/rojo
+- **Toggle activo/inactivo**: optimistic update con React Query
+- **QR**: usar `qrcode.react` con `value={buildShortLink(slug)}`, `fgColor="#25D366"`, descargas convirtiendo canvas/svg a blob
+- **Gráfico analítica**: recharts `LineChart` agrupado por día (procesado en cliente desde los clicks crudos)
+- **Eliminación**: `AlertDialog` de confirmación
+- **Skeletons**: en tabla, analítica y formulario de edición durante carga
+
+### Consideraciones de seguridad
+
+- Edge function usa service role para insert de clicks (sin exponer policies públicas)
+- Hash de IP con SHA-256 antes de almacenar (privacy)
+- Links anónimos (`user_id IS NULL`) son inmutables tras creación
+- Validación cliente + servidor (zod) en el formulario
 
