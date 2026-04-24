@@ -40,11 +40,26 @@ const CompanyOnboarding = () => {
       });
 
       if (error) throw error;
+
+      // Aplicar grant pendiente de la lista de espera (1 año gratis)
+      // Si no hay grant, la edge function responde { applied: false } sin romper.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await supabase.functions.invoke("apply-waitlist-grant", {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+        }
+      } catch (err) {
+        // No bloqueamos el onboarding si falla
+        console.warn("[apply-waitlist-grant]", err);
+      }
     },
     onSuccess: () => {
       toast.success(t("onboarding.success"));
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["company_branding"] });
+      queryClient.invalidateQueries({ queryKey: ["subscription"] });
     },
     onError: () => {
       toast.error(t("onboarding.error"));
