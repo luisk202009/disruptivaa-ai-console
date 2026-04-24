@@ -54,6 +54,7 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const Blog = lazy(() => import("./pages/Blog"));
 const BlogPost = lazy(() => import("./pages/BlogPost"));
 const WhatsAppLinkGenerator = lazy(() => import("./pages/WhatsAppLinkGenerator"));
+const Waitlist = lazy(() => import("./pages/Waitlist"));
 const WaRedirect = lazy(() => import("./pages/WaRedirect"));
 const WhatsAppLinksPage = lazy(() => import("./pages/dashboard/WhatsAppLinksPage"));
 const WhatsAppLinkNew = lazy(() => import("./pages/dashboard/WhatsAppLinkNew"));
@@ -101,6 +102,7 @@ const App = () => (
               {/* Rutas públicas */}
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/lista-de-espera" element={<Lazy><Waitlist /></Lazy>} />
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/agents" element={<Agents />} />
 
