@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.wa-redirect]
 verify_jwt = false
+
+[functions.apply-waitlist-grant]
+verify_jwt = false

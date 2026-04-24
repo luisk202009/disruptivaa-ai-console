@@ -82,10 +82,35 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: inviteError.message }), { status: 500, headers: corsHeaders });
     }
 
-    // Update lead status
-    await adminClient.from("leads").update({ status: "cliente" }).eq("id", lead_id);
+    // Registrar el grant pendiente para activar 1 año gratis al completar onboarding.
+    // Si ya hay uno aplicado, no lo sobreescribimos.
+    const normalizedEmail = (lead.email as string).toLowerCase();
+    const { data: existingGrant } = await adminClient
+      .from("pending_waitlist_grants")
+      .select("id, applied_at")
+      .ilike("email", normalizedEmail)
+      .maybeSingle();
 
-    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!existingGrant) {
+      await adminClient.from("pending_waitlist_grants").insert({
+        email: normalizedEmail,
+        lead_id: lead_id,
+      });
+    } else if (!existingGrant.applied_at) {
+      // Refrescar granted_at por trazabilidad
+      await adminClient
+        .from("pending_waitlist_grants")
+        .update({ lead_id: lead_id, granted_at: new Date().toISOString() })
+        .eq("id", existingGrant.id);
+    }
+
+    // Marcar lead como invitado (no cliente — cliente se reserva para pagos reales)
+    await adminClient.from("leads").update({ status: "invitado" }).eq("id", lead_id);
+
+    return new Response(
+      JSON.stringify({ success: true, free_year_granted: !existingGrant?.applied_at }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
