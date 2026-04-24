@@ -14,14 +14,18 @@ import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
 const statusOptions = [
   { value: "all", label: "Todos" },
   { value: "new", label: "Nuevo" },
+  { value: "waitlist", label: "Lista de espera" },
   { value: "oportunidad", label: "Oportunidad" },
+  { value: "invitado", label: "Invitado" },
   { value: "cliente", label: "Cliente" },
   { value: "finalizado", label: "Finalizado" },
 ];
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  waitlist: "bg-violet-500/20 text-violet-400 border-violet-500/30",
   oportunidad: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  invitado: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   cliente: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
   finalizado: "bg-muted text-muted-foreground border-border",
 };
@@ -88,7 +92,10 @@ const AdminLeads = () => {
       if (res.error) throw res.error;
       return res.data;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success("Invitación enviada correctamente"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      toast.success("Invitación enviada · 1 año gratis activado al registrarse");
+    },
     onError: (err: any) => toast.error(err?.message || "Error al enviar invitación"),
   });
 
@@ -155,8 +162,8 @@ const AdminLeads = () => {
                             )}
                           </Button>
                         )}
-                        {lead.status !== "cliente" && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Invitar a plataforma"
+                        {lead.status !== "cliente" && lead.status !== "invitado" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Invitar a plataforma (1 año gratis)"
                             onClick={() => inviteLead.mutate(lead.id)} disabled={inviteLead.isPending}>
                             {inviteLead.isPending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
                           </Button>
