@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -5,8 +6,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Sparkles } from "lucide-react";
-import AuthForm from "./AuthForm";
+import { Button } from "@/components/ui/button";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 interface AuthModalProps {
   open: boolean;
@@ -14,32 +15,38 @@ interface AuthModalProps {
   onSuccess?: () => void;
 }
 
-const AuthModal = ({ open, onOpenChange, onSuccess }: AuthModalProps) => {
-  const handleSuccess = () => {
-    onOpenChange(false);
-    onSuccess?.();
-  };
-
+const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-[#3D3D3D] border-[#EF7911]/30">
+      <DialogContent className="sm:max-w-md bg-[#1f1f1f] border-primary/30">
         <DialogHeader className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-[#EF7911]/10 flex items-center justify-center mb-4">
-            <Sparkles className="w-8 h-8 text-[#EF7911]" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Sparkles className="w-8 h-8 text-primary" />
           </div>
           <DialogTitle className="text-xl font-bold text-foreground">
-            Lleva tu marca al siguiente nivel
+            Acceso por invitación
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-2">
-            Crea tu cuenta en Disruptivaa para que nuestros agentes guarden tu historial y analicen tus campañas reales
+            Disruptivaa está abierto por invitación. Únete a la lista de espera y
+            obtén hasta <span className="text-foreground font-medium">1 año de
+            servicio sin costo</span> al ser seleccionado.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4">
-          <AuthForm 
-            onSuccess={handleSuccess} 
-            defaultTab="register" 
-          />
+        <div className="mt-4 space-y-3">
+          <Link to="/lista-de-espera" onClick={() => onOpenChange(false)}>
+            <Button className="w-full" size="lg">
+              Únete a la lista de espera
+              <ArrowRight size={16} className="ml-2" />
+            </Button>
+          </Link>
+          <Link
+            to="/auth"
+            onClick={() => onOpenChange(false)}
+            className="block text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Ya tengo acceso → Iniciar sesión
+          </Link>
         </div>
       </DialogContent>
     </Dialog>
@@ -47,4 +54,3 @@ const AuthModal = ({ open, onOpenChange, onSuccess }: AuthModalProps) => {
 };
 
 export default AuthModal;
-

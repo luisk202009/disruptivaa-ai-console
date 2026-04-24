@@ -383,6 +383,30 @@ export type Database = {
           },
         ]
       }
+      pending_waitlist_grants: {
+        Row: {
+          applied_at: string | null
+          email: string
+          granted_at: string
+          id: string
+          lead_id: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          email: string
+          granted_at?: string
+          id?: string
+          lead_id?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          email?: string
+          granted_at?: string
+          id?: string
+          lead_id?: string | null
+        }
+        Relationships: []
+      }
       plans: {
         Row: {
           created_at: string | null

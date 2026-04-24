@@ -28,7 +28,7 @@ const Auth = () => {
           Bienvenido
         </h1>
         <p className="text-zinc-500 text-center mb-10 text-sm tracking-wide">
-          Accede a tus agentes AI y conecta tus campañas
+          Accede con tu cuenta de Disruptivaa
         </p>
 
         {/* Contenedor del form - borde muy sutil */}

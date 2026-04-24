@@ -167,10 +167,10 @@ const Dashboard = () => {
                   {t("auth.signIn")}
                 </button>
                 <button
-                  onClick={() => navigate("/auth?tab=register")}
+                  onClick={() => navigate("/lista-de-espera")}
                   className="px-6 py-2.5 text-sm font-medium text-primary border border-primary rounded-lg hover:bg-primary/10 transition-colors"
                 >
-                  {t("auth.createAccount")}
+                  Únete a la lista de espera
                 </button>
               </div>
             </div>
