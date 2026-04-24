@@ -142,7 +142,7 @@ const PricingPlans = () => {
               <Button
                 onClick={() => {
                   if (!session) {
-                    navigate(`/auth?redirect=/dashboard&plan=${plan.id}`);
+                    navigate(`/lista-de-espera?plan=${plan.id}`);
                     return;
                   }
                   subscribe.mutate(plan);
@@ -156,7 +156,7 @@ const PricingPlans = () => {
                 ) : (
                   <Zap size={14} className="mr-2" />
                 )}
-                {session ? "Suscribirse" : "Comenzar"}
+                {session ? "Suscribirse" : "Únete a la lista de espera"}
               </Button>
             </div>
           );

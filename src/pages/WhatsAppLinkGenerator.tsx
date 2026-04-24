@@ -216,12 +216,12 @@ const WhatsAppLinkGenerator = () => {
                   ¿Quieres un link con tu nombre, analítica de clics y QR con tu logo?
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Crea tu cuenta y desbloquea links personalizados ilimitados.
+                  Únete a la lista de espera para acceder a links personalizados ilimitados.
                 </p>
               </div>
             </div>
-            <Link to="/auth">
-              <Button size="lg">Crear cuenta gratis</Button>
+            <Link to="/lista-de-espera">
+              <Button size="lg">Únete a la lista de espera</Button>
             </Link>
           </div>
         </div>
