@@ -984,6 +984,20 @@ export type Database = {
         Args: { _branding_color?: string; _company_name: string }
         Returns: string
       }
+      get_public_proposal: {
+        Args: { _slug: string }
+        Returns: {
+          company_name: string
+          cta_primary_url: string
+          cta_secondary_url: string
+          payment_type: string
+          price: string
+          proposal_date: string
+          service_type: string
+          status: string
+          terms_conditions: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

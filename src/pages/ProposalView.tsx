@@ -21,20 +21,18 @@ const ProposalView = () => {
     if (!slug) return;
 
     const load = async () => {
-      // 1. Fetch proposal from DB
+      // 1. Fetch proposal via secure RPC (slug acts as unguessable token)
       const { data, error } = await supabase
-        .from("proposals" as any)
-        .select("company_name, status, cta_primary_url, cta_secondary_url, service_type, price, payment_type, terms_conditions, proposal_date")
-        .eq("slug", slug)
-        .single();
+        .rpc("get_public_proposal" as any, { _slug: slug });
 
-      if (error || !data) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (error || !row) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      const d = data as any;
+      const d = row as any;
       const companyName = d.company_name || "";
       const serviceType = d.service_type || "";
 
