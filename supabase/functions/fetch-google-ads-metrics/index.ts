@@ -201,7 +201,7 @@ serve(async (req) => {
       userId = payload.sub;
       if (!userId) throw new Error("No sub claim");
     } catch (e) {
-      console.error("❌ Invalid token:", e.message);
+      console.error("❌ Invalid token:", (e as Error).message);
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }

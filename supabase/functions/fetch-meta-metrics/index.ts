@@ -148,7 +148,7 @@ serve(async (req) => {
       userId = payload.sub;
       if (!userId) throw new Error("No sub claim");
     } catch (e) {
-      console.error("❌ Invalid token:", e.message);
+      console.error("❌ Invalid token:", (e as Error).message);
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -389,7 +389,7 @@ async function fetchInsightsWithDailyBreakdown(
           data.error.message.includes("session has been invalidated") ||
           data.error.message.includes("access token")
         ));
-      return { error: data.error.message, token_expired: isTokenExpired };
+      return { error: data.error.message, token_expired: isTokenExpired } as any;
     }
 
     // Normalize Meta response to our format

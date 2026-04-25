@@ -223,10 +223,12 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("send-branded-email error:", err);
-    await supabase.from("ai_agent_logs").insert({
-      action_taken: "email_send_error",
-      result_status: `Exception: ${err.message}`,
-    }).catch(() => {});
+    try {
+      await supabase.from("ai_agent_logs").insert({
+        action_taken: "email_send_error",
+        result_status: `Exception: ${(err as Error).message}`,
+      });
+    } catch (_) { /* ignore log errors */ }
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

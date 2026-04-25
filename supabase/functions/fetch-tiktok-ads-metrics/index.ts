@@ -310,11 +310,12 @@ serve(async (req) => {
         dateRanges.current.until
       );
     } catch (e) {
-      console.warn("⚠️ Failed to fetch TikTok current period, returning demo data:", e.message);
-      const isTokenExpired = e.message?.includes("Token may be expired") || 
-        e.message?.includes("non-JSON response") ||
-        e.message?.includes("auth") ||
-        e.message?.includes("unauthorized");
+      const errMsg = (e as Error).message;
+      console.warn("⚠️ Failed to fetch TikTok current period, returning demo data:", errMsg);
+      const isTokenExpired = errMsg?.includes("Token may be expired") || 
+        errMsg?.includes("non-JSON response") ||
+        errMsg?.includes("auth") ||
+        errMsg?.includes("unauthorized");
       const demoValue = generateDemoValue(metric);
       return new Response(
         JSON.stringify({
@@ -326,7 +327,7 @@ serve(async (req) => {
           is_demo: true,
           token_expired: isTokenExpired,
           platform: "tiktok_ads",
-          error_message: e.message,
+          error_message: errMsg,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -352,7 +353,7 @@ serve(async (req) => {
           trend = changePercent > 1 ? "up" : changePercent < -1 ? "down" : "neutral";
         }
       } catch (e) {
-        console.warn("⚠️ Could not fetch comparison data:", e.message);
+        console.warn("⚠️ Could not fetch comparison data:", (e as Error).message);
       }
     }
 
