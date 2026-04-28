@@ -11,7 +11,7 @@ const locations = [
 const Footer = () => (
   <footer className="border-t border-border bg-background">
     <div className="max-w-7xl mx-auto px-6 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-10">
         <div className="md:col-span-2">
           <img src={logo} alt="Disruptivaa" className="h-6 mb-4" />
           <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
@@ -28,6 +28,13 @@ const Footer = () => (
             <li><Link to="/servicios/marketing-ads" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Marketing & Ads</Link></li>
             <li><Link to="/servicios/websites-landings" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Websites & Landings</Link></li>
             <li><Link to="/servicios/mvp-aplicaciones" className="text-sm text-muted-foreground hover:text-foreground transition-colors">MVP & Aplicaciones</Link></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4">Herramientas</h4>
+          <ul className="space-y-2.5">
+            <li><Link to="/whatsapp-link" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Links de WhatsApp</Link></li>
           </ul>
         </div>
 
