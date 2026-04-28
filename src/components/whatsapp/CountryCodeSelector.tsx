@@ -3,7 +3,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { COUNTRY_CODES } from "@/lib/countryCodes";
 
@@ -14,10 +13,18 @@ interface Props {
 }
 
 const CountryCodeSelector = ({ value, onChange, className }: Props) => {
+  const selected = COUNTRY_CODES.find((c) => c.dial === value);
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className={className ?? "w-[140px]"}>
-        <SelectValue placeholder="País" />
+        {selected ? (
+          <span className="flex items-center gap-2">
+            <span className="text-base leading-none">{selected.flag}</span>
+            <span>+{selected.dial}</span>
+          </span>
+        ) : (
+          <span className="text-muted-foreground">País</span>
+        )}
       </SelectTrigger>
       <SelectContent className="max-h-64">
         {COUNTRY_CODES.map((c) => (
