@@ -278,12 +278,12 @@ const WhatsAppLinkForm = ({ initial, isEdit }: Props) => {
               <Label>Mensaje predeterminado</Label>
               <Textarea
                 value={message ?? ""}
-                onChange={(e) => setMessage(e.target.value.slice(0, 300))}
+                onChange={(e) => setMessage(e.target.value.slice(0, 1000))}
                 placeholder="Ej: Hola, quiero más información sobre sus servicios"
                 rows={4}
               />
               <p className="text-xs text-muted-foreground text-right">
-                {(message ?? "").length}/300
+                {(message ?? "").length}/1000
               </p>
             </div>
           )}
