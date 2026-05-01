@@ -148,7 +148,7 @@ serve(async (req) => {
       try {
         console.info("Discovering Google Ads accounts...");
         const listResponse = await fetch(
-          "https://googleads.googleapis.com/v17/customers:listAccessibleCustomers",
+          "https://googleads.googleapis.com/v18/customers:listAccessibleCustomers",
           {
             headers: {
               "Authorization": `Bearer ${accessToken}`,
@@ -167,7 +167,7 @@ serve(async (req) => {
           if (accountIds.length > 0) {
             try {
               const detailResponse = await fetch(
-                `https://googleads.googleapis.com/v17/customers/${accountIds[0]}`,
+                `https://googleads.googleapis.com/v18/customers/${accountIds[0]}`,
                 {
                   headers: {
                     "Authorization": `Bearer ${accessToken}`,
