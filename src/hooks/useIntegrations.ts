@@ -53,7 +53,7 @@ export const useIntegrations = () => {
     try {
       const { data, error } = await supabase
         .from('user_integrations')
-        .select('id, platform, status, connected_at, account_name, account_ids, token_expires_at')
+        .select('id, platform, status, connected_at, account_name, account_ids, token_expires_at, refresh_token')
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -65,6 +65,7 @@ export const useIntegrations = () => {
         connected_at: item.connected_at,
         account_name: item.account_name,
         token_expires_at: item.token_expires_at,
+        has_refresh_token: !!item.refresh_token,
       })) || []);
     } catch (error) {
       console.error('Error fetching integrations:', error);
