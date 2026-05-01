@@ -15,6 +15,7 @@ export interface Integration {
   connected_at: string | null;
   account_name: string | null;
   token_expires_at: string | null;
+  has_refresh_token: boolean;
   accountsCount?: number;
   accountDetails?: MetaAccountDetail[];
 }
