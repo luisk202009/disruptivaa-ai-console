@@ -264,7 +264,18 @@
     "processingTikTok": "Conectando con TikTok...",
     "processingTikTokDesc": "Verificando tu cuenta de TikTok Ads",
     "successTikTok": "Tu cuenta de TikTok Ads ha sido vinculada correctamente. Redirigiendo...",
-    "tiktokConnectLabel": "Conectar con TikTok"
+    "tiktokConnectLabel": "Conectar con TikTok",
+    "tokenStatus": {
+      "active": "Token activo",
+      "activeWithDate": "Activo · expira {{time}}",
+      "expiring": "Expira {{time}}",
+      "refreshable": "Renovación automática",
+      "expired": "Expiró {{time}}",
+      "activeTooltip": "Tu token es válido hasta el {{date}}. No se requiere acción.",
+      "expiringTooltip": "El token caduca pronto. Si la plataforma no admite renovación automática, deberás reconectar antes de esa fecha.",
+      "refreshableTooltip": "El token caducó o está por caducar, pero será renovado automáticamente en la próxima petición usando el refresh token guardado.",
+      "expiredTooltip": "El token caducó y no hay refresh token disponible. Debes reconectar la cuenta para seguir recibiendo métricas."
+    }
   },
   "exportReport": {
     "copied": "Informe copiado al portapapeles",
@@ -406,7 +417,8 @@
     "reconnect": "Reconectar",
     "expiredBannerTitle": "Conexiones expiradas",
     "expiredBannerDesc": "Las siguientes plataformas requieren re-autenticación:",
-    "expiredBannerAction": "Ir a Conexiones"
+    "expiredBannerAction": "Ir a Conexiones",
+    "expiredBannerTooltip": "Este aviso aparece cuando una o más integraciones tienen tokens caducados sin posibilidad de renovación automática. Reconéctalas para no perder métricas."
   },
   "smartAlerts": {
     "title": "Centro de Alertas",

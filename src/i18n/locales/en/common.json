@@ -264,7 +264,18 @@
     "processingTikTok": "Connecting to TikTok...",
     "processingTikTokDesc": "Verifying your TikTok Ads account",
     "successTikTok": "Your TikTok Ads account has been linked successfully. Redirecting...",
-    "tiktokConnectLabel": "Connect with TikTok"
+    "tiktokConnectLabel": "Connect with TikTok",
+    "tokenStatus": {
+      "active": "Active token",
+      "activeWithDate": "Active · expires {{time}}",
+      "expiring": "Expires {{time}}",
+      "refreshable": "Auto-renewable",
+      "expired": "Expired {{time}}",
+      "activeTooltip": "Your token is valid until {{date}}. No action required.",
+      "expiringTooltip": "Token expires soon. If the platform doesn't support auto-renewal, you'll need to reconnect before that date.",
+      "refreshableTooltip": "The token expired or is about to, but it will be auto-renewed on the next request using the stored refresh token.",
+      "expiredTooltip": "The token expired and no refresh token is available. Reconnect the account to keep receiving metrics."
+    }
   },
   "exportReport": {
     "copied": "Report copied to clipboard",
@@ -406,7 +417,8 @@
     "reconnect": "Reconnect",
     "expiredBannerTitle": "Expired connections",
     "expiredBannerDesc": "The following platforms require re-authentication:",
-    "expiredBannerAction": "Go to Connections"
+    "expiredBannerAction": "Go to Connections",
+    "expiredBannerTooltip": "This warning appears when one or more integrations have expired tokens with no auto-renewal available. Reconnect them to avoid losing metrics."
   },
   "smartAlerts": {
     "title": "Alert Center",

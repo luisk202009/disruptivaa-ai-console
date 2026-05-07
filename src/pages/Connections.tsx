@@ -11,6 +11,7 @@ import { useState } from "react";
 import MetaOAuthButton from "@/components/MetaOAuthButton";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 import TikTokOAuthButton from "@/components/TikTokOAuthButton";
+import TokenStatusBadge from "@/components/connections/TokenStatusBadge";
 
 const DATE_LOCALES: Record<string, typeof es> = { es, en: enUS, pt: ptBR };
 
@@ -158,6 +159,11 @@ const Connections = () => {
                       )}
                     </div>
 
+                    {isConnected && integration && (
+                      <div className="mb-4">
+                        <TokenStatusBadge integration={integration} />
+                      </div>
+                    )}
                     {isConnected && platform.id === 'meta_ads' && connectionResult?.accountDetails && (
                       <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                         <p className="text-xs text-green-400 font-medium mb-2">{t('connections.accountsDetected')}</p>
