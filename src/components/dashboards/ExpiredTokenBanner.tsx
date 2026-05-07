@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, X, ArrowRight } from "lucide-react";
+import { AlertTriangle, X, ArrowRight, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { Integration } from "@/hooks/useIntegrations";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -28,8 +34,20 @@ export const ExpiredTokenBanner = ({ expiredPlatforms }: ExpiredTokenBannerProps
         <AlertTriangle size={18} className="text-destructive" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-destructive">
+        <p className="text-sm font-semibold text-destructive flex items-center gap-1.5">
           {t("widget.expiredBannerTitle")}
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button type="button" aria-label="info" className="text-muted-foreground hover:text-foreground">
+                  <HelpCircle size={13} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs">
+                {t("widget.expiredBannerTooltip")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {t("widget.expiredBannerDesc")}{" "}
