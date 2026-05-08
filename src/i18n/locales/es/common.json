@@ -275,7 +275,9 @@
       "expiringTooltip": "El token caduca pronto. Si la plataforma no admite renovación automática, deberás reconectar antes de esa fecha.",
       "refreshableTooltip": "El token caducó o está por caducar, pero será renovado automáticamente en la próxima petición usando el refresh token guardado.",
       "expiredTooltip": "El token caducó y no hay refresh token disponible. Debes reconectar la cuenta para seguir recibiendo métricas."
-    }
+    },
+    "tokenExpiredNotice": "Tu sesión expiró. Reconecta para seguir recibiendo métricas.",
+    "reconnect": "Reconectar"
   },
   "exportReport": {
     "copied": "Informe copiado al portapapeles",
