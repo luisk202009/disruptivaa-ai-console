@@ -1,4 +1,4 @@
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const META_APP_ID = "861442349805787";
@@ -7,9 +7,11 @@ const SCOPES = "ads_read,ads_management";
 interface MetaOAuthButtonProps {
   isConnecting: boolean;
   disabled?: boolean;
+  mode?: "connect" | "reconnect";
 }
 
-const MetaOAuthButton = ({ isConnecting, disabled }: MetaOAuthButtonProps) => {
+const MetaOAuthButton = ({ isConnecting, disabled, mode = "connect" }: MetaOAuthButtonProps) => {
+  const isReconnect = mode === "reconnect";
   const initiateOAuth = () => {
     // Generate CSRF protection state
     const state = crypto.randomUUID();
