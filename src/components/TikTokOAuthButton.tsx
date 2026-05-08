@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
@@ -7,9 +7,11 @@ const TIKTOK_APP_ID = "7607279938378399760";
 interface TikTokOAuthButtonProps {
   isConnecting: boolean;
   disabled?: boolean;
+  mode?: "connect" | "reconnect";
 }
 
-const TikTokOAuthButton = ({ isConnecting, disabled }: TikTokOAuthButtonProps) => {
+const TikTokOAuthButton = ({ isConnecting, disabled, mode = "connect" }: TikTokOAuthButtonProps) => {
+  const isReconnect = mode === "reconnect";
   const initiateOAuth = () => {
     if (!TIKTOK_APP_ID) {
       toast({ title: "Error", description: "TikTok App ID no configurado.", variant: "destructive" });
@@ -36,14 +38,18 @@ const TikTokOAuthButton = ({ isConnecting, disabled }: TikTokOAuthButtonProps) =
       {isConnecting ? (
         <>
           <Loader2 className="animate-spin" size={16} />
-          Conectando...
+          {isReconnect ? "Reconectando..." : "Conectando..."}
         </>
       ) : (
         <>
-          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-          </svg>
-          Conectar con TikTok
+          {isReconnect ? (
+            <RefreshCw size={16} />
+          ) : (
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
+              <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+            </svg>
+          )}
+          {isReconnect ? "Reconectar TikTok" : "Conectar con TikTok"}
         </>
       )}
     </Button>
