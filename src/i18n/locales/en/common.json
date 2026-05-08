@@ -275,7 +275,9 @@
       "expiringTooltip": "Token expires soon. If the platform doesn't support auto-renewal, you'll need to reconnect before that date.",
       "refreshableTooltip": "The token expired or is about to, but it will be auto-renewed on the next request using the stored refresh token.",
       "expiredTooltip": "The token expired and no refresh token is available. Reconnect the account to keep receiving metrics."
-    }
+    },
+    "tokenExpiredNotice": "Your session expired. Reconnect to keep receiving metrics.",
+    "reconnect": "Reconnect"
   },
   "exportReport": {
     "copied": "Report copied to clipboard",
