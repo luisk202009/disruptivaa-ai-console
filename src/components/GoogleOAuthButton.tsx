@@ -1,4 +1,4 @@
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // This is a public client ID - safe to expose in frontend code
@@ -8,9 +8,11 @@ const SCOPES = "https://www.googleapis.com/auth/adwords";
 interface GoogleOAuthButtonProps {
   isConnecting: boolean;
   disabled?: boolean;
+  mode?: "connect" | "reconnect";
 }
 
-const GoogleOAuthButton = ({ isConnecting, disabled }: GoogleOAuthButtonProps) => {
+const GoogleOAuthButton = ({ isConnecting, disabled, mode = "connect" }: GoogleOAuthButtonProps) => {
+  const isReconnect = mode === "reconnect";
   const initiateOAuth = () => {
     // Generate CSRF protection state
     const state = crypto.randomUUID();
