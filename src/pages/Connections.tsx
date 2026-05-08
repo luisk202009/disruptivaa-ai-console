@@ -123,6 +123,20 @@ const Connections = () => {
                 const isConnected = integration?.status === 'connected';
                 const isConnecting = connecting === platform.id;
                 const connectionResult = connectionResults[platform.id];
+                const tokenStatus = getTokenStatus(integration);
+                const isExpired = isConnected && tokenStatus.kind === 'expired';
+
+                const renderOAuthButton = (mode: 'connect' | 'reconnect' = 'connect') => {
+                  if (platform.id === 'meta_ads') return <MetaOAuthButton isConnecting={isConnecting} mode={mode} />;
+                  if (platform.id === 'google_ads') return <GoogleOAuthButton isConnecting={isConnecting} mode={mode} />;
+                  if (platform.id === 'tiktok_ads') return <TikTokOAuthButton isConnecting={isConnecting} mode={mode} />;
+                  return (
+                    <Button className="w-full gap-2" style={{ backgroundColor: '#EF7911' }} onClick={() => handleConnect(platform.id)} disabled={isConnecting}>
+                      {isConnecting ? <Loader2 className="animate-spin" size={16} /> : <ExternalLink size={16} />}
+                      {isConnecting ? t('connections.validating') : t('connections.connectAccount')}
+                    </Button>
+                  );
+                };
 
                 return (
                   <div key={platform.id} className="glass rounded-xl p-6 transition-all duration-200 hover:border-white/[0.12]">
@@ -164,6 +178,16 @@ const Connections = () => {
                         <TokenStatusBadge integration={integration} />
                       </div>
                     )}
+
+                    {isExpired && (
+                      <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle size={14} className="text-destructive mt-0.5 shrink-0" />
+                          <p className="text-xs text-destructive">{t('connections.tokenExpiredNotice')}</p>
+                        </div>
+                      </div>
+                    )}
+
                     {isConnected && platform.id === 'meta_ads' && connectionResult?.accountDetails && (
                       <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                         <p className="text-xs text-green-400 font-medium mb-2">{t('connections.accountsDetected')}</p>
@@ -189,22 +213,21 @@ const Connections = () => {
                       </div>
                     )}
 
-                    {isConnected ? (
+                    {isExpired ? (
+                      <div className="space-y-2">
+                        {renderOAuthButton('reconnect')}
+                        <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => handleDisconnect(platform.id)} disabled={isConnecting}>
+                          <X size={14} />
+                          {t('connections.disconnect')}
+                        </Button>
+                      </div>
+                    ) : isConnected ? (
                       <Button variant="outline" className="w-full gap-2" onClick={() => handleDisconnect(platform.id)} disabled={isConnecting}>
                         {isConnecting ? <Loader2 className="animate-spin" size={16} /> : <X size={16} />}
                         {t('connections.disconnect')}
                       </Button>
-                    ) : platform.id === 'meta_ads' ? (
-                      <MetaOAuthButton isConnecting={isConnecting} />
-                    ) : platform.id === 'google_ads' ? (
-                      <GoogleOAuthButton isConnecting={isConnecting} />
-                    ) : platform.id === 'tiktok_ads' ? (
-                      <TikTokOAuthButton isConnecting={isConnecting} />
                     ) : (
-                      <Button className="w-full gap-2" style={{ backgroundColor: '#EF7911' }} onClick={() => handleConnect(platform.id)} disabled={isConnecting}>
-                        {isConnecting ? <Loader2 className="animate-spin" size={16} /> : <ExternalLink size={16} />}
-                        {isConnecting ? t('connections.validating') : t('connections.connectAccount')}
-                      </Button>
+                      renderOAuthButton('connect')
                     )}
                   </div>
                 );
