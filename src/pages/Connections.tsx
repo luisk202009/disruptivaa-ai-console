@@ -11,7 +11,7 @@ import { useState } from "react";
 import MetaOAuthButton from "@/components/MetaOAuthButton";
 import GoogleOAuthButton from "@/components/GoogleOAuthButton";
 import TikTokOAuthButton from "@/components/TikTokOAuthButton";
-import TokenStatusBadge from "@/components/connections/TokenStatusBadge";
+import TokenStatusBadge, { getTokenStatus } from "@/components/connections/TokenStatusBadge";
 
 const DATE_LOCALES: Record<string, typeof es> = { es, en: enUS, pt: ptBR };
 
