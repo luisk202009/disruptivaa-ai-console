@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
@@ -7,9 +7,11 @@ const TIKTOK_APP_ID = "7607279938378399760";
 interface TikTokOAuthButtonProps {
   isConnecting: boolean;
   disabled?: boolean;
+  mode?: "connect" | "reconnect";
 }
 
-const TikTokOAuthButton = ({ isConnecting, disabled }: TikTokOAuthButtonProps) => {
+const TikTokOAuthButton = ({ isConnecting, disabled, mode = "connect" }: TikTokOAuthButtonProps) => {
+  const isReconnect = mode === "reconnect";
   const initiateOAuth = () => {
     if (!TIKTOK_APP_ID) {
       toast({ title: "Error", description: "TikTok App ID no configurado.", variant: "destructive" });
