@@ -1,4 +1,4 @@
-import { Mail, Code, ChevronRight } from "lucide-react";
+import { Mail, Code, ChevronRight, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const settingsCards = [
@@ -13,6 +13,12 @@ const settingsCards = [
     title: "Plantillas de Propuestas",
     description: "Edita las plantillas HTML utilizadas para generar propuestas comerciales.",
     path: "/admin/proposal-templates",
+  },
+  {
+    icon: <MessageCircle size={22} strokeWidth={1.5} />,
+    title: "Botón de WhatsApp",
+    description: "Define el número y el mensaje del botón flotante de WhatsApp del sitio público.",
+    path: "/admin/whatsapp-button",
   },
 ];
 
