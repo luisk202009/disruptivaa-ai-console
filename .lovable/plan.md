@@ -1,32 +1,44 @@
 ## Objetivo
-Mostrar un botón "Reconectar" dentro de la tarjeta de cada integración cuando el token esté en estado `expired`, que dispare el flujo OAuth correspondiente (Meta, Google Ads o TikTok Ads) para re-autenticar sin pasar por desconectar manualmente.
+Permitir que un admin configure el número de WhatsApp y el mensaje predefinido al que apunta el botón flotante (`WhatsAppButton`) visible en el layout público.
 
 ## Cambios
 
-### 1. `src/components/connections/TokenStatusBadge.tsx`
-- Exportar (ya existe) el helper `getTokenStatus()` para poder consultar el `kind` desde fuera.
+### 1. Base de datos (migración)
+Nueva tabla `public.site_settings` (singleton tipo key/value para configuración global):
+- `key text primary key`
+- `value jsonb not null`
+- `updated_at timestamptz default now()`
+- `updated_by uuid`
 
-### 2. `src/pages/Connections.tsx`
-- Importar `getTokenStatus` y calcular `tokenStatus = getTokenStatus(integration)` para cada integración conectada.
-- Cuando `isConnected && tokenStatus.kind === 'expired'`:
-  - Mostrar un bloque destacado (fondo `bg-destructive/10`, borde `border-destructive/20`) con icono `AlertTriangle` y texto i18n `connections.tokenExpiredNotice`.
-  - Reemplazar el botón "Desconectar" por **dos botones**:
-    - **Reconectar** (variant primario, icono `RefreshCw`): renderiza el OAuth button correspondiente (`MetaOAuthButton`, `GoogleOAuthButton`, `TikTokOAuthButton`) con un prop nuevo opcional `label` o, más sencillo, envolver con un wrapper que cambie el texto.
-    - **Desconectar** (variant outline, secundario, más pequeño).
+Grants + RLS:
+- `GRANT SELECT` a `anon` y `authenticated` (para que el botón público lea el número).
+- `GRANT ALL` a `service_role`.
+- Política SELECT pública: `using (true)`.
+- Políticas INSERT/UPDATE solo para `has_role(auth.uid(), 'admin')`.
 
-### 3. Botones OAuth (`MetaOAuthButton`, `GoogleOAuthButton`, `TikTokOAuthButton`)
-- Añadir prop opcional `variant?: 'connect' | 'reconnect'` que:
-  - Cambia el texto del botón a `t('connections.reconnect')` cuando sea `reconnect`.
-  - Cambia el icono a `RefreshCw`.
-- Mantener el comportamiento OAuth idéntico (mismo `redirect_uri`, mismo flujo, sobreescribirá la fila existente al volver del callback).
+Seed inicial con `key = 'whatsapp_floating_button'` y `value = { "phone": "", "message": "", "enabled": true }`.
 
-### 4. i18n (`es`, `en`, `pt` en `common.json`)
-Añadir claves:
-- `connections.reconnect` — "Reconectar" / "Reconnect" / "Reconectar"
-- `connections.reconnecting` — "Reconectando..." / "Reconnecting..." / "Reconectando..."
-- `connections.tokenExpiredNotice` — "Tu sesión expiró. Reconecta para seguir recibiendo métricas."
+### 2. Página admin
+Nueva ruta `/admin/whatsapp-button` (registrada en `App.tsx` dentro del layout admin) y una tarjeta nueva en `src/pages/admin/AdminSettings.tsx` que enlaza a ella.
+
+Formulario con:
+- Selector de código de país + input de número (reusando `CountryCodeSelector` de `src/components/whatsapp/`).
+- Textarea de mensaje predefinido (opcional, máx. 1000 chars).
+- Switch para habilitar/deshabilitar el botón.
+- Vista previa del link `https://wa.me/<phone>?text=...` (reusando `buildWaUrl` de `src/lib/walink.ts`).
+- Botón Guardar (upsert sobre `site_settings`).
+
+### 3. Hook
+`src/hooks/useSiteSetting.ts`: `useSiteSetting(key)` con TanStack Query que devuelve el `value` parseado. Cache 5 min.
+
+### 4. Botón flotante
+Actualizar `src/components/landing/WhatsAppButton.tsx`:
+- Consumir `useSiteSetting('whatsapp_floating_button')`.
+- Si `enabled === false` o `phone` vacío, no renderizar nada.
+- Construir `href` con `buildWaUrl(phone, message, 'chat')`.
+- Mantener estilos actuales.
 
 ## Notas técnicas
-- No se requieren cambios en backend ni en las Edge Functions OAuth: el callback ya hace `upsert` por `(user_id, platform)`, así que reconectar reemplaza el token expirado.
-- No se modifica `useIntegrations` salvo que sea necesario reusar `getTokenStatus` (ya vive en `TokenStatusBadge.tsx`).
-- El badge `TokenStatusBadge` permanece visible arriba; el botón Reconectar es la acción explícita debajo.
+- No se modifica el layout público ni otras integraciones de WhatsApp (`whatsapp_links` sigue independiente para los links cortos).
+- Todo el texto de UI en español.
+- La tabla `site_settings` queda extensible para futuras configuraciones globales (no solo WhatsApp).
