@@ -234,6 +234,36 @@ const AdminLeads = () => {
       />
 
       <ManualLeadDialog open={manualOpen} onOpenChange={setManualOpen} />
+
+      <LeadDialog
+        lead={selectedLead}
+        open={!!selectedLead}
+        onOpenChange={(o) => { if (!o) setSelectedLead(null); }}
+        initialMode={leadDialogMode}
+      />
+
+      <AlertDialog open={!!leadToDelete} onOpenChange={(o) => { if (!o) setLeadToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará <strong>{leadToDelete?.name}</strong> ({leadToDelete?.email}) de forma permanente.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLead.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (leadToDelete) deleteLead.mutate(leadToDelete.id); }}
+              disabled={deleteLead.isPending}
+              className="bg-rose-500 hover:bg-rose-600 text-white"
+            >
+              {deleteLead.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
