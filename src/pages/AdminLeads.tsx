@@ -5,13 +5,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Users, FileText, UserPlus, Plus } from "lucide-react";
+import { Loader2, Users, FileText, UserPlus, Plus, Eye, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
 import ManualLeadDialog from "@/components/admin/ManualLeadDialog";
+import LeadDialog, { type LeadRecord } from "@/components/admin/LeadDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { getNicheLabel } from "@/lib/leadNiches";
 
 const statusOptions = [
   { value: "all", label: "Todos" },
