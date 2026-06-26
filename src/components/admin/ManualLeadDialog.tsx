@@ -137,10 +137,22 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
               <Label htmlFor="ml-company">Empresa / Despacho</Label>
               <Input id="ml-company" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={150} />
             </div>
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5">
               <Label htmlFor="ml-service">Servicio de interés</Label>
               <Input id="ml-service" value={serviceType} onChange={(e) => setServiceType(e.target.value)}
                 placeholder="Ej. marketing-abogados, crm-hubspot…" maxLength={80} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ml-niche">Nicho</Label>
+              <Select value={niche || "__none"} onValueChange={(v) => setNiche(v === "__none" ? "" : v)}>
+                <SelectTrigger id="ml-niche"><SelectValue placeholder="Selecciona un nicho" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— Sin especificar —</SelectItem>
+                  {LEAD_NICHES.map((n) => (
+                    <SelectItem key={n.value} value={n.value}>{n.emoji} {n.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5 md:col-span-2">
               <Label htmlFor="ml-notes">Notas internas</Label>
