@@ -48,6 +48,9 @@ interface BriefSubmission {
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
   const [manualOpen, setManualOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [leadDialogMode, setLeadDialogMode] = useState<"view" | "edit">("view");
+  const [leadToDelete, setLeadToDelete] = useState<LeadRecord | null>(null);
   const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; submissions: BriefSubmission[]; leadName: string }>({
     open: false, serviceType: null, submissions: [], leadName: "",
   });
