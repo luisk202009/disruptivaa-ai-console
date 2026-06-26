@@ -78,6 +78,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
         phone: phone.trim() || null,
         service_type: serviceType.trim() || null,
         notes: notes.trim() || null,
+        niche: niche || null,
         status,
         source: "manual",
       };
