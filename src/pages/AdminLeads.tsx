@@ -139,6 +139,7 @@ const AdminLeads = () => {
                 <TableHead>Empresa</TableHead>
                 <TableHead>Servicio</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Fit</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
@@ -147,6 +148,8 @@ const AdminLeads = () => {
               {leads.map((lead) => {
                 const leadBriefs = briefsByLead.get(lead.id) || [];
                 const hasBrief = leadBriefs.length > 0;
+                const fit = (lead as { fit_score?: number | null }).fit_score;
+                const fitColor = fit == null ? "" : fit >= 8 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : fit >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-rose-500/20 text-rose-300 border-rose-500/40";
                 return (
                   <TableRow key={lead.id}>
                     <TableCell className="font-medium">{lead.name}</TableCell>
@@ -154,6 +157,11 @@ const AdminLeads = () => {
                     <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
                     <TableCell><Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge></TableCell>
+                    <TableCell>
+                      {fit == null ? <span className="text-xs text-muted-foreground">—</span> : (
+                        <Badge className={cn("text-xs font-semibold border", fitColor)}>{fit}/10</Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -193,6 +201,8 @@ const AdminLeads = () => {
         submissions={briefDialog.submissions}
         leadName={briefDialog.leadName}
       />
+
+      <ManualLeadDialog open={manualOpen} onOpenChange={setManualOpen} />
     </div>
   );
 };
