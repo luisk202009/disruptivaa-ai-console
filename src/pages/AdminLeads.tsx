@@ -5,11 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Users, FileText, UserPlus } from "lucide-react";
+import { Loader2, Users, FileText, UserPlus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
+import ManualLeadDialog from "@/components/admin/ManualLeadDialog";
+import { cn } from "@/lib/utils";
 
 const statusOptions = [
   { value: "all", label: "Todos" },
@@ -39,6 +41,7 @@ interface BriefSubmission {
 
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
+  const [manualOpen, setManualOpen] = useState(false);
   const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; submissions: BriefSubmission[]; leadName: string }>({
     open: false, serviceType: null, submissions: [], leadName: "",
   });
@@ -106,15 +109,20 @@ const AdminLeads = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Leads CRM</h1>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>{statusOptions.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setManualOpen(true)} className="gap-1.5">
+            <Plus size={16} /> Nuevo lead
+          </Button>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>{statusOptions.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
@@ -131,6 +139,7 @@ const AdminLeads = () => {
                 <TableHead>Empresa</TableHead>
                 <TableHead>Servicio</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead>Fit</TableHead>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Acciones</TableHead>
               </TableRow>
@@ -139,6 +148,8 @@ const AdminLeads = () => {
               {leads.map((lead) => {
                 const leadBriefs = briefsByLead.get(lead.id) || [];
                 const hasBrief = leadBriefs.length > 0;
+                const fit = (lead as { fit_score?: number | null }).fit_score;
+                const fitColor = fit == null ? "" : fit >= 8 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : fit >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-rose-500/20 text-rose-300 border-rose-500/40";
                 return (
                   <TableRow key={lead.id}>
                     <TableCell className="font-medium">{lead.name}</TableCell>
@@ -146,6 +157,11 @@ const AdminLeads = () => {
                     <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
                     <TableCell><Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge></TableCell>
+                    <TableCell>
+                      {fit == null ? <span className="text-xs text-muted-foreground">—</span> : (
+                        <Badge className={cn("text-xs font-semibold border", fitColor)}>{fit}/10</Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -185,6 +201,8 @@ const AdminLeads = () => {
         submissions={briefDialog.submissions}
         leadName={briefDialog.leadName}
       />
+
+      <ManualLeadDialog open={manualOpen} onOpenChange={setManualOpen} />
     </div>
   );
 };

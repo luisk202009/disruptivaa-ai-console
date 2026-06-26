@@ -293,27 +293,42 @@ export type Database = {
           company: string | null
           created_at: string | null
           email: string
+          fit_answers: Json | null
+          fit_score: number | null
           id: string
           name: string
+          notes: string | null
+          phone: string | null
           service_type: string | null
+          source: string | null
           status: string
         }
         Insert: {
           company?: string | null
           created_at?: string | null
           email: string
+          fit_answers?: Json | null
+          fit_score?: number | null
           id?: string
           name: string
+          notes?: string | null
+          phone?: string | null
           service_type?: string | null
+          source?: string | null
           status?: string
         }
         Update: {
           company?: string | null
           created_at?: string | null
           email?: string
+          fit_answers?: Json | null
+          fit_score?: number | null
           id?: string
           name?: string
+          notes?: string | null
+          phone?: string | null
           service_type?: string | null
+          source?: string | null
           status?: string
         }
         Relationships: []
