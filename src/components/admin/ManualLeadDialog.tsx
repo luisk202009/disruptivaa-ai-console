@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LEAD_NICHES } from "@/lib/leadNiches";
 
 // Preguntas del Lead Fit Score (máx 10 pts; Sí=2, Parcial=1, No=0)
 const FIT_QUESTIONS = [
