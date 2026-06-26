@@ -5,13 +5,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Users, FileText, UserPlus, Plus } from "lucide-react";
+import { Loader2, Users, FileText, UserPlus, Plus, Eye, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
 import ManualLeadDialog from "@/components/admin/ManualLeadDialog";
+import LeadDialog, { type LeadRecord } from "@/components/admin/LeadDialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { getNicheLabel } from "@/lib/leadNiches";
 
 const statusOptions = [
   { value: "all", label: "Todos" },
@@ -42,6 +48,9 @@ interface BriefSubmission {
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
   const [manualOpen, setManualOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [leadDialogMode, setLeadDialogMode] = useState<"view" | "edit">("view");
+  const [leadToDelete, setLeadToDelete] = useState<LeadRecord | null>(null);
   const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; submissions: BriefSubmission[]; leadName: string }>({
     open: false, serviceType: null, submissions: [], leadName: "",
   });
@@ -76,13 +85,19 @@ const AdminLeads = () => {
     }
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("leads").update({ status }).eq("id", id);
+  // Mutación de eliminación; el cambio de estado se hace desde el diálogo de edición.
+
+  const deleteLead = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success("Estado actualizado"); },
-    onError: () => toast.error("Error al actualizar estado"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      toast.success("Lead eliminado");
+      setLeadToDelete(null);
+    },
+    onError: (err: Error) => toast.error(err.message || "Error al eliminar"),
   });
 
   const inviteLead = useMutation({
@@ -137,25 +152,33 @@ const AdminLeads = () => {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Empresa</TableHead>
-                <TableHead>Servicio</TableHead>
+                <TableHead>Nicho</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Fit</TableHead>
                 <TableHead>Fecha</TableHead>
-                <TableHead>Acciones</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {leads.map((lead) => {
                 const leadBriefs = briefsByLead.get(lead.id) || [];
                 const hasBrief = leadBriefs.length > 0;
-                const fit = (lead as { fit_score?: number | null }).fit_score;
+                const leadAny = lead as typeof lead & { fit_score?: number | null; fit_answers?: Record<string, number> | null; niche?: string | null };
+                const fit = leadAny.fit_score;
                 const fitColor = fit == null ? "" : fit >= 8 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : fit >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-rose-500/20 text-rose-300 border-rose-500/40";
+                const leadRecord: LeadRecord = {
+                  id: lead.id, name: lead.name, email: lead.email,
+                  phone: lead.phone ?? null, company: lead.company ?? null,
+                  service_type: lead.service_type ?? null, notes: lead.notes ?? null,
+                  status: lead.status, fit_score: leadAny.fit_score ?? null,
+                  fit_answers: leadAny.fit_answers ?? null, niche: leadAny.niche ?? null,
+                };
                 return (
                   <TableRow key={lead.id}>
                     <TableCell className="font-medium">{lead.name}</TableCell>
                     <TableCell className="text-muted-foreground">{lead.email}</TableCell>
                     <TableCell className="text-muted-foreground">{lead.company || "—"}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-xs">{lead.service_type || "—"}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{getNicheLabel(leadAny.niche)}</TableCell>
                     <TableCell><Badge className={statusColors[lead.status] || statusColors.new}>{lead.status}</Badge></TableCell>
                     <TableCell>
                       {fit == null ? <span className="text-xs text-muted-foreground">—</span> : (
@@ -164,11 +187,15 @@ const AdminLeads = () => {
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{lead.created_at ? format(new Date(lead.created_at), "dd MMM yyyy", { locale: es }) : "—"}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Select value={lead.status} onValueChange={(v) => updateStatus.mutate({ id: lead.id, status: v })}>
-                          <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>{statusOptions.filter((s) => s.value !== "all").map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
-                        </Select>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver detalle"
+                          onClick={() => { setSelectedLead(leadRecord); setLeadDialogMode("view"); }}>
+                          <Eye size={16} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar"
+                          onClick={() => { setSelectedLead(leadRecord); setLeadDialogMode("edit"); }}>
+                          <Pencil size={16} />
+                        </Button>
                         {hasBrief && (
                           <Button variant="ghost" size="icon" className="h-8 w-8 relative" title="Ver briefs"
                             onClick={() => openBrief(lead.id, lead.name, lead.service_type)}>
@@ -184,6 +211,10 @@ const AdminLeads = () => {
                             {inviteLead.isPending ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
                           </Button>
                         )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                          title="Eliminar lead" onClick={() => setLeadToDelete(leadRecord)}>
+                          <Trash2 size={16} />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -203,6 +234,36 @@ const AdminLeads = () => {
       />
 
       <ManualLeadDialog open={manualOpen} onOpenChange={setManualOpen} />
+
+      <LeadDialog
+        lead={selectedLead}
+        open={!!selectedLead}
+        onOpenChange={(o) => { if (!o) setSelectedLead(null); }}
+        initialMode={leadDialogMode}
+      />
+
+      <AlertDialog open={!!leadToDelete} onOpenChange={(o) => { if (!o) setLeadToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar este lead?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminará <strong>{leadToDelete?.name}</strong> ({leadToDelete?.email}) de forma permanente.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLead.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (leadToDelete) deleteLead.mutate(leadToDelete.id); }}
+              disabled={deleteLead.isPending}
+              className="bg-rose-500 hover:bg-rose-600 text-white"
+            >
+              {deleteLead.isPending && <Loader2 size={16} className="mr-2 animate-spin" />}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

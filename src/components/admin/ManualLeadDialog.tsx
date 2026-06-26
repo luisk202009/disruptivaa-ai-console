@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LEAD_NICHES } from "@/lib/leadNiches";
 
 // Preguntas del Lead Fit Score (máx 10 pts; Sí=2, Parcial=1, No=0)
 const FIT_QUESTIONS = [
@@ -42,6 +44,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
   const [company, setCompany] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [notes, setNotes] = useState("");
+  const [niche, setNiche] = useState<string>("");
   const [answers, setAnswers] = useState<FitAnswers>({});
 
   const score = FIT_QUESTIONS.reduce((acc, q) => acc + (answers[q.id] ?? 0), 0);
@@ -55,7 +58,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
 
   const reset = () => {
     setName(""); setEmail(""); setPhone(""); setCompany("");
-    setServiceType(""); setNotes(""); setAnswers({});
+    setServiceType(""); setNotes(""); setNiche(""); setAnswers({});
   };
 
   const createLead = useMutation({
@@ -75,6 +78,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
         phone: phone.trim() || null,
         service_type: serviceType.trim() || null,
         notes: notes.trim() || null,
+        niche: niche || null,
         status,
         source: "manual",
       };
@@ -133,10 +137,22 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
               <Label htmlFor="ml-company">Empresa / Despacho</Label>
               <Input id="ml-company" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={150} />
             </div>
-            <div className="space-y-1.5 md:col-span-2">
+            <div className="space-y-1.5">
               <Label htmlFor="ml-service">Servicio de interés</Label>
               <Input id="ml-service" value={serviceType} onChange={(e) => setServiceType(e.target.value)}
                 placeholder="Ej. marketing-abogados, crm-hubspot…" maxLength={80} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="ml-niche">Nicho</Label>
+              <Select value={niche || "__none"} onValueChange={(v) => setNiche(v === "__none" ? "" : v)}>
+                <SelectTrigger id="ml-niche"><SelectValue placeholder="Selecciona un nicho" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— Sin especificar —</SelectItem>
+                  {LEAD_NICHES.map((n) => (
+                    <SelectItem key={n.value} value={n.value}>{n.emoji} {n.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5 md:col-span-2">
               <Label htmlFor="ml-notes">Notas internas</Label>
