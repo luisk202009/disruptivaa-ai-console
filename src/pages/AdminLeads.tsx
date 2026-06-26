@@ -5,11 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Users, FileText, UserPlus } from "lucide-react";
+import { Loader2, Users, FileText, UserPlus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import BriefDetailDialog from "@/components/admin/BriefDetailDialog";
+import ManualLeadDialog from "@/components/admin/ManualLeadDialog";
+import { cn } from "@/lib/utils";
 
 const statusOptions = [
   { value: "all", label: "Todos" },
