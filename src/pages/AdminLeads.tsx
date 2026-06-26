@@ -85,14 +85,7 @@ const AdminLeads = () => {
     }
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("leads").update({ status }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-leads"] }); toast.success("Estado actualizado"); },
-    onError: () => toast.error("Error al actualizar estado"),
-  });
+  // Mutación de eliminación; el cambio de estado se hace desde el diálogo de edición.
 
   const deleteLead = useMutation({
     mutationFn: async (id: string) => {
