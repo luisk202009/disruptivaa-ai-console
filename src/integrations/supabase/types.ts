@@ -297,6 +297,7 @@ export type Database = {
           fit_score: number | null
           id: string
           name: string
+          niche: string | null
           notes: string | null
           phone: string | null
           service_type: string | null
@@ -311,6 +312,7 @@ export type Database = {
           fit_score?: number | null
           id?: string
           name: string
+          niche?: string | null
           notes?: string | null
           phone?: string | null
           service_type?: string | null
@@ -325,6 +327,7 @@ export type Database = {
           fit_score?: number | null
           id?: string
           name?: string
+          niche?: string | null
           notes?: string | null
           phone?: string | null
           service_type?: string | null
