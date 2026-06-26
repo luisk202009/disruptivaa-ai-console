@@ -94,6 +94,19 @@ const AdminLeads = () => {
     onError: () => toast.error("Error al actualizar estado"),
   });
 
+  const deleteLead = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
+      toast.success("Lead eliminado");
+      setLeadToDelete(null);
+    },
+    onError: (err: Error) => toast.error(err.message || "Error al eliminar"),
+  });
+
   const inviteLead = useMutation({
     mutationFn: async (leadId: string) => {
       const { data: { session } } = await supabase.auth.getSession();
