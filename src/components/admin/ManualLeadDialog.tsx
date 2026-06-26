@@ -44,6 +44,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
   const [company, setCompany] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [notes, setNotes] = useState("");
+  const [niche, setNiche] = useState<string>("");
   const [answers, setAnswers] = useState<FitAnswers>({});
 
   const score = FIT_QUESTIONS.reduce((acc, q) => acc + (answers[q.id] ?? 0), 0);
@@ -57,7 +58,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
 
   const reset = () => {
     setName(""); setEmail(""); setPhone(""); setCompany("");
-    setServiceType(""); setNotes(""); setAnswers({});
+    setServiceType(""); setNotes(""); setNiche(""); setAnswers({});
   };
 
   const createLead = useMutation({
