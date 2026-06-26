@@ -41,6 +41,7 @@ interface BriefSubmission {
 
 const AdminLeads = () => {
   const [filter, setFilter] = useState("all");
+  const [manualOpen, setManualOpen] = useState(false);
   const [briefDialog, setBriefDialog] = useState<{ open: boolean; serviceType: string | null; submissions: BriefSubmission[]; leadName: string }>({
     open: false, serviceType: null, submissions: [], leadName: "",
   });
@@ -108,15 +109,20 @@ const AdminLeads = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Users size={24} className="text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Leads CRM</h1>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>{statusOptions.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setManualOpen(true)} className="gap-1.5">
+            <Plus size={16} /> Nuevo lead
+          </Button>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>{statusOptions.map((s) => (<SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>))}</SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
