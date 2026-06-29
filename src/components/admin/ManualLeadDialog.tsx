@@ -150,9 +150,9 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
               <Input id="ml-company" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={150} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ml-service">Servicio de interés</Label>
-              <Input id="ml-service" value={serviceType} onChange={(e) => setServiceType(e.target.value)}
-                placeholder="Ej. marketing-abogados, crm-hubspot…" maxLength={80} />
+              <Label htmlFor="ml-website">Sitio web</Label>
+              <Input id="ml-website" type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://ejemplo.com" maxLength={255} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ml-niche">Nicho</Label>
@@ -166,6 +166,11 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Servicios de interés</Label>
+              <ServiceMultiSelect value={services} onChange={setServices} />
+            </div>
+
             <div className="space-y-1.5 md:col-span-2">
               <Label htmlFor="ml-notes">Notas internas</Label>
               <Textarea id="ml-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={1000} />
