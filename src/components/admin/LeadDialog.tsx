@@ -90,8 +90,10 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
     setEmail(lead.email ?? "");
     setPhone(lead.phone ?? "");
     setCompany(lead.company ?? "");
-    setServiceType(lead.service_type ?? "");
+    setWebsite(lead.website ?? "");
+    setServices(parseServices(lead.service_type));
     setNotes(lead.notes ?? "");
+
     setStatus(lead.status ?? "new");
     setNiche(lead.niche ?? "");
     const fa = (lead.fit_answers ?? {}) as Record<string, number>;
