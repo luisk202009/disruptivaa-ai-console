@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Pencil, Save, X, Eye } from "lucide-react";
+import { Loader2, Pencil, Save, X, Eye, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LEAD_NICHES, getNicheLabel } from "@/lib/leadNiches";
+import { parseServices, serializeServices, normalizeWebsite, getServiceLabel } from "@/lib/leadServices";
+import ServiceMultiSelect from "@/components/admin/ServiceMultiSelect";
+
 
 // Mismas preguntas que en el registro manual, mantenidas en sincronía.
 const FIT_QUESTIONS = [
