@@ -74,11 +74,13 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [company, setCompany] = useState("");
-  const [serviceType, setServiceType] = useState("");
+  const [website, setWebsite] = useState("");
+  const [services, setServices] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("new");
   const [niche, setNiche] = useState<string>("");
   const [answers, setAnswers] = useState<FitAnswers>({});
+
 
   // Cargar valores del lead cuando se abre o cambia.
   useEffect(() => {
