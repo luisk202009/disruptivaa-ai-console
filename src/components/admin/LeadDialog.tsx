@@ -190,8 +190,23 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
               <Input value={company} onChange={(e) => setCompany(e.target.value)} disabled={!isEdit} maxLength={150} />
             </div>
             <div className="space-y-1.5">
-              <Label>Servicio de interés</Label>
-              <Input value={serviceType} onChange={(e) => setServiceType(e.target.value)} disabled={!isEdit} maxLength={80} />
+              <Label>Sitio web</Label>
+              {isEdit ? (
+                <Input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://ejemplo.com" maxLength={255} />
+              ) : website ? (
+                <a
+                  href={normalizeWebsite(website) ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-border bg-background/40 text-primary hover:bg-muted transition-colors break-all"
+                >
+                  {website}
+                  <ExternalLink size={14} className="shrink-0" />
+                </a>
+              ) : (
+                <Input value="—" disabled />
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Estado</Label>
@@ -206,6 +221,21 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
                 <Input value={STATUS_OPTIONS.find((s) => s.value === status)?.label || status} disabled />
               )}
             </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Servicios de interés</Label>
+              {isEdit ? (
+                <ServiceMultiSelect value={services} onChange={setServices} />
+              ) : services.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {services.map((s) => (
+                    <Badge key={s} variant="secondary" className="text-xs">{getServiceLabel(s)}</Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
+            </div>
+
             <div className="space-y-1.5 md:col-span-2">
               <Label>Nicho</Label>
               {isEdit ? (
