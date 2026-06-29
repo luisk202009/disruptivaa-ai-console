@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LEAD_NICHES } from "@/lib/leadNiches";
+import { serializeServices, normalizeWebsite } from "@/lib/leadServices";
+import ServiceMultiSelect from "@/components/admin/ServiceMultiSelect";
+
 
 // Preguntas del Lead Fit Score (máx 10 pts; Sí=2, Parcial=1, No=0)
 const FIT_QUESTIONS = [
