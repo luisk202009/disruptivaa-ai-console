@@ -1,44 +1,34 @@
-## Objetivo
-Permitir que un admin configure el número de WhatsApp y el mensaje predefinido al que apunta el botón flotante (`WhatsAppButton`) visible en el layout público.
+## Plan: Mejoras al CRUD de leads
 
-## Cambios
+### 1. Base de datos
+Migración para añadir columna `website` (text, nullable) a `public.leads`.
 
-### 1. Base de datos (migración)
-Nueva tabla `public.site_settings` (singleton tipo key/value para configuración global):
-- `key text primary key`
-- `value jsonb not null`
-- `updated_at timestamptz default now()`
-- `updated_by uuid`
+### 2. Catálogo de servicios
+Crear `src/lib/leadServices.ts` con las opciones:
+- `crm-hubspot` — CRM HubSpot
+- `negocio-14-dias` — Negocio Digital en 14 días
+- `shopify` — Shopify
+- `marketing-ads` — Marketing & Ads
+- `websites-landings` — Websites & Landings
+- `mvp-aplicaciones` — MVP & Aplicaciones
 
-Grants + RLS:
-- `GRANT SELECT` a `anon` y `authenticated` (para que el botón público lea el número).
-- `GRANT ALL` a `service_role`.
-- Política SELECT pública: `using (true)`.
-- Políticas INSERT/UPDATE solo para `has_role(auth.uid(), 'admin')`.
+El campo `service_type` en la BD pasa a almacenar una lista separada por comas (compatible con el texto libre existente). Helpers `parseServices` / `serializeServices` para convertir entre string y array.
 
-Seed inicial con `key = 'whatsapp_floating_button'` y `value = { "phone": "", "message": "", "enabled": true }`.
+### 3. `ManualLeadDialog.tsx`
+- Reemplazar el `Input` de "Servicio de interés" por un selector múltiple (popover con checkboxes usando los componentes shadcn existentes: `Popover` + `Command` o lista de `Checkbox`).
+- Añadir nuevo campo "Sitio web" (`Input` tipo url, opcional, con validación básica y normalización a `https://` si falta protocolo).
+- Persistir `website` y `service_type` (CSV) en el insert.
 
-### 2. Página admin
-Nueva ruta `/admin/whatsapp-button` (registrada en `App.tsx` dentro del layout admin) y una tarjeta nueva en `src/pages/admin/AdminSettings.tsx` que enlaza a ella.
+### 4. `LeadDialog.tsx` (ver / editar)
+- **Modo ver**: mostrar el sitio web como enlace clickable (`<a target="_blank" rel="noopener noreferrer">`) con icono `ExternalLink`. Mostrar los servicios como chips/badges.
+- **Modo editar**: mismo selector múltiple de servicios e input de sitio web que en el manual.
+- Actualizar el `update` para incluir ambos campos.
 
-Formulario con:
-- Selector de código de país + input de número (reusando `CountryCodeSelector` de `src/components/whatsapp/`).
-- Textarea de mensaje predefinido (opcional, máx. 1000 chars).
-- Switch para habilitar/deshabilitar el botón.
-- Vista previa del link `https://wa.me/<phone>?text=...` (reusando `buildWaUrl` de `src/lib/walink.ts`).
-- Botón Guardar (upsert sobre `site_settings`).
+### 5. `AdminLeads.tsx`
+- Incluir `website` en el tipo `LeadRecord` que se pasa al diálogo.
+- (Opcional) pequeño icono de globo junto al nombre si el lead tiene web, que abre el sitio en nueva pestaña.
 
-### 3. Hook
-`src/hooks/useSiteSetting.ts`: `useSiteSetting(key)` con TanStack Query que devuelve el `value` parseado. Cache 5 min.
-
-### 4. Botón flotante
-Actualizar `src/components/landing/WhatsAppButton.tsx`:
-- Consumir `useSiteSetting('whatsapp_floating_button')`.
-- Si `enabled === false` o `phone` vacío, no renderizar nada.
-- Construir `href` con `buildWaUrl(phone, message, 'chat')`.
-- Mantener estilos actuales.
-
-## Notas técnicas
-- No se modifica el layout público ni otras integraciones de WhatsApp (`whatsapp_links` sigue independiente para los links cortos).
-- Todo el texto de UI en español.
-- La tabla `site_settings` queda extensible para futuras configuraciones globales (no solo WhatsApp).
+### Detalles técnicos
+- No se cambia la firma de `service_type` en BD (sigue siendo `text`), evitando migración destructiva. El array se serializa con `", "`.
+- La normalización de URL acepta `dominio.com`, `www.dominio.com` y URLs completas; se valida con `URL()` tras prefijar `https://` si es necesario.
+- Todos los textos y comentarios en español.
