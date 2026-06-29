@@ -166,9 +166,11 @@ const AdminLeads = () => {
                 const leadAny = lead as typeof lead & { fit_score?: number | null; fit_answers?: Record<string, number> | null; niche?: string | null };
                 const fit = leadAny.fit_score;
                 const fitColor = fit == null ? "" : fit >= 8 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" : fit >= 5 ? "bg-amber-500/20 text-amber-300 border-amber-500/40" : "bg-rose-500/20 text-rose-300 border-rose-500/40";
+                const leadWithWeb = lead as typeof lead & { website?: string | null };
                 const leadRecord: LeadRecord = {
                   id: lead.id, name: lead.name, email: lead.email,
                   phone: lead.phone ?? null, company: lead.company ?? null,
+                  website: leadWithWeb.website ?? null,
                   service_type: lead.service_type ?? null, notes: lead.notes ?? null,
                   status: lead.status, fit_score: leadAny.fit_score ?? null,
                   fit_answers: leadAny.fit_answers ?? null, niche: leadAny.niche ?? null,

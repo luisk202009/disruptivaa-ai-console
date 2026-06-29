@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Pencil, Save, X, Eye } from "lucide-react";
+import { Loader2, Pencil, Save, X, Eye, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LEAD_NICHES, getNicheLabel } from "@/lib/leadNiches";
+import { parseServices, serializeServices, normalizeWebsite, getServiceLabel } from "@/lib/leadServices";
+import ServiceMultiSelect from "@/components/admin/ServiceMultiSelect";
+
 
 // Mismas preguntas que en el registro manual, mantenidas en sincronía.
 const FIT_QUESTIONS = [
@@ -46,6 +49,7 @@ export interface LeadRecord {
   email: string;
   phone: string | null;
   company: string | null;
+  website?: string | null;
   service_type: string | null;
   notes: string | null;
   status: string;
@@ -53,6 +57,7 @@ export interface LeadRecord {
   fit_answers?: Record<string, number> | null;
   niche?: string | null;
 }
+
 
 interface LeadDialogProps {
   lead: LeadRecord | null;
@@ -69,11 +74,13 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [company, setCompany] = useState("");
-  const [serviceType, setServiceType] = useState("");
+  const [website, setWebsite] = useState("");
+  const [services, setServices] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("new");
   const [niche, setNiche] = useState<string>("");
   const [answers, setAnswers] = useState<FitAnswers>({});
+
 
   // Cargar valores del lead cuando se abre o cambia.
   useEffect(() => {
@@ -83,8 +90,10 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
     setEmail(lead.email ?? "");
     setPhone(lead.phone ?? "");
     setCompany(lead.company ?? "");
-    setServiceType(lead.service_type ?? "");
+    setWebsite(lead.website ?? "");
+    setServices(parseServices(lead.service_type));
     setNotes(lead.notes ?? "");
+
     setStatus(lead.status ?? "new");
     setNiche(lead.niche ?? "");
     const fa = (lead.fit_answers ?? {}) as Record<string, number>;
@@ -111,18 +120,25 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
       if (!lead) return;
       if (!name.trim() || !email.trim()) throw new Error("Nombre y email son obligatorios");
 
+      const normalizedWebsite = website.trim() ? normalizeWebsite(website) : null;
+      if (website.trim() && !normalizedWebsite) {
+        throw new Error("La URL del sitio web no es válida");
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || null,
         company: company.trim() || null,
-        service_type: serviceType.trim() || null,
+        website: normalizedWebsite,
+        service_type: serializeServices(services),
         notes: notes.trim() || null,
         status,
         niche: niche || null,
         fit_score: allAnswered ? score : null,
         fit_answers: allAnswered ? answers : null,
       };
+
 
       const { error } = await supabase.from("leads").update(payload as never).eq("id", lead.id);
       if (error) throw error;
@@ -174,8 +190,23 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
               <Input value={company} onChange={(e) => setCompany(e.target.value)} disabled={!isEdit} maxLength={150} />
             </div>
             <div className="space-y-1.5">
-              <Label>Servicio de interés</Label>
-              <Input value={serviceType} onChange={(e) => setServiceType(e.target.value)} disabled={!isEdit} maxLength={80} />
+              <Label>Sitio web</Label>
+              {isEdit ? (
+                <Input type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://ejemplo.com" maxLength={255} />
+              ) : website ? (
+                <a
+                  href={normalizeWebsite(website) ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-md border border-border bg-background/40 text-primary hover:bg-muted transition-colors break-all"
+                >
+                  {website}
+                  <ExternalLink size={14} className="shrink-0" />
+                </a>
+              ) : (
+                <Input value="—" disabled />
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Estado</Label>
@@ -190,6 +221,21 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
                 <Input value={STATUS_OPTIONS.find((s) => s.value === status)?.label || status} disabled />
               )}
             </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Servicios de interés</Label>
+              {isEdit ? (
+                <ServiceMultiSelect value={services} onChange={setServices} />
+              ) : services.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {services.map((s) => (
+                    <Badge key={s} variant="secondary" className="text-xs">{getServiceLabel(s)}</Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">—</p>
+              )}
+            </div>
+
             <div className="space-y-1.5 md:col-span-2">
               <Label>Nicho</Label>
               {isEdit ? (

@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LEAD_NICHES } from "@/lib/leadNiches";
+import { serializeServices, normalizeWebsite } from "@/lib/leadServices";
+import ServiceMultiSelect from "@/components/admin/ServiceMultiSelect";
+
 
 // Preguntas del Lead Fit Score (máx 10 pts; Sí=2, Parcial=1, No=0)
 const FIT_QUESTIONS = [
@@ -42,10 +45,12 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [company, setCompany] = useState("");
-  const [serviceType, setServiceType] = useState("");
+  const [website, setWebsite] = useState("");
+  const [services, setServices] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [niche, setNiche] = useState<string>("");
   const [answers, setAnswers] = useState<FitAnswers>({});
+
 
   const score = FIT_QUESTIONS.reduce((acc, q) => acc + (answers[q.id] ?? 0), 0);
   const answeredCount = FIT_QUESTIONS.filter((q) => answers[q.id] !== undefined).length;
@@ -58,7 +63,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
 
   const reset = () => {
     setName(""); setEmail(""); setPhone(""); setCompany("");
-    setServiceType(""); setNotes(""); setNiche(""); setAnswers({});
+    setWebsite(""); setServices([]); setNotes(""); setNiche(""); setAnswers({});
   };
 
   const createLead = useMutation({
@@ -71,17 +76,24 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
         ? (score >= 8 ? "oportunidad" : score >= 5 ? "waitlist" : "new")
         : "new";
 
+      const normalizedWebsite = website.trim() ? normalizeWebsite(website) : null;
+      if (website.trim() && !normalizedWebsite) {
+        throw new Error("La URL del sitio web no es válida");
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         email: trimmedEmail,
         company: company.trim() || null,
         phone: phone.trim() || null,
-        service_type: serviceType.trim() || null,
+        website: normalizedWebsite,
+        service_type: serializeServices(services),
         notes: notes.trim() || null,
         niche: niche || null,
         status,
         source: "manual",
       };
+
 
       if (allAnswered) {
         payload.fit_score = score;
@@ -138,9 +150,9 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
               <Input id="ml-company" value={company} onChange={(e) => setCompany(e.target.value)} maxLength={150} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="ml-service">Servicio de interés</Label>
-              <Input id="ml-service" value={serviceType} onChange={(e) => setServiceType(e.target.value)}
-                placeholder="Ej. marketing-abogados, crm-hubspot…" maxLength={80} />
+              <Label htmlFor="ml-website">Sitio web</Label>
+              <Input id="ml-website" type="url" value={website} onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://ejemplo.com" maxLength={255} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ml-niche">Nicho</Label>
@@ -154,6 +166,11 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Servicios de interés</Label>
+              <ServiceMultiSelect value={services} onChange={setServices} />
+            </div>
+
             <div className="space-y-1.5 md:col-span-2">
               <Label htmlFor="ml-notes">Notas internas</Label>
               <Textarea id="ml-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={1000} />
