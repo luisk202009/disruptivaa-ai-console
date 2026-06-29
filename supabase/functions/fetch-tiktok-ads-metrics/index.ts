@@ -227,22 +227,21 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Decode JWT
-    const token = authHeader.replace("Bearer ", "");
-    let userId: string;
-    try {
-      const payloadBase64 = token.split(".")[1];
-      const payload = JSON.parse(atob(payloadBase64));
-      userId = payload.sub;
-      if (!userId) throw new Error("No sub claim");
-    } catch (e) {
+    // Verificación criptográfica del JWT vía Supabase Auth
+    const supabaseUserClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userError } = await supabaseUserClient.auth.getUser();
+    if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ error: "Invalid user" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const userId = userData.user.id;
 
     const body: MetricRequest = await req.json();
     const { metric, date_preset, account_id, comparison = true } = body;
