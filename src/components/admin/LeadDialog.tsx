@@ -120,18 +120,25 @@ const LeadDialog = ({ lead, open, onOpenChange, initialMode = "view" }: LeadDial
       if (!lead) return;
       if (!name.trim() || !email.trim()) throw new Error("Nombre y email son obligatorios");
 
+      const normalizedWebsite = website.trim() ? normalizeWebsite(website) : null;
+      if (website.trim() && !normalizedWebsite) {
+        throw new Error("La URL del sitio web no es válida");
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim() || null,
         company: company.trim() || null,
-        service_type: serviceType.trim() || null,
+        website: normalizedWebsite,
+        service_type: serializeServices(services),
         notes: notes.trim() || null,
         status,
         niche: niche || null,
         fit_score: allAnswered ? score : null,
         fit_answers: allAnswered ? answers : null,
       };
+
 
       const { error } = await supabase.from("leads").update(payload as never).eq("id", lead.id);
       if (error) throw error;
