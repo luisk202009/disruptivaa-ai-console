@@ -49,6 +49,7 @@ export interface LeadRecord {
   email: string;
   phone: string | null;
   company: string | null;
+  website?: string | null;
   service_type: string | null;
   notes: string | null;
   status: string;
@@ -56,6 +57,7 @@ export interface LeadRecord {
   fit_answers?: Record<string, number> | null;
   niche?: string | null;
 }
+
 
 interface LeadDialogProps {
   lead: LeadRecord | null;
