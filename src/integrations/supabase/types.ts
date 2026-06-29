@@ -303,6 +303,7 @@ export type Database = {
           service_type: string | null
           source: string | null
           status: string
+          website: string | null
         }
         Insert: {
           company?: string | null
@@ -318,6 +319,7 @@ export type Database = {
           service_type?: string | null
           source?: string | null
           status?: string
+          website?: string | null
         }
         Update: {
           company?: string | null
@@ -333,6 +335,7 @@ export type Database = {
           service_type?: string | null
           source?: string | null
           status?: string
+          website?: string | null
         }
         Relationships: []
       }
