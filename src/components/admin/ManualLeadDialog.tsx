@@ -63,7 +63,7 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
 
   const reset = () => {
     setName(""); setEmail(""); setPhone(""); setCompany("");
-    setServiceType(""); setNotes(""); setNiche(""); setAnswers({});
+    setWebsite(""); setServices([]); setNotes(""); setNiche(""); setAnswers({});
   };
 
   const createLead = useMutation({
@@ -76,17 +76,24 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
         ? (score >= 8 ? "oportunidad" : score >= 5 ? "waitlist" : "new")
         : "new";
 
+      const normalizedWebsite = website.trim() ? normalizeWebsite(website) : null;
+      if (website.trim() && !normalizedWebsite) {
+        throw new Error("La URL del sitio web no es válida");
+      }
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         email: trimmedEmail,
         company: company.trim() || null,
         phone: phone.trim() || null,
-        service_type: serviceType.trim() || null,
+        website: normalizedWebsite,
+        service_type: serializeServices(services),
         notes: notes.trim() || null,
         niche: niche || null,
         status,
         source: "manual",
       };
+
 
       if (allAnswered) {
         payload.fit_score = score;
