@@ -100,8 +100,29 @@ const ManualLeadDialog = ({ open, onOpenChange }: ManualLeadDialogProps) => {
         payload.fit_answers = answers;
       }
 
-      const { error } = await supabase.from("leads").insert(payload as never);
+      const { data: inserted, error } = await supabase
+        .from("leads")
+        .insert(payload as never)
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // Sincronización automática con HubSpot si está habilitada
+      try {
+        const { data: cfg } = await supabase
+          .from("hubspot_sync_config")
+          .select("enabled, auto_sync")
+          .limit(1)
+          .maybeSingle();
+        if (cfg?.enabled && cfg?.auto_sync && (inserted as any)?.id) {
+          await supabase.functions.invoke("hubspot-sync-lead", {
+            body: { lead_id: (inserted as any).id },
+          });
+        }
+      } catch (e) {
+        // No bloquear el flujo si HubSpot falla; sólo log
+        console.warn("Auto-sync HubSpot falló:", e);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-leads"] });
