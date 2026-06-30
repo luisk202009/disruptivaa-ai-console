@@ -50,3 +50,15 @@ verify_jwt = false
 
 [functions.apply-waitlist-grant]
 verify_jwt = false
+
+[functions.hubspot-test-connection]
+verify_jwt = false
+
+[functions.hubspot-list-properties]
+verify_jwt = false
+
+[functions.hubspot-sync-lead]
+verify_jwt = false
+
+[functions.hubspot-sync-all]
+verify_jwt = false
