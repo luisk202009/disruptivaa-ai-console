@@ -1,4 +1,4 @@
-import { Mail, Code, ChevronRight, MessageCircle } from "lucide-react";
+import { Mail, Code, ChevronRight, MessageCircle, Workflow } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const settingsCards = [
@@ -19,6 +19,12 @@ const settingsCards = [
     title: "Botón de WhatsApp",
     description: "Define el número y el mensaje del botón flotante de WhatsApp del sitio público.",
     path: "/admin/whatsapp-button",
+  },
+  {
+    icon: <Workflow size={22} strokeWidth={1.5} />,
+    title: "HubSpot CRM",
+    description: "Sincroniza los leads de la plataforma con tu cuenta de HubSpot y define el mapeo de campos.",
+    path: "/admin/hubspot",
   },
 ];
 
