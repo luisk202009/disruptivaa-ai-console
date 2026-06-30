@@ -1,73 +1,73 @@
 import {
   corsHeaders,
-  getHubSpotHeaders,
   requireAdmin,
   serviceClient,
-  buildHubSpotProperties,
-  HUBSPOT_GATEWAY,
+  normalizeMapping,
+  splitProperties,
+  upsertContact,
+  upsertCompany,
+  associateContactCompany,
 } from "../_shared/hubspot.ts";
 
-// Sincroniza un lead específico (o todos si lead_id viene null) hacia HubSpot Contacts.
-// Estrategia:
-//   1) Si lead.hubspot_contact_id existe → PATCH al contacto.
-//   2) Si no, intentar buscar por email vía /crm/v3/objects/contacts/{email}?idProperty=email.
-//   3) Si existe, PATCH y guardar id; si no, POST para crear.
-async function syncLead(supabase: any, lead: any, mapping: Record<string, string>) {
-  const properties = buildHubSpotProperties(lead, mapping);
-  if (!properties.email && !lead.hubspot_contact_id) {
-    return { action: "skip", error: "Lead sin email — no se puede sincronizar" };
+// Sincroniza un lead concreto a HubSpot: crea/actualiza el Contacto, opcionalmente
+// la Empresa, y crea la asociación.
+async function syncLead(sb: any, lead: any, mappingRaw: any) {
+  const mapping = normalizeMapping(mappingRaw);
+  const { contact, company } = splitProperties(lead, mapping);
+
+  const logs: any[] = [];
+
+  if (!contact.email && !lead.hubspot_contact_id) {
+    return { ok: false, logs: [{ object_type: "contact", action: "skip", error_message: "Sin email" }] };
   }
 
-  const headers = getHubSpotHeaders();
+  let contactId: string | null = lead.hubspot_contact_id || null;
+  let companyId: string | null = lead.hubspot_company_id || null;
 
-  // Resolver ID del contacto en HubSpot
-  let contactId: string | null = lead.hubspot_contact_id;
+  // Contacto
+  try {
+    const result = await upsertContact(contact, contactId);
+    const action = contactId ? "update" : "create";
+    contactId = result.id;
+    logs.push({ object_type: "contact", action, hubspot_contact_id: contactId });
+  } catch (e) {
+    logs.push({ object_type: "contact", action: "error", error_message: (e as Error).message });
+  }
 
-  if (!contactId && properties.email) {
-    const lookup = await fetch(
-      `${HUBSPOT_GATEWAY}/crm/v3/objects/contacts/${encodeURIComponent(properties.email)}?idProperty=email`,
-      { headers },
-    );
-    if (lookup.ok) {
-      const json = await lookup.json();
-      contactId = json.id;
-    } else {
-      await lookup.text(); // consumir body
+  // Empresa (si hay datos)
+  if (Object.keys(company).length > 0) {
+    try {
+      const result = await upsertCompany(company, companyId);
+      if (result) {
+        const action = companyId ? "update" : "create";
+        companyId = result.id;
+        logs.push({ object_type: "company", action, hubspot_company_id: companyId });
+
+        if (contactId && companyId) {
+          try {
+            await associateContactCompany(contactId, companyId);
+          } catch (e) {
+            logs.push({
+              object_type: "company",
+              action: "error",
+              error_message: `Asociación falló: ${(e as Error).message}`,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      logs.push({ object_type: "company", action: "error", error_message: (e as Error).message });
     }
   }
 
-  let action: "create" | "update" = "update";
-  let response: Response;
+  // Persistir ids
+  const patch: any = {};
+  if (contactId && contactId !== lead.hubspot_contact_id) patch.hubspot_contact_id = contactId;
+  if (companyId && companyId !== lead.hubspot_company_id) patch.hubspot_company_id = companyId;
+  if (Object.keys(patch).length) await sb.from("leads").update(patch).eq("id", lead.id);
 
-  if (contactId) {
-    response = await fetch(`${HUBSPOT_GATEWAY}/crm/v3/objects/contacts/${contactId}`, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ properties }),
-    });
-  } else {
-    action = "create";
-    response = await fetch(`${HUBSPOT_GATEWAY}/crm/v3/objects/contacts`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ properties }),
-    });
-  }
-
-  const text = await response.text();
-  if (!response.ok) {
-    return { action: "error", error: `HubSpot ${response.status}: ${text}` };
-  }
-
-  const json = JSON.parse(text);
-  const newId = json.id || contactId;
-
-  // Persistir el id en el lead
-  if (newId && newId !== lead.hubspot_contact_id) {
-    await supabase.from("leads").update({ hubspot_contact_id: newId }).eq("id", lead.id);
-  }
-
-  return { action, hubspot_contact_id: newId };
+  const ok = !logs.some((l) => l.action === "error");
+  return { ok, logs, contactId, companyId };
 }
 
 Deno.serve(async (req) => {
@@ -84,8 +84,6 @@ Deno.serve(async (req) => {
     }
 
     const sb = serviceClient();
-
-    // Verificar que la integración esté activa
     const { data: config } = await sb
       .from("hubspot_sync_config")
       .select("enabled, field_mapping")
@@ -99,12 +97,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: lead, error: leadErr } = await sb
-      .from("leads")
-      .select("*")
-      .eq("id", lead_id)
-      .maybeSingle();
-    if (leadErr || !lead) {
+    const { data: lead } = await sb.from("leads").select("*").eq("id", lead_id).maybeSingle();
+    if (!lead) {
       return new Response(JSON.stringify({ ok: false, error: "Lead no encontrado" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -113,17 +107,21 @@ Deno.serve(async (req) => {
 
     const result = await syncLead(sb, lead, config.field_mapping || {});
 
-    await sb.from("hubspot_sync_log").insert({
-      lead_id: lead.id,
-      hubspot_contact_id: result.hubspot_contact_id ?? lead.hubspot_contact_id,
-      action: result.action,
-      error_message: result.error ?? null,
-    });
+    if (result.logs.length) {
+      await sb.from("hubspot_sync_log").insert(
+        result.logs.map((l: any) => ({
+          lead_id: lead.id,
+          hubspot_contact_id: l.hubspot_contact_id ?? result.contactId ?? lead.hubspot_contact_id,
+          object_type: l.object_type,
+          action: l.action,
+          error_message: l.error_message ?? null,
+        })),
+      );
+    }
 
-    return new Response(
-      JSON.stringify({ ok: result.action !== "error", result }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ ok: result.ok, result }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     if (e instanceof Response) return e;
     return new Response(

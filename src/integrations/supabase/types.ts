@@ -325,6 +325,7 @@ export type Database = {
           hubspot_contact_id: string | null
           id: string
           lead_id: string | null
+          object_type: string | null
           synced_at: string
         }
         Insert: {
@@ -333,6 +334,7 @@ export type Database = {
           hubspot_contact_id?: string | null
           id?: string
           lead_id?: string | null
+          object_type?: string | null
           synced_at?: string
         }
         Update: {
@@ -341,6 +343,7 @@ export type Database = {
           hubspot_contact_id?: string | null
           id?: string
           lead_id?: string | null
+          object_type?: string | null
           synced_at?: string
         }
         Relationships: [
@@ -360,6 +363,7 @@ export type Database = {
           email: string
           fit_answers: Json | null
           fit_score: number | null
+          hubspot_company_id: string | null
           hubspot_contact_id: string | null
           id: string
           name: string
@@ -377,6 +381,7 @@ export type Database = {
           email: string
           fit_answers?: Json | null
           fit_score?: number | null
+          hubspot_company_id?: string | null
           hubspot_contact_id?: string | null
           id?: string
           name: string
@@ -394,6 +399,7 @@ export type Database = {
           email?: string
           fit_answers?: Json | null
           fit_score?: number | null
+          hubspot_company_id?: string | null
           hubspot_contact_id?: string | null
           id?: string
           name?: string

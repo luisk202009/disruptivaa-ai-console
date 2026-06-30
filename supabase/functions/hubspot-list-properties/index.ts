@@ -1,35 +1,39 @@
 import { corsHeaders, getHubSpotHeaders, requireAdmin, HUBSPOT_GATEWAY } from "../_shared/hubspot.ts";
 
-// Devuelve la lista de propiedades del objeto contacts para construir el selector de mapeo.
+// Devuelve propiedades de contacts y companies para construir el selector de mapeo.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     await requireAdmin(req);
+    const headers = getHubSpotHeaders();
 
-    const res = await fetch(`${HUBSPOT_GATEWAY}/crm/v3/properties/contacts`, {
-      headers: getHubSpotHeaders(),
-    });
-    const body = await res.text();
+    const [contactsRes, companiesRes] = await Promise.all([
+      fetch(`${HUBSPOT_GATEWAY}/crm/v3/properties/contacts`, { headers }),
+      fetch(`${HUBSPOT_GATEWAY}/crm/v3/properties/companies`, { headers }),
+    ]);
 
-    if (!res.ok) {
+    if (!contactsRes.ok) {
+      const t = await contactsRes.text();
       return new Response(
-        JSON.stringify({ ok: false, status: res.status, error: body }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ ok: false, status: contactsRes.status, error: t }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const json = JSON.parse(body);
-    // Retornamos sólo lo esencial para la UI
-    const properties = (json.results || []).map((p: any) => ({
-      name: p.name,
-      label: p.label,
-      type: p.type,
-      groupName: p.groupName,
-    }));
+    const map = (json: any) =>
+      (json.results || []).map((p: any) => ({
+        name: p.name,
+        label: p.label,
+        type: p.type,
+        groupName: p.groupName,
+      }));
+
+    const contacts = map(await contactsRes.json());
+    const companies = companiesRes.ok ? map(await companiesRes.json()) : [];
 
     return new Response(
-      JSON.stringify({ ok: true, properties }),
+      JSON.stringify({ ok: true, contacts, companies }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
