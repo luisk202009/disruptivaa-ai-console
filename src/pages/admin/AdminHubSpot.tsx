@@ -10,6 +10,7 @@ import {
   PlugZap,
   Workflow,
   Save,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,9 @@ import {
   useUpdateHubSpotConfig,
   useHubSpotSyncLog,
   LEAD_FIELDS,
+  normalizeMappingClient,
+  type MappingEntry,
+  type ObjectType,
 } from "@/hooks/useHubSpotConfig";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -46,25 +50,26 @@ const AdminHubSpot = () => {
   const updateConfig = useUpdateHubSpotConfig();
   const { data: log } = useHubSpotSyncLog();
 
-  const [properties, setProperties] = useState<HubSpotProperty[]>([]);
+  const [contactProps, setContactProps] = useState<HubSpotProperty[]>([]);
+  const [companyProps, setCompanyProps] = useState<HubSpotProperty[]>([]);
   const [loadingProps, setLoadingProps] = useState(false);
   const [connected, setConnected] = useState<boolean | null>(null);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [ensuringProps, setEnsuringProps] = useState(false);
+  const [mapping, setMapping] = useState<Record<string, MappingEntry>>({});
   const [enabled, setEnabled] = useState(false);
   const [autoSync, setAutoSync] = useState(false);
 
   useEffect(() => {
     if (config) {
-      setMapping(config.field_mapping || {});
+      setMapping(normalizeMappingClient(config.field_mapping));
       setEnabled(config.enabled);
       setAutoSync(config.auto_sync);
     }
   }, [config]);
 
-  // Probar conexión y cargar propiedades al entrar
   useEffect(() => {
     void testConnection();
   }, []);
@@ -95,11 +100,41 @@ const AdminHubSpot = () => {
     try {
       const { data, error } = await supabase.functions.invoke("hubspot-list-properties");
       if (error) throw error;
-      if (data?.ok) setProperties(data.properties);
+      if (data?.ok) {
+        setContactProps(data.contacts || []);
+        setCompanyProps(data.companies || []);
+      }
     } catch (e: any) {
       toast.error("No se pudieron cargar propiedades", { description: e.message });
     } finally {
       setLoadingProps(false);
+    }
+  }
+
+  async function handleEnsureProps() {
+    setEnsuringProps(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("hubspot-ensure-properties");
+      if (error) throw error;
+      if (data?.ok) {
+        const created = data.results.filter((r: any) => r.status === "created").length;
+        const existed = data.results.filter((r: any) => r.status === "exists").length;
+        const failed = data.results.filter((r: any) => r.status === "error");
+        if (failed.length) {
+          toast.warning(`Creadas ${created}, ya existían ${existed}, errores ${failed.length}`, {
+            description: failed.map((f: any) => `${f.name}: ${f.error}`).join(" · "),
+          });
+        } else {
+          toast.success(`Propiedades listas (${created} creadas, ${existed} ya existían)`);
+        }
+        await loadProperties();
+      } else {
+        toast.error("Error", { description: data?.error });
+      }
+    } catch (e: any) {
+      toast.error("Error", { description: e.message });
+    } finally {
+      setEnsuringProps(false);
     }
   }
 
@@ -110,7 +145,7 @@ const AdminHubSpot = () => {
         id: config.id,
         enabled,
         auto_sync: autoSync,
-        field_mapping: mapping,
+        field_mapping: mapping as any,
       });
       toast.success("Configuración guardada");
     } catch (e: any) {
@@ -141,6 +176,18 @@ const AdminHubSpot = () => {
     }
   }
 
+  function updateMapping(key: string, patch: Partial<MappingEntry>) {
+    setMapping((prev) => {
+      const current = prev[key] || { property: "", object: LEAD_FIELDS.find((f) => f.key === key)?.defaultObject || "contact" };
+      const next = { ...current, ...patch };
+      if (!next.property || next.property === "__none__") {
+        const { [key]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [key]: next };
+    });
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -150,7 +197,7 @@ const AdminHubSpot = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <button
         onClick={() => navigate("/admin/settings")}
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -161,7 +208,7 @@ const AdminHubSpot = () => {
       <div>
         <h1 className="text-2xl font-semibold tracking-wide text-foreground mb-1">HubSpot CRM</h1>
         <p className="text-sm text-muted-foreground">
-          Sincroniza automáticamente los leads de la plataforma con tu cuenta de HubSpot.
+          Sincroniza Contactos y Empresas de la plataforma con tu portal de HubSpot.
         </p>
       </div>
 
@@ -175,11 +222,7 @@ const AdminHubSpot = () => {
               </div>
               <div>
                 <h3 className="text-sm font-medium text-foreground">Estado de conexión</h3>
-                {connected === true && (
-                  <p className="text-xs text-muted-foreground">
-                    Conectado · {accountName}
-                  </p>
-                )}
+                {connected === true && <p className="text-xs text-muted-foreground">Conectado · {accountName}</p>}
                 {connected === false && (
                   <p className="text-xs text-destructive">
                     No conectado. Conecta la Service Key desde el panel de Lovable Connectors.
@@ -247,6 +290,14 @@ const AdminHubSpot = () => {
               {syncing ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <RefreshCw size={14} className="mr-1.5" />}
               Sincronizar todos los leads
             </Button>
+            <Button variant="outline" onClick={handleEnsureProps} disabled={ensuringProps || !connected}>
+              {ensuringProps ? (
+                <Loader2 size={14} className="animate-spin mr-1.5" />
+              ) : (
+                <Sparkles size={14} className="mr-1.5" />
+              )}
+              Crear propiedades en HubSpot
+            </Button>
             {config?.last_sync_at && (
               <span className="text-xs text-muted-foreground ml-auto">
                 Última sincronización: {formatDistanceToNow(new Date(config.last_sync_at), { addSuffix: true, locale: es })}
@@ -263,7 +314,7 @@ const AdminHubSpot = () => {
             <div>
               <h3 className="text-sm font-medium text-foreground">Mapeo de campos</h3>
               <p className="text-xs text-muted-foreground">
-                Define qué propiedad de HubSpot corresponde a cada campo del lead.
+                Define a qué objeto (Contacto o Empresa) y propiedad de HubSpot va cada campo del lead.
               </p>
             </div>
             <Button size="sm" variant="ghost" onClick={loadProperties} disabled={loadingProps}>
@@ -278,38 +329,69 @@ const AdminHubSpot = () => {
             </p>
           )}
 
+          <p className="text-xs text-muted-foreground bg-white/[0.02] border border-white/[0.04] rounded p-3">
+            Tip: pulsa <strong>Crear propiedades en HubSpot</strong> para generar las propiedades personalizadas
+            (<code>disruptivaa_*</code>) antes de sincronizar.
+          </p>
+
           <div className="divide-y divide-white/[0.04] border border-white/[0.06] rounded-lg overflow-hidden">
-            {LEAD_FIELDS.map((field) => (
-              <div key={field.key} className="grid grid-cols-2 gap-3 p-3 items-center hover:bg-white/[0.02]">
-                <div>
-                  <p className="text-sm text-foreground">{field.label}</p>
-                  {field.description && (
-                    <p className="text-xs text-muted-foreground">{field.description}</p>
-                  )}
-                </div>
-                <Select
-                  value={mapping[field.key] || "__none__"}
-                  onValueChange={(v) =>
-                    setMapping((prev) => ({ ...prev, [field.key]: v === "__none__" ? "" : v }))
-                  }
-                >
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecciona propiedad" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    <SelectItem value="__none__">— No sincronizar —</SelectItem>
-                    {properties.length === 0 && mapping[field.key] && (
-                      <SelectItem value={mapping[field.key]}>{mapping[field.key]} (actual)</SelectItem>
+            <div className="grid grid-cols-12 gap-3 p-3 bg-white/[0.02] text-[11px] uppercase tracking-wide text-muted-foreground">
+              <div className="col-span-4">Campo del lead</div>
+              <div className="col-span-3">Objeto HubSpot</div>
+              <div className="col-span-5">Propiedad HubSpot</div>
+            </div>
+            {LEAD_FIELDS.map((field) => {
+              const entry = mapping[field.key];
+              const object: ObjectType = entry?.object || field.defaultObject;
+              const property = entry?.property || "__none__";
+              const props = object === "company" ? companyProps : contactProps;
+
+              return (
+                <div key={field.key} className="grid grid-cols-12 gap-3 p-3 items-center hover:bg-white/[0.02]">
+                  <div className="col-span-4">
+                    <p className="text-sm text-foreground">{field.label}</p>
+                    {field.description && (
+                      <p className="text-xs text-muted-foreground">{field.description}</p>
                     )}
-                    {properties.map((p) => (
-                      <SelectItem key={p.name} value={p.name}>
-                        {p.label} <span className="text-muted-foreground">({p.name})</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+                  </div>
+                  <div className="col-span-3">
+                    <Select
+                      value={object}
+                      onValueChange={(v) => updateMapping(field.key, { object: v as ObjectType, property: "" })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="contact">Contacto</SelectItem>
+                        <SelectItem value="company">Empresa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-5">
+                    <Select
+                      value={property}
+                      onValueChange={(v) => updateMapping(field.key, { property: v === "__none__" ? "" : v, object })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Selecciona propiedad" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        <SelectItem value="__none__">— No sincronizar —</SelectItem>
+                        {props.length === 0 && property !== "__none__" && (
+                          <SelectItem value={property}>{property} (actual)</SelectItem>
+                        )}
+                        {props.map((p) => (
+                          <SelectItem key={p.name} value={p.name}>
+                            {p.label} <span className="text-muted-foreground">({p.name})</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -336,13 +418,18 @@ const AdminHubSpot = () => {
                       <CheckCircle2 size={12} className="text-emerald-400" />
                     )}
                     <span className="text-foreground">{entry.leads?.email || entry.lead_id}</span>
+                    {entry.object_type && (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        {entry.object_type === "company" ? "Empresa" : "Contacto"}
+                      </Badge>
+                    )}
                     <Badge variant="outline" className="text-[10px] py-0">
                       {entry.action}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-3">
                     {entry.error_message && (
-                      <span className="text-destructive truncate max-w-xs" title={entry.error_message}>
+                      <span className="text-destructive truncate max-w-md" title={entry.error_message}>
                         {entry.error_message}
                       </span>
                     )}

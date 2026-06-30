@@ -1,51 +1,79 @@
 import {
   corsHeaders,
-  getHubSpotHeaders,
   requireAdmin,
   serviceClient,
-  buildHubSpotProperties,
-  HUBSPOT_GATEWAY,
+  normalizeMapping,
+  splitProperties,
+  upsertContact,
+  upsertCompany,
+  associateContactCompany,
 } from "../_shared/hubspot.ts";
 
-// Sincroniza TODOS los leads en lote. Usa batch upsert por email para eficiencia,
-// pero por simplicidad y trazabilidad por lead lo hacemos uno a uno con un pequeño
-// throttle para no exceder rate limits (100 req/10s en HubSpot).
-async function syncOne(sb: any, lead: any, mapping: Record<string, string>, headers: HeadersInit) {
-  const properties = buildHubSpotProperties(lead, mapping);
-  if (!properties.email && !lead.hubspot_contact_id) {
-    return { action: "skip", error: "Sin email" };
+// Sincroniza TODOS los leads. Para cada uno upsert de contacto + empresa + asociación.
+async function syncOne(sb: any, lead: any, mapping: Record<string, any>) {
+  const { contact, company } = splitProperties(lead, mapping);
+  const events: any[] = [];
+
+  if (!contact.email && !lead.hubspot_contact_id) {
+    return {
+      counters: { create: 0, update: 0, skip: 1, error: 0 },
+      events: [{ object_type: "contact", action: "skip", error_message: "Sin email" }],
+    };
   }
 
-  let contactId: string | null = lead.hubspot_contact_id;
+  const counters = { create: 0, update: 0, skip: 0, error: 0 };
+  let contactId: string | null = lead.hubspot_contact_id || null;
+  let companyId: string | null = lead.hubspot_company_id || null;
 
-  if (!contactId && properties.email) {
-    const lookup = await fetch(
-      `${HUBSPOT_GATEWAY}/crm/v3/objects/contacts/${encodeURIComponent(properties.email)}?idProperty=email`,
-      { headers },
-    );
-    if (lookup.ok) contactId = (await lookup.json()).id;
-    else await lookup.text();
+  try {
+    const wasUpdate = !!contactId;
+    const r = await upsertContact(contact, contactId);
+    contactId = r.id;
+    counters[wasUpdate ? "update" : "create"]++;
+    events.push({
+      object_type: "contact",
+      action: wasUpdate ? "update" : "create",
+      hubspot_contact_id: contactId,
+    });
+  } catch (e) {
+    counters.error++;
+    events.push({ object_type: "contact", action: "error", error_message: (e as Error).message });
   }
 
-  let action: "create" | "update" = contactId ? "update" : "create";
-  const url = contactId
-    ? `${HUBSPOT_GATEWAY}/crm/v3/objects/contacts/${contactId}`
-    : `${HUBSPOT_GATEWAY}/crm/v3/objects/contacts`;
-
-  const res = await fetch(url, {
-    method: contactId ? "PATCH" : "POST",
-    headers,
-    body: JSON.stringify({ properties }),
-  });
-  const text = await res.text();
-  if (!res.ok) return { action: "error", error: `HubSpot ${res.status}: ${text}` };
-
-  const json = JSON.parse(text);
-  const newId = json.id || contactId;
-  if (newId && newId !== lead.hubspot_contact_id) {
-    await sb.from("leads").update({ hubspot_contact_id: newId }).eq("id", lead.id);
+  if (Object.keys(company).length > 0) {
+    try {
+      const wasUpdate = !!companyId;
+      const r = await upsertCompany(company, companyId);
+      if (r) {
+        companyId = r.id;
+        events.push({
+          object_type: "company",
+          action: wasUpdate ? "update" : "create",
+          hubspot_company_id: companyId,
+        });
+        if (contactId) {
+          try {
+            await associateContactCompany(contactId, companyId);
+          } catch (e) {
+            events.push({
+              object_type: "company",
+              action: "error",
+              error_message: `Asociación: ${(e as Error).message}`,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      events.push({ object_type: "company", action: "error", error_message: (e as Error).message });
+    }
   }
-  return { action, hubspot_contact_id: newId };
+
+  const patch: any = {};
+  if (contactId && contactId !== lead.hubspot_contact_id) patch.hubspot_contact_id = contactId;
+  if (companyId && companyId !== lead.hubspot_company_id) patch.hubspot_company_id = companyId;
+  if (Object.keys(patch).length) await sb.from("leads").update(patch).eq("id", lead.id);
+
+  return { counters, events, contactId, companyId };
 }
 
 Deno.serve(async (req) => {
@@ -68,39 +96,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    const mapping = normalizeMapping(config.field_mapping || {});
     const { data: leads } = await sb.from("leads").select("*").order("created_at", { ascending: true });
     if (!leads?.length) {
-      return new Response(JSON.stringify({ ok: true, total: 0, created: 0, updated: 0, skipped: 0, errors: 0 }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ ok: true, total: 0, created: 0, updated: 0, skipped: 0, errors: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const headers = getHubSpotHeaders();
-    const counters = { total: leads.length, created: 0, updated: 0, skipped: 0, errors: 0 };
+    const totals = { created: 0, updated: 0, skipped: 0, errors: 0 };
     const logs: any[] = [];
 
     for (const lead of leads) {
-      const r = await syncOne(sb, lead, config.field_mapping || {}, headers);
-      if (r.action === "create") counters.created++;
-      else if (r.action === "update") counters.updated++;
-      else if (r.action === "skip") counters.skipped++;
-      else counters.errors++;
+      const r = await syncOne(sb, lead, mapping);
+      totals.created += r.counters.create;
+      totals.updated += r.counters.update;
+      totals.skipped += r.counters.skip;
+      totals.errors += r.counters.error;
 
-      logs.push({
-        lead_id: lead.id,
-        hubspot_contact_id: r.hubspot_contact_id ?? lead.hubspot_contact_id ?? null,
-        action: r.action,
-        error_message: r.error ?? null,
-      });
+      for (const ev of r.events) {
+        logs.push({
+          lead_id: lead.id,
+          hubspot_contact_id: ev.hubspot_contact_id ?? r.contactId ?? lead.hubspot_contact_id ?? null,
+          object_type: ev.object_type,
+          action: ev.action,
+          error_message: ev.error_message ?? null,
+        });
+      }
 
-      // Throttle: 80ms ≈ 12 req/s, holgado bajo el límite de HubSpot
+      // Throttle ~12 req/s
       await new Promise((res) => setTimeout(res, 80));
     }
 
     if (logs.length) await sb.from("hubspot_sync_log").insert(logs);
-    await sb.from("hubspot_sync_config").update({ last_sync_at: new Date().toISOString() }).eq("id", config.id);
+    await sb.from("hubspot_sync_config")
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq("id", config.id);
 
-    return new Response(JSON.stringify({ ok: true, ...counters }), {
+    return new Response(JSON.stringify({ ok: true, total: leads.length, ...totals }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
