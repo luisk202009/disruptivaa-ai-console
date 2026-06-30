@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.hubspot-sync-all]
 verify_jwt = false
+
+[functions.hubspot-ensure-properties]
+verify_jwt = false
