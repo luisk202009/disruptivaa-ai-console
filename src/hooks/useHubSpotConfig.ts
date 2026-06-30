@@ -65,7 +65,7 @@ export function useUpdateHubSpotConfig() {
   return useMutation({
     mutationFn: async (patch: Partial<HubSpotConfig> & { id: string }) => {
       const { id, ...rest } = patch;
-      const { error } = await supabase.from("hubspot_sync_config").update(rest).eq("id", id);
+      const { error } = await supabase.from("hubspot_sync_config").update(rest as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["hubspot-config"] }),
