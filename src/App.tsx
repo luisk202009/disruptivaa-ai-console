@@ -153,6 +153,7 @@ const App = () => (
               <Route path="/admin/settings" element={<ProtectedRoute><Lazy><AdminLayout><AdminSettings /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/plans" element={<ProtectedRoute><Lazy><AdminLayout><AdminPlans /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/admin/whatsapp-button" element={<ProtectedRoute><Lazy><AdminLayout><AdminWhatsAppButton /></AdminLayout></Lazy></ProtectedRoute>} />
+              <Route path="/admin/hubspot" element={<ProtectedRoute><Lazy><AdminLayout><AdminHubSpot /></AdminLayout></Lazy></ProtectedRoute>} />
               <Route path="/websites" element={<ProtectedRoute><Lazy><Websites /></Lazy></ProtectedRoute>} />
               <Route path="/landing-builder" element={<ProtectedRoute><Lazy><LandingBuilder /></Lazy></ProtectedRoute>} />
 
