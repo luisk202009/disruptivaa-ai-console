@@ -39,6 +39,7 @@ const AdminProposalTemplates = lazy(() => import("./pages/admin/AdminProposalTem
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminPlans = lazy(() => import("./pages/admin/AdminPlans"));
 const AdminWhatsAppButton = lazy(() => import("./pages/admin/AdminWhatsAppButton"));
+const AdminHubSpot = lazy(() => import("./pages/admin/AdminHubSpot"));
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const ProposalView = lazy(() => import("./pages/ProposalView"));
 const Brief = lazy(() => import("./pages/Brief"));
