@@ -288,6 +288,71 @@ export type Database = {
         }
         Relationships: []
       }
+      hubspot_sync_config: {
+        Row: {
+          auto_sync: boolean
+          created_at: string
+          enabled: boolean
+          field_mapping: Json
+          id: string
+          last_sync_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_sync?: boolean
+          created_at?: string
+          enabled?: boolean
+          field_mapping?: Json
+          id?: string
+          last_sync_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_sync?: boolean
+          created_at?: string
+          enabled?: boolean
+          field_mapping?: Json
+          id?: string
+          last_sync_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hubspot_sync_log: {
+        Row: {
+          action: string
+          error_message: string | null
+          hubspot_contact_id: string | null
+          id: string
+          lead_id: string | null
+          synced_at: string
+        }
+        Insert: {
+          action: string
+          error_message?: string | null
+          hubspot_contact_id?: string | null
+          id?: string
+          lead_id?: string | null
+          synced_at?: string
+        }
+        Update: {
+          action?: string
+          error_message?: string | null
+          hubspot_contact_id?: string | null
+          id?: string
+          lead_id?: string | null
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hubspot_sync_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           company: string | null
@@ -295,6 +360,7 @@ export type Database = {
           email: string
           fit_answers: Json | null
           fit_score: number | null
+          hubspot_contact_id: string | null
           id: string
           name: string
           niche: string | null
@@ -311,6 +377,7 @@ export type Database = {
           email: string
           fit_answers?: Json | null
           fit_score?: number | null
+          hubspot_contact_id?: string | null
           id?: string
           name: string
           niche?: string | null
@@ -327,6 +394,7 @@ export type Database = {
           email?: string
           fit_answers?: Json | null
           fit_score?: number | null
+          hubspot_contact_id?: string | null
           id?: string
           name?: string
           niche?: string | null
