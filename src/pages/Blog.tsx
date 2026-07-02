@@ -49,6 +49,11 @@ const Blog = () => {
 
   return (
     <PublicLayout>
+      <SEO
+        title="Blog — Disruptivaa"
+        description="Artículos, guías y novedades sobre marketing digital, CRM HubSpot, Shopify, automatización con IA y crecimiento de negocios."
+        path="/blog"
+      />
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
