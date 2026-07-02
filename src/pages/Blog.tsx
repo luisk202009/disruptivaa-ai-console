@@ -4,6 +4,7 @@ import BlogCard from "@/components/blog/BlogCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import SEO from "@/components/SEO";
 
 interface WpPost {
   slug: string;
