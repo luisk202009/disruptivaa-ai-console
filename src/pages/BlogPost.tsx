@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import SEO from "@/components/SEO";
 
 interface WpPost {
   title: { rendered: string };
@@ -59,6 +60,25 @@ const BlogPost = () => {
 
   return (
     <PublicLayout>
+      {post && (
+        <SEO
+          title={`${decodeHtml(post.title.rendered)} — Blog Disruptivaa`.slice(0, 70)}
+          description={decodeHtml(post.excerpt.rendered).replace(/<[^>]+>/g, "").trim().slice(0, 155) || "Artículo del blog de Disruptivaa."}
+          path={`/blog/${slug}`}
+          type="article"
+          image={featuredImage}
+          jsonLd={{
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: decodeHtml(post.title.rendered),
+            datePublished: post.date,
+            image: featuredImage ? [featuredImage] : undefined,
+            author: { "@type": "Organization", name: "Disruptivaa" },
+            publisher: { "@type": "Organization", name: "Disruptivaa" },
+            mainEntityOfPage: `https://www.disruptivaa.com/blog/${slug}`,
+          }}
+        />
+      )}
       <section className="py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <Link to="/blog">
