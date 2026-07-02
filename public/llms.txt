@@ -1,0 +1,25 @@
+# Disruptivaa
+
+> Agencia digital que diseña, implementa y acompaña negocios digitales que venden, operan y crecen ordenados: CRM HubSpot, Shopify, marketing, websites y automatización con IA.
+
+## Pages
+
+- [Inicio](/): Propuesta de valor y flujo captar-seguir-cobrar-escalar.
+- [Nosotros](/nosotros): Equipo, clientes y metodología.
+- [Planes y precios](/pricing): Planes de suscripción a la consola de agentes de IA.
+- [Blog](/blog): Artículos sobre marketing digital, CRM y negocios.
+- [Brief](/brief): Formulario para solicitar propuesta.
+- [Generador de links de WhatsApp](/whatsapp-link): Herramienta pública para crear enlaces cortos wa.me.
+
+## Servicios
+
+- [CRM HubSpot](/servicios/crm-hubspot): Consultoría, implementación y acompañamiento en HubSpot.
+- [Negocio en 14 días](/servicios/negocio-14-dias): Landing + CRM + pagos listos para operar.
+- [Shopify](/servicios/shopify): Tienda online lista para vender.
+- [Marketing & Ads](/servicios/marketing-ads): Campañas Meta, Google y TikTok con reporting.
+- [Websites & Landings](/servicios/websites-landings): Sitios que convierten visitantes en clientes.
+- [MVP & Aplicaciones](/servicios/mvp-aplicaciones): Producto digital hecho realidad.
+
+## Optional
+
+- [Lista de espera](/lista-de-espera): Solicitar invitación a la plataforma.

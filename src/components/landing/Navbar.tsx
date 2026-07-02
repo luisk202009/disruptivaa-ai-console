@@ -83,8 +83,8 @@ const Navbar = () => {
     >
       <nav className="max-w-7xl mx-auto flex items-center justify-between px-6 h-20">
         {/* Left: Logo */}
-        <Link to="/" className="shrink-0">
-          <img src={logo} alt="Disruptivaa" className="h-7" />
+        <Link to="/" className="shrink-0" aria-label="Ir al inicio de Disruptivaa">
+          <img src={logo} alt="Logotipo de Disruptivaa" className="h-7" />
         </Link>
 
         {/* Center: Nav links (desktop) */}
@@ -170,6 +170,9 @@ const Navbar = () => {
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden text-muted-foreground hover:text-foreground"
+          aria-label={mobileOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-menu"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>

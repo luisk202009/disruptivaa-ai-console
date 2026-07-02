@@ -125,7 +125,7 @@ const Nosotros = () => (
       <div className="marquee-container group">
         <div className="marquee-track group-hover:[animation-play-state:paused]">
           {[...clients, ...clients].map((c, i) => (
-            <img key={`${c.name}-${i}`} src={c.logo} alt={c.name} className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity flex-shrink-0" />
+            <img key={`${c.name}-${i}`} src={c.logo} alt={`Logotipo de ${c.name}, cliente de Disruptivaa`} className="h-10 md:h-12 object-contain opacity-60 hover:opacity-100 transition-opacity flex-shrink-0" />
           ))}
         </div>
       </div>
