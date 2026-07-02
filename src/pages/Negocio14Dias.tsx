@@ -4,6 +4,7 @@ import { Zap, ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 const plans = [
   {
@@ -31,6 +32,12 @@ const fadeUp = {
 
 const Negocio14Dias = () => (
   <PublicLayout>
+    <SEO
+      title="Negocio Digital en 14 días — Landing + CRM + Pagos | Disruptivaa"
+      description="Lanzamos tu negocio digital en 14 días: landing de alta conversión, CRM configurado, WhatsApp integrado y pasarela de pagos lista."
+      path="/servicios/negocio-14-dias"
+      jsonLd={{ "@context": "https://schema.org", "@type": "Service", name: "Negocio digital en 14 días", provider: { "@type": "Organization", name: "Disruptivaa" }, serviceType: "Digital business launch" }}
+    />
     {/* Hero */}
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">

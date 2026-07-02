@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Rocket, ArrowRight, Check, Target, BarChart3, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 const benefits = [
   { icon: Target, title: "Estrategia multicanal", desc: "Campañas coordinadas en Meta Ads, Google Ads y TikTok para maximizar tu inversión." },
@@ -21,6 +22,12 @@ const fadeUp = {
 
 const MarketingAds = () => (
   <PublicLayout>
+    <SEO
+      title="Marketing & Ads — Campañas Meta, Google y TikTok | Disruptivaa"
+      description="Gestionamos tu inversión publicitaria con estrategia multicanal, creatividades que convierten y reportes transparentes con ROAS, CPA y CPL."
+      path="/servicios/marketing-ads"
+      jsonLd={{ "@context": "https://schema.org", "@type": "Service", name: "Gestión de campañas publicitarias digitales", provider: { "@type": "Organization", name: "Disruptivaa" }, serviceType: "Digital advertising" }}
+    />
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-4xl mx-auto text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>

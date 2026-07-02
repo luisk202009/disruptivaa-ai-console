@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Users, ArrowRight, Check, BarChart3, Workflow, HeadphonesIcon, Search, Settings, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 const phases = [
   { step: "01", icon: Search, title: "Consultoría & Diagnóstico", desc: "Analizamos tus procesos actuales, identificamos cuellos de botella y diseñamos la arquitectura ideal de tu CRM en HubSpot." },
@@ -27,6 +28,12 @@ const fadeUp = {
 
 const CrmHubspot = () => (
   <PublicLayout>
+    <SEO
+      title="CRM HubSpot — Consultoría e implementación | Disruptivaa"
+      description="Implementamos HubSpot con adopción real: consultoría, migración, automatizaciones y acompañamiento para que tu equipo use el CRM desde el día uno."
+      path="/servicios/crm-hubspot"
+      jsonLd={{ "@context": "https://schema.org", "@type": "Service", name: "Consultoría e implementación de CRM HubSpot", provider: { "@type": "Organization", name: "Disruptivaa" }, areaServed: ["CO","ES","PT"], serviceType: "CRM" }}
+    />
     {/* Hero */}
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-4xl mx-auto text-center">

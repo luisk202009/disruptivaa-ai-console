@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
 import BentoGrid from "@/components/landing/BentoGrid";
 import ContactForm from "@/components/landing/ContactForm";
+import SEO from "@/components/SEO";
 
 const painPoints = [
   { icon: AlertTriangle, title: "Leads dispersos", desc: "Contactos en WhatsApp, Excel, email… sin seguimiento real." },
@@ -30,6 +31,11 @@ const fadeUp = {
 
 const Landing = () => (
   <PublicLayout>
+    <SEO
+      title="Disruptivaa — Negocios digitales que venden, operan y crecen"
+      description="Diseñamos, implementamos y acompañamos negocios digitales: CRM HubSpot, Shopify, marketing y automatización con IA para captar, seguir y cobrar sin caos."
+      path="/"
+    />
     {/* ── HERO ── */}
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ShoppingBag, ArrowRight, Check, CreditCard, Palette, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 const benefits = [
   { icon: Palette, title: "Diseño de alta conversión", desc: "Tienda con UX optimizada para convertir visitantes en compradores desde el primer clic." },
@@ -21,6 +22,12 @@ const fadeUp = {
 
 const ShopifyPage = () => (
   <PublicLayout>
+    <SEO
+      title="Shopify — Tu tienda online lista para vender | Disruptivaa"
+      description="Diseñamos, configuramos y lanzamos tu e-commerce en Shopify: diseño de alta conversión, pasarelas de pago y estrategia de lanzamiento."
+      path="/servicios/shopify"
+      jsonLd={{ "@context": "https://schema.org", "@type": "Service", name: "Implementación de Shopify", provider: { "@type": "Organization", name: "Disruptivaa" }, serviceType: "E-commerce" }}
+    />
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-4xl mx-auto text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>

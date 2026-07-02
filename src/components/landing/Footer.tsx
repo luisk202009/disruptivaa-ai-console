@@ -13,7 +13,7 @@ const Footer = () => (
     <div className="max-w-7xl mx-auto px-6 py-12">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-10">
         <div className="md:col-span-2">
-          <img src={logo} alt="Disruptivaa" className="h-6 mb-4" />
+          <img src={logo} alt="Logotipo de Disruptivaa" className="h-6 mb-4" />
           <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
             Integración de estrategia, tecnología y automatización para negocios que quieren escalar con orden.
           </p>
