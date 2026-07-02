@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
 import BentoGrid from "@/components/landing/BentoGrid";
 import ContactForm from "@/components/landing/ContactForm";
+import SEO from "@/components/SEO";
 
 const painPoints = [
   { icon: AlertTriangle, title: "Leads dispersos", desc: "Contactos en WhatsApp, Excel, email… sin seguimiento real." },
