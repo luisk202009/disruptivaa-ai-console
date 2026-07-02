@@ -12,6 +12,7 @@ import SEO from "@/components/SEO";
 interface WpPost {
   title: { rendered: string };
   content: { rendered: string };
+  excerpt?: { rendered: string };
   date: string;
   _embedded?: {
     "wp:featuredmedia"?: { source_url: string }[];
@@ -63,7 +64,7 @@ const BlogPost = () => {
       {post && (
         <SEO
           title={`${decodeHtml(post.title.rendered)} — Blog Disruptivaa`.slice(0, 70)}
-          description={decodeHtml(post.excerpt.rendered).replace(/<[^>]+>/g, "").trim().slice(0, 155) || "Artículo del blog de Disruptivaa."}
+          description={(post.excerpt ? decodeHtml(post.excerpt.rendered).replace(/<[^>]+>/g, "").trim() : "").slice(0, 155) || "Artículo del blog de Disruptivaa."}
           path={`/blog/${slug}`}
           type="article"
           image={featuredImage}
