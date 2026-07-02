@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Rocket, ArrowRight, Check, Lightbulb, Palette, Plug, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 const benefits = [
   { icon: Lightbulb, title: "Validación rápida", desc: "Lanzá tu producto mínimo viable en semanas. Probá tu idea con usuarios reales antes de invertir a gran escala." },
@@ -21,6 +22,12 @@ const fadeUp = {
 
 const MvpAplicaciones = () => (
   <PublicLayout>
+    <SEO
+      title="MVP & Aplicaciones — Tu idea hecha producto | Disruptivaa"
+      description="Diseñamos y construimos tu MVP en semanas: UX profesional, integraciones listas y arquitectura escalable desde el inicio."
+      path="/servicios/mvp-aplicaciones"
+      jsonLd={{ "@context": "https://schema.org", "@type": "Service", name: "Desarrollo de MVP y aplicaciones", provider: { "@type": "Organization", name: "Disruptivaa" }, serviceType: "Software development" }}
+    />
     {/* Hero */}
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-4xl mx-auto text-center">

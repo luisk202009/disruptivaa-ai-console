@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, BarChart3, Layout, Rocket, ShoppingBag, Users, Workflow, FileText, Lightbulb, Hammer, HeadphonesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 import logoAcontapp from "@/assets/clients/acontapp.png";
 import logoEdudestinos from "@/assets/clients/edudestinos.png";
@@ -56,6 +57,11 @@ const fadeUp = {
 
 const Nosotros = () => (
   <PublicLayout>
+    <SEO
+      title="Nosotros — Equipo, clientes y metodología | Disruptivaa"
+      description="Somos Disruptivaa: agencia digital con presencia en Colombia, España y Portugal. Ayudamos a marcas a captar, seguir, cobrar y escalar."
+      path="/nosotros"
+    />
     {/* Hero */}
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-4xl mx-auto text-center">

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Layout, ArrowRight, Check, Paintbrush, Gauge, Search, MousePointerClick } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/components/landing/PublicLayout";
+import SEO from "@/components/SEO";
 
 const benefits = [
   { icon: Paintbrush, title: "Diseño a medida", desc: "Cada página refleja tu marca. Sin templates genéricos: diseño único pensado para tu audiencia y objetivos." },
@@ -21,6 +22,12 @@ const fadeUp = {
 
 const WebsitesLandings = () => (
   <PublicLayout>
+    <SEO
+      title="Websites & Landings de alta conversión | Disruptivaa"
+      description="Sitios y landing pages diseñados a medida, optimizados para conversión, velocidad y SEO desde el primer día."
+      path="/servicios/websites-landings"
+      jsonLd={{ "@context": "https://schema.org", "@type": "Service", name: "Diseño de websites y landing pages", provider: { "@type": "Organization", name: "Disruptivaa" }, serviceType: "Web design" }}
+    />
     {/* Hero */}
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-4xl mx-auto text-center">
