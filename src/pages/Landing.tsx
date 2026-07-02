@@ -31,6 +31,11 @@ const fadeUp = {
 
 const Landing = () => (
   <PublicLayout>
+    <SEO
+      title="Disruptivaa — Negocios digitales que venden, operan y crecen"
+      description="Diseñamos, implementamos y acompañamos negocios digitales: CRM HubSpot, Shopify, marketing y automatización con IA para captar, seguir y cobrar sin caos."
+      path="/"
+    />
     {/* ── HERO ── */}
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
