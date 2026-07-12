@@ -1,75 +1,42 @@
+# Flujo de suscripción sin fricción desde /pricing
+
+## Problema
+Actualmente al pulsar "Suscribirse" en `/pricing`, la mutación `subscribe` bloquea con el error *"Necesitas completar el onboarding de tu empresa antes de suscribirte"* si `profile.company_id` es null. Esto rompe el flujo público: el usuario debería poder elegir plan → registrarse → onboarding → checkout de forma continua.
+
 ## Objetivo
+El botón "Suscribirse" (y "Reclamar oferta") debe funcionar como un embudo guiado:
 
-1. Solucionar el error "Error al iniciar el pago. Intenta de nuevo." al pulsar **Suscribirse** en `/pricing`.
-2. Rediseñar la sección para mostrar únicamente **3 planes** en la parrilla principal (Starter, Growth, Enterprise).
-3. Mover **Waitlist Free Year** debajo, como una **oferta destacada diferenciada** (banner/oferta especial, no una tarjeta más).
+1. **Usuario NO autenticado** → redirige a `/auth?plan=<id>&next=checkout`
+2. **Usuario autenticado sin `company_id`** → redirige a onboarding con `?plan=<id>&next=checkout`
+3. **Usuario autenticado con `company_id`** → dispara Stripe Checkout como hoy
 
----
+Tras completar el paso pendiente, el sistema reanuda automáticamente el checkout del plan elegido.
 
-## 1) Diagnóstico del error de pago
+## Cambios
 
-La toast `"Error al iniciar el pago"` proviene de `PricingPlans.tsx → subscribe.onError`. El fallo puede venir de:
+### 1. `src/components/PricingPlans.tsx`
+- Reemplazar la validación bloqueante dentro de `subscribe.mutationFn` por lógica de ruteo en `handleSubscribe`:
+  - Si no hay `session` → `navigate('/auth?plan=<id>&next=checkout')`.
+  - Si hay sesión pero `!profile?.company_id` → `navigate('/dashboard?onboarding=1&plan=<id>&next=checkout')` (Dashboard ya monta `CompanyOnboarding` cuando falta empresa).
+  - Si todo está listo → `subscribe.mutate(plan)`.
+- Aplicar la misma lógica al CTA del bloque Waitlist Free Year ("Reclamar oferta").
+- Eliminar el `throw new Error("Necesitas completar el onboarding...")` de la mutación.
 
-- La invocación de la Edge Function `create-checkout-session` devuelve error (por ejemplo, `STRIPE_SECRET_KEY` no configurada, `stripe_price_id` inválido, o falta de `company_id` en el perfil).
-- El `insert` en `subscriptions` falla por RLS o por columnas requeridas.
-- Para planes sin `stripe_price_id` (como Waitlist Free Year o Enterprise sin precio en Stripe) el flujo actual crea suscripción "pending" pero puede fallar en el insert.
+### 2. `src/pages/Auth.tsx`
+- Leer `plan` y `next` de `useSearchParams`.
+- Al pasar `onSuccess` a `<AuthForm>`, redirigir a `/dashboard?onboarding=1&plan=<id>&next=checkout` en lugar de `/dashboard`. Si no hay `plan`, comportamiento actual.
 
-**Acciones:**
+### 3. `src/components/CompanyOnboarding.tsx` (o donde se cierre el onboarding)
+- Tras guardar la empresa exitosamente, leer `plan` y `next` de la URL. Si `next === "checkout"` y hay `plan`, invocar el mismo edge function `create-checkout-session` y redirigir a `data.url`. Si falla, dejar al usuario en el dashboard con un toast.
 
-- Añadir logs detallados en el `catch` del mutation y mostrar el mensaje real (`err.message`) en la toast para depurar.
-- En la Edge Function `create-checkout-session`, mejorar mensajes de error devueltos (ya existen), y confirmar que `STRIPE_SECRET_KEY` está configurada como secret. Si no lo está, guiar al usuario para configurarla.
-- Manejar el caso "usuario sin `company_id`" (usuarios sin onboarding completado): en lugar de fallar, redirigir a completar el onboarding o al waitlist.
-- Para planes sin `stripe_price_id`, en lugar de crear una suscripción pending silenciosa, redirigir a `/lista-de-espera?plan=ID` (más coherente con el estado actual del negocio).
+### 4. `src/pages/Dashboard.tsx` (o el layout que monta el onboarding)
+- Asegurar que si el usuario llega con `?onboarding=1` y no tiene `company_id`, se abre el flujo de onboarding automáticamente (probablemente ya sucede porque se muestra cuando falta `company_id`; solo verificar).
 
-Confirmaré con el usuario si `STRIPE_SECRET_KEY` está configurado antes de asumir la causa raíz.
+## Aspectos técnicos
+- No se toca el edge function `create-checkout-session` — sigue exigiendo `company_id`, lo cual está correcto (validación de servidor).
+- El parámetro `next=checkout` es la señal única que dispara el reanude post-onboarding y post-login.
+- El plan Waitlist Free Year se comporta igual: primero login/onboarding, luego se ejecuta su rama especial (que hoy también llama a Stripe con `stripe_price_id=null` — a corregir en otra iteración si aplica; fuera del alcance).
 
----
-
-## 2) Rediseño de `/pricing`
-
-### Parrilla principal — 3 planes
-
-Filtrar los planes activos excluyendo el "Waitlist Free Year" (por nombre o marcándolo con un flag). Mostrar en grid de 3 columnas los planes de pago: **Starter**, **Growth**, **Enterprise**. Mantener el badge "Popular" en Growth (el central).
-
-### Oferta destacada — Waitlist Free Year
-
-Debajo de la parrilla, un bloque **full-width diferenciado**:
-
-- Fondo con gradiente sutil (primary/emerald) y borde luminoso.
-- Etiqueta "Oferta especial · Tiempo limitado".
-- Título: "Waitlist Free Year — 1 año gratis por unirte temprano".
-- Descripción breve de beneficios y límites (5 proyectos, ilimitados agentes IA, 3 paneles, integraciones ilimitadas).
-- CTA prominente: **"Únete a la lista de espera"** → `/lista-de-espera?plan=<id>`.
-- Layout horizontal (título + beneficios a la izquierda, CTA a la derecha) para diferenciarlo visualmente de las tarjetas.
-
----
-
-## Detalles técnicos
-
-**Archivos a modificar:**
-
-- `src/components/PricingPlans.tsx`
-  - Separar `plans` en `paidPlans` (grid de 3) y `waitlistPlan` (destacado abajo).
-  - Filtro: `plan.name.toLowerCase().includes("waitlist")` o `price === 0`.
-  - Mejorar `onError` mostrando `err.message` real.
-  - Para planes sin `stripe_price_id`, navegar directo a `/lista-de-espera` en lugar de insertar suscripción pendiente.
-- `src/pages/Pricing.tsx` — sin cambios estructurales, solo el componente hijo cambia.
-- (Opcional según confirmación) `supabase/functions/create-checkout-session/index.ts` — mejor manejo de errores y validación de `STRIPE_SECRET_KEY`.
-
-**Sin cambios en la BD** — el filtrado es en frontend, los planes existentes se mantienen.
-
----
-
-## Preguntas antes de ejecutar
-
-1. ¿La variable `STRIPE_SECRET_KEY` ya está configurada en los secrets de Supabase? Si no, es la causa más probable del error. ¿Quieres que la configuremos ahora (necesito la clave `sk_live_...` o `sk_test_...`)?  
-  
-Si ay ae encuentra configurada, verificalo igualmente.
-2. Los planes **Starter ($29)**, **Growth ($79)** y **Enterprise ($199)** en la BD, ¿ya tienen `stripe_price_id` reales creados en tu cuenta de Stripe? Si no, el checkout siempre fallará hasta que existan.  
-  
-Si, estan los stripe_price_id en la bd  
-
-3. Para el bloque **Waitlist Free Year**, ¿el CTA debe llevar a `/lista-de-espera` (formulario) o directo a registro/auth?  
-  
-Directo al registro Auth.  
-  
+## Fuera de alcance
+- Configurar `stripe_price_id` reales en la tabla `plans` (Starter/Growth/Enterprise) — si aún no existen, el checkout fallará con el mensaje real de Stripe, que ya se muestra al usuario.
+- Rediseño del onboarding.
