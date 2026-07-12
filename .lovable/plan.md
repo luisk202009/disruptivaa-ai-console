@@ -1,70 +1,75 @@
-# Plan: Arreglar sincronización HubSpot (Contactos + Empresas)
+## Objetivo
 
-## Diagnóstico (de los logs reales de `hubspot_sync_log`)
+1. Solucionar el error "Error al iniciar el pago. Intenta de nuevo." al pulsar **Suscribirse** en `/pricing`.
+2. Rediseñar la sección para mostrar únicamente **3 planes** en la parrilla principal (Starter, Growth, Enterprise).
+3. Mover **Waitlist Free Year** debajo, como una **oferta destacada diferenciada** (banner/oferta especial, no una tarjeta más).
 
-Los leads no llegan porque HubSpot devuelve `400 VALIDATION_ERROR` por tres causas:
+---
 
-1. **Enums inválidos**:
-   - `status` (lead) se mapea a `lifecyclestage`, pero envía `"oportunidad" / "invitado" / "finalizado"` — HubSpot solo acepta `subscriber, lead, marketingqualifiedlead, salesqualifiedlead, opportunity, customer, evangelist, other`.
-   - `source` se mapea a `hs_analytics_source`, que solo acepta `ORGANIC_SEARCH, PAID_SEARCH, …`. Valores como `"manual" / "web"` se rechazan.
-2. **Propiedades personalizadas inexistentes**: el mapeo por defecto apunta a `disruptivaa_fit_score`, `disruptivaa_nicho`, `disruptivaa_servicios`, etc., que nunca se crearon en el portal.
-3. **Sin distinción Contacto vs Empresa**: hoy todo va al objeto `contacts`, así que `company` y `website` no crean la empresa en HubSpot ni la asocian. Por eso "Lextramit" no aparece como cuenta.
+## 1) Diagnóstico del error de pago
 
-## Cambios propuestos
+La toast `"Error al iniciar el pago"` proviene de `PricingPlans.tsx → subscribe.onError`. El fallo puede venir de:
 
-### 1. Modelo de mapeo enriquecido
-Cambiar `field_mapping` de `Record<string, string>` a `Record<string, { property: string; object: "contact" | "company"; transform?: string }>`. Migración para reescribir el mapeo actual al nuevo formato (con `object: "contact"` por defecto y `company`/`website` → `"company"`).
+- La invocación de la Edge Function `create-checkout-session` devuelve error (por ejemplo, `STRIPE_SECRET_KEY` no configurada, `stripe_price_id` inválido, o falta de `company_id` en el perfil).
+- El `insert` en `subscriptions` falla por RLS o por columnas requeridas.
+- Para planes sin `stripe_price_id` (como Waitlist Free Year o Enterprise sin precio en Stripe) el flujo actual crea suscripción "pending" pero puede fallar en el insert.
 
-### 2. Transformación de valores (catálogo cerrado)
-Nuevo helper `transformValue(leadField, value)` en `_shared/hubspot.ts`:
-- `status` → `lifecyclestage`: `nuevo→lead`, `waitlist→subscriber`, `oportunidad→opportunity`, `invitado→marketingqualifiedlead`, `cliente→customer`, `finalizado→other`.
-- `source` → texto plano en propiedad custom `disruptivaa_source` (NO `hs_analytics_source`).
-- `service_type` (array) → string separado por `;`.
-- `fit_score` → número.
+**Acciones:**
 
-### 3. Auto-provisión de propiedades custom
-Nueva edge function `hubspot-ensure-properties` (admin) que crea (si faltan) en el grupo `contactinformation` / `companyinformation`:
-- Contact: `disruptivaa_fit_score` (number), `disruptivaa_nicho` (string), `disruptivaa_servicios` (string), `disruptivaa_status` (enumeration con los valores reales), `disruptivaa_source` (string), `disruptivaa_notes` (string).
-- Botón **"Crear propiedades en HubSpot"** en el panel admin.
+- Añadir logs detallados en el `catch` del mutation y mostrar el mensaje real (`err.message`) en la toast para depurar.
+- En la Edge Function `create-checkout-session`, mejorar mensajes de error devueltos (ya existen), y confirmar que `STRIPE_SECRET_KEY` está configurada como secret. Si no lo está, guiar al usuario para configurarla.
+- Manejar el caso "usuario sin `company_id`" (usuarios sin onboarding completado): en lugar de fallar, redirigir a completar el onboarding o al waitlist.
+- Para planes sin `stripe_price_id`, en lugar de crear una suscripción pending silenciosa, redirigir a `/lista-de-espera?plan=ID` (más coherente con el estado actual del negocio).
 
-### 4. Sincronización dual Contact + Company
-En `hubspot-sync-lead` y `hubspot-sync-all`:
-1. Separar `properties` por objeto según el mapeo (`contact` vs `company`).
-2. Upsert del Contact por `email` (igual que hoy).
-3. Si hay props de Company y existe `company` (nombre) o `website` (dominio):
-   - Buscar Company por `domain` (extraído del website) o por `name`.
-   - Crear o actualizar y guardar `hubspot_company_id` en `leads` (nueva columna).
-   - Crear asociación Contact ↔ Company (`PUT /crm/v3/objects/contacts/{id}/associations/companies/{id}/contact_to_company`).
-4. Loguear ambas acciones en `hubspot_sync_log` (campo `object_type`).
+Confirmaré con el usuario si `STRIPE_SECRET_KEY` está configurado antes de asumir la causa raíz.
 
-### 5. UI de mapeo
-En `AdminHubSpot.tsx`:
-- Cada fila del mapeo añade un selector **Objeto** (`Contacto` / `Empresa`).
-- Defaults sugeridos: `name/email/phone/notes/fit_score/status/source/niche/service_type → Contacto`, `company/website → Empresa`.
-- El selector de propiedad filtra por objeto (cargar también `companies` properties en `hubspot-list-properties`).
-- Banner explicativo y botón "Crear propiedades faltantes".
+---
 
-### 6. Auto-sync al crear lead manual
-Ya invoca `hubspot-sync-lead`; queda cubierto al arreglar el backend. Verificar que `enabled && auto_sync` se respete.
+## 2) Rediseño de `/pricing`
 
-## Esquema (migración)
+### Parrilla principal — 3 planes
 
-- `ALTER TABLE leads ADD COLUMN hubspot_company_id text`.
-- `ALTER TABLE hubspot_sync_log ADD COLUMN object_type text` (`contact` | `company`).
-- `UPDATE hubspot_sync_config` para reescribir `field_mapping` al nuevo formato `{property, object}`.
+Filtrar los planes activos excluyendo el "Waitlist Free Year" (por nombre o marcándolo con un flag). Mostrar en grid de 3 columnas los planes de pago: **Starter**, **Growth**, **Enterprise**. Mantener el badge "Popular" en Growth (el central).
 
-## Archivos afectados
+### Oferta destacada — Waitlist Free Year
 
-- `supabase/migrations/<nuevo>.sql`
-- `supabase/functions/_shared/hubspot.ts` (split por objeto + transforms)
-- `supabase/functions/hubspot-sync-lead/index.ts` (lógica Company + asociación)
-- `supabase/functions/hubspot-sync-all/index.ts` (idem)
-- `supabase/functions/hubspot-list-properties/index.ts` (acepta `?object=contacts|companies`)
-- `supabase/functions/hubspot-ensure-properties/index.ts` (nueva)
-- `supabase/config.toml` (registrar la nueva función con `verify_jwt = false`)
-- `src/hooks/useHubSpotConfig.ts` (tipos del nuevo mapeo)
-- `src/pages/admin/AdminHubSpot.tsx` (selector Objeto + botón crear propiedades)
+Debajo de la parrilla, un bloque **full-width diferenciado**:
 
-## Resultado esperado
+- Fondo con gradiente sutil (primary/emerald) y borde luminoso.
+- Etiqueta "Oferta especial · Tiempo limitado".
+- Título: "Waitlist Free Year — 1 año gratis por unirte temprano".
+- Descripción breve de beneficios y límites (5 proyectos, ilimitados agentes IA, 3 paneles, integraciones ilimitadas).
+- CTA prominente: **"Únete a la lista de espera"** → `/lista-de-espera?plan=<id>`.
+- Layout horizontal (título + beneficios a la izquierda, CTA a la derecha) para diferenciarlo visualmente de las tarjetas.
 
-Tras aplicar: pulsar "Sincronizar todos los leads" creará Contactos (sin errores 400) y las Empresas asociadas con su dominio. Los leads nuevos se sincronizan al instante con la misma lógica.
+---
+
+## Detalles técnicos
+
+**Archivos a modificar:**
+
+- `src/components/PricingPlans.tsx`
+  - Separar `plans` en `paidPlans` (grid de 3) y `waitlistPlan` (destacado abajo).
+  - Filtro: `plan.name.toLowerCase().includes("waitlist")` o `price === 0`.
+  - Mejorar `onError` mostrando `err.message` real.
+  - Para planes sin `stripe_price_id`, navegar directo a `/lista-de-espera` en lugar de insertar suscripción pendiente.
+- `src/pages/Pricing.tsx` — sin cambios estructurales, solo el componente hijo cambia.
+- (Opcional según confirmación) `supabase/functions/create-checkout-session/index.ts` — mejor manejo de errores y validación de `STRIPE_SECRET_KEY`.
+
+**Sin cambios en la BD** — el filtrado es en frontend, los planes existentes se mantienen.
+
+---
+
+## Preguntas antes de ejecutar
+
+1. ¿La variable `STRIPE_SECRET_KEY` ya está configurada en los secrets de Supabase? Si no, es la causa más probable del error. ¿Quieres que la configuremos ahora (necesito la clave `sk_live_...` o `sk_test_...`)?  
+  
+Si ay ae encuentra configurada, verificalo igualmente.
+2. Los planes **Starter ($29)**, **Growth ($79)** y **Enterprise ($199)** en la BD, ¿ya tienen `stripe_price_id` reales creados en tu cuenta de Stripe? Si no, el checkout siempre fallará hasta que existan.  
+  
+Si, estan los stripe_price_id en la bd  
+
+3. Para el bloque **Waitlist Free Year**, ¿el CTA debe llevar a `/lista-de-espera` (formulario) o directo a registro/auth?  
+  
+Directo al registro Auth.  
+  
