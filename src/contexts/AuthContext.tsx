@@ -32,7 +32,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           const path = window.location.pathname;
           if (path === '/auth' || path === '/update-password') {
-            window.location.href = '/dashboard';
+            // Preserva plan/next para reanudar el checkout después del login
+            const params = new URLSearchParams(window.location.search);
+            const planId = params.get('plan');
+            const next = params.get('next');
+            if (planId && next === 'checkout') {
+              window.location.href = `/dashboard?onboarding=1&plan=${planId}&next=checkout`;
+            } else {
+              window.location.href = '/dashboard';
+            }
           }
         }
       }
