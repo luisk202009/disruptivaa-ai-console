@@ -55,11 +55,54 @@ const CompanyOnboarding = () => {
         console.warn("[apply-waitlist-grant]", err);
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(t("onboarding.success"));
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["company_branding"] });
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
+
+      // Si venimos del flujo de suscripción (/pricing → /auth → onboarding),
+      // reanudamos el checkout de Stripe automáticamente.
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const planId = params.get("plan");
+        const next = params.get("next");
+        if (planId && next === "checkout") {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("company_id")
+            .eq("id", user!.id)
+            .maybeSingle();
+          const { data: plan } = await supabase
+            .from("plans")
+            .select("id, stripe_price_id")
+            .eq("id", planId)
+            .maybeSingle();
+
+          if (!plan?.stripe_price_id) {
+            toast.error("Este plan aún no está disponible para pago. Contáctanos para activarlo.");
+            return;
+          }
+
+          const { data, error } = await supabase.functions.invoke(
+            "create-checkout-session",
+            {
+              body: {
+                plan_id: plan.id,
+                company_id: profile?.company_id,
+                price_id: plan.stripe_price_id,
+              },
+            },
+          );
+          if (error) throw error;
+          if (data?.url) {
+            window.location.href = data.url;
+          }
+        }
+      } catch (err) {
+        console.error("[onboarding→checkout]", err);
+        toast.error("No pudimos abrir el pago automáticamente. Vuelve a intentarlo desde Planes.");
+      }
     },
     onError: () => {
       toast.error(t("onboarding.error"));
