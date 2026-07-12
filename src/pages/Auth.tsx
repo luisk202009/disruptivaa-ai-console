@@ -44,7 +44,7 @@ const Auth = () => {
 
         {/* Contenedor del form - borde muy sutil */}
         <div className="rounded-xl border border-white/[0.05] bg-zinc-900/30 p-8">
-          <AuthForm onSuccess={() => navigate("/dashboard")} defaultTab="login" />
+          <AuthForm onSuccess={handleSuccess} defaultTab="login" />
         </div>
       </div>
     </div>
