@@ -63,6 +63,7 @@ const PricingPlans = () => {
   const subscribe = useMutation({
     mutationFn: async (plan: Plan) => {
       if (!profile?.company_id) {
+        // Fallback defensivo — el ruteo previo debería haber evitado llegar aquí
         throw new Error(
           "Necesitas completar el onboarding de tu empresa antes de suscribirte.",
         );
@@ -137,10 +138,17 @@ const PricingPlans = () => {
   const paidPlans = plans.filter((p) => !isWaitlist(p)).slice(0, 3);
 
   const handleSubscribe = (plan: Plan) => {
+    // 1) Sin sesión → login (o waitlist en el futuro), preservando el plan y next=checkout
     if (!session) {
-      navigate(`/auth?plan=${plan.id}`);
+      navigate(`/auth?plan=${plan.id}&next=checkout`);
       return;
     }
+    // 2) Con sesión pero sin empresa → onboarding, reanudará checkout al terminar
+    if (!profile?.company_id) {
+      navigate(`/dashboard?onboarding=1&plan=${plan.id}&next=checkout`);
+      return;
+    }
+    // 3) Todo listo → checkout directo
     subscribe.mutate(plan);
   };
 
@@ -257,7 +265,7 @@ const PricingPlans = () => {
                 </div>
               </div>
               <Button
-                onClick={() => navigate(`/auth?plan=${waitlistPlan.id}`)}
+                onClick={() => handleSubscribe(waitlistPlan)}
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 w-full lg:w-auto"
               >

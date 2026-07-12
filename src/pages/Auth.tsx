@@ -1,10 +1,21 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo-disruptivaa.png";
 import AuthForm from "@/components/AuthForm";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const planId = searchParams.get("plan");
+  const next = searchParams.get("next");
+
+  const handleSuccess = () => {
+    if (planId && next === "checkout") {
+      navigate(`/dashboard?onboarding=1&plan=${planId}&next=checkout`);
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -33,7 +44,7 @@ const Auth = () => {
 
         {/* Contenedor del form - borde muy sutil */}
         <div className="rounded-xl border border-white/[0.05] bg-zinc-900/30 p-8">
-          <AuthForm onSuccess={() => navigate("/dashboard")} defaultTab="login" />
+          <AuthForm onSuccess={handleSuccess} defaultTab="login" />
         </div>
       </div>
     </div>
