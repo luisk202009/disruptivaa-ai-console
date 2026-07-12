@@ -265,7 +265,7 @@ const PricingPlans = () => {
                 </div>
               </div>
               <Button
-                onClick={() => navigate(`/auth?plan=${waitlistPlan.id}`)}
+                onClick={() => handleSubscribe(waitlistPlan)}
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 w-full lg:w-auto"
               >
