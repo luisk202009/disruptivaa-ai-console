@@ -63,6 +63,7 @@ const PricingPlans = () => {
   const subscribe = useMutation({
     mutationFn: async (plan: Plan) => {
       if (!profile?.company_id) {
+        // Fallback defensivo — el ruteo previo debería haber evitado llegar aquí
         throw new Error(
           "Necesitas completar el onboarding de tu empresa antes de suscribirte.",
         );
