@@ -1,4 +1,4 @@
-import { Mail, Code, ChevronRight, MessageCircle, Workflow } from "lucide-react";
+import { Mail, Code, ChevronRight, MessageCircle, Workflow, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const settingsCards = [
@@ -25,6 +25,12 @@ const settingsCards = [
     title: "HubSpot CRM",
     description: "Sincroniza los leads de la plataforma con tu cuenta de HubSpot y define el mapeo de campos.",
     path: "/admin/hubspot",
+  },
+  {
+    icon: <Tag size={22} strokeWidth={1.5} />,
+    title: "Google Tag Manager",
+    description: "Instala GTM pegando los fragmentos de código para el HEAD y el BODY del sitio.",
+    path: "/admin/settings/gtm",
   },
 ];
 
