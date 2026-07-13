@@ -13,6 +13,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import Agents from "./pages/Agents";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import GTMInjector from "./components/GTMInjector";
 
 // Lazy-loaded routes
 const Conversations = lazy(() => import("./pages/Conversations"));
@@ -40,6 +41,7 @@ const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminPlans = lazy(() => import("./pages/admin/AdminPlans"));
 const AdminWhatsAppButton = lazy(() => import("./pages/admin/AdminWhatsAppButton"));
 const AdminHubSpot = lazy(() => import("./pages/admin/AdminHubSpot"));
+const AdminGTM = lazy(() => import("./pages/admin/AdminGTM"));
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
 const ProposalView = lazy(() => import("./pages/ProposalView"));
 const Brief = lazy(() => import("./pages/Brief"));
@@ -98,6 +100,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <GTMInjector />
         <BrandingProvider>
           <BrowserRouter>
             <Routes>
