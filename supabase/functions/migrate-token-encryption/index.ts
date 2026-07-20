@@ -3,8 +3,17 @@
 // Autoriza únicamente al service_role o a usuarios con rol admin (patrón requireAdmin).
 // No toca filas ya cifradas (prefijo "enc:"). No despliega ni migra nada por su cuenta:
 // hay que invocarla explícitamente.
+import { timingSafeEqual } from "node:crypto";
 import { corsHeaders, requireAdmin, serviceClient } from "../_shared/hubspot.ts";
 import { assertEncryptionKey, encryptToken } from "../_shared/crypto.ts";
+
+// Comparación de tiempo constante para evitar timing attacks sobre la service key.
+function safeEqual(a: string, b: string): boolean {
+  const ab = new TextEncoder().encode(a);
+  const bb = new TextEncoder().encode(b);
+  if (ab.length !== bb.length) return false; // timingSafeEqual exige misma longitud
+  return timingSafeEqual(ab, bb);
+}
 
 // Autoriza service_role (Bearer == SUPABASE_SERVICE_ROLE_KEY) o, si no, delega en
 // requireAdmin (que lanza un Response 401/403 para cualquier otra llamada).
@@ -12,7 +21,7 @@ async function authorize(req: Request): Promise<void> {
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (token && serviceKey && token === serviceKey) return; // service_role autorizado
+  if (token && serviceKey && safeEqual(token, serviceKey)) return; // service_role autorizado
   await requireAdmin(req); // admin autorizado; cualquier otro caso lanza Response
 }
 
