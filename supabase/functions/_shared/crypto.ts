@@ -16,9 +16,35 @@ function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function getEncryptionKey(): Promise<CryptoKey | null> {
-  const keyHex = Deno.env.get("TOKEN_ENCRYPTION_KEY");
-  if (!keyHex || keyHex.length < 64) return null; // Need at least 256-bit key (64 hex chars)
+const HEX_RE = /^[0-9a-fA-F]+$/;
+
+/**
+ * Validate the raw TOKEN_ENCRYPTION_KEY hex string. Throws a clear Error if it is
+ * missing, not valid hex, or shorter than 64 chars (256-bit key). Returns the hex.
+ */
+function assertValidKeyHex(keyHex: string | undefined): string {
+  if (!keyHex) {
+    throw new Error("TOKEN_ENCRYPTION_KEY no está configurada");
+  }
+  if (!HEX_RE.test(keyHex)) {
+    throw new Error("TOKEN_ENCRYPTION_KEY debe ser hexadecimal (^[0-9a-fA-F]+$)");
+  }
+  if (keyHex.length < 64) {
+    throw new Error("TOKEN_ENCRYPTION_KEY debe medir al menos 64 caracteres hex (256 bits)");
+  }
+  return keyHex;
+}
+
+/**
+ * Valida que TOKEN_ENCRYPTION_KEY exista y sea válida. Lanza si no.
+ * Pensada para llamarse al inicio de cada función que cifra (fail-fast).
+ */
+export function assertEncryptionKey(): void {
+  assertValidKeyHex(Deno.env.get("TOKEN_ENCRYPTION_KEY"));
+}
+
+async function getEncryptionKey(): Promise<CryptoKey> {
+  const keyHex = assertValidKeyHex(Deno.env.get("TOKEN_ENCRYPTION_KEY"));
 
   const keyBytes = hexToBytes(keyHex.slice(0, 64)); // Use first 256 bits
   return crypto.subtle.importKey(
@@ -32,13 +58,12 @@ async function getEncryptionKey(): Promise<CryptoKey | null> {
 
 /**
  * Encrypt a plaintext token. Returns prefixed ciphertext string.
- * Falls back to plaintext if TOKEN_ENCRYPTION_KEY is not configured.
+ * Fail-closed: lanza si TOKEN_ENCRYPTION_KEY no está configurada o es inválida.
  */
 export async function encryptToken(plaintext: string): Promise<string> {
   if (!plaintext) return plaintext;
 
   const key = await getEncryptionKey();
-  if (!key) return plaintext; // Graceful fallback
 
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(plaintext);
@@ -57,13 +82,14 @@ export async function encryptToken(plaintext: string): Promise<string> {
 export async function decryptToken(stored: string): Promise<string> {
   if (!stored) return stored;
 
-  // Plaintext backward compatibility
-  if (!stored.startsWith("enc:")) return stored;
+  // Branch temporal de migración: tokens legacy en texto plano (sin prefijo enc:).
+  // TODO(F0-2): eliminar este branch tras migrar y verificar 0 plaintext, dejándolo en throw.
+  if (!stored.startsWith("enc:")) {
+    console.error("[crypto] plaintext token detectado - pendiente de migrar");
+    return stored;
+  }
 
   const key = await getEncryptionKey();
-  if (!key) {
-    throw new Error("TOKEN_ENCRYPTION_KEY is required to decrypt encrypted tokens");
-  }
 
   const parts = stored.split(":");
   if (parts.length !== 3) {
